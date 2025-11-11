@@ -1,14 +1,15 @@
 <div align="center">
 
-# SwiftDisc
+# 🚀 SwiftDisc
 
-**A Swift-native, cross-platform Discord API library**
+**A Swift-native, cross-platform Discord API library**  
+Build Discord bots and integrations natively in Swift — fast, modern, and fully async.
 
-[![Discord](https://img.shields.io/discord/1010302596351859718?logo=discord&label=Discord&color=5865F2)](https://discord.com/invite/r4rCAXvb8d)
-[![Swift Version](https://img.shields.io/badge/Swift-5.9+-F05138)](https://swift.org)
+[![Discord](https://img.shields.io/discord/1010302596351859718?logo=discord&label=Join%20our%20Discord&color=5865F2)](https://discord.com/invite/r4rCAXvb8d)
+[![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Roadmap](#roadmap)
+📚 [Features](#features) • ⚙️ [Installation](#installation) • 🚦 [Quick Start](#quick-start) • 🧾 [Documentation](#documentation) • 🗺️ [Roadmap](#roadmap)
 
 </div>
 
@@ -46,7 +47,7 @@ Add SwiftDisc to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.1.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.2.0")
 ]
 ```
 
@@ -158,17 +159,18 @@ try await client.sendMessage(channelId: "123456789", content: "Hello, Discord!")
 
 ## Current Status
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 SwiftDisc is in active development. The following components are currently available:
 
 ### ✅ Implemented
 
 - **REST API**
-  - Basic GET/POST operations
-  - JSON encoding/decoding
-  - Simple rate limiting
+  - GET/POST/PATCH/DELETE operations
+  - JSON encoding/decoding with detailed error decoding
+  - Per-route rate limiting with automatic retries and 429 handling
   - Structured error types
+  - Initial endpoint coverage: Channels, Guilds, Interactions, Webhooks
 
 - **Models**
   - Snowflake identifiers
@@ -201,9 +203,9 @@ SwiftDisc's development roadmap is inspired by battle-tested libraries like disc
 - [x] Presence updates
 
 ### Phase 2: REST Maturity
-- [ ] Per-route rate limiting with automatic retries
-- [ ] Detailed error payload decoding
-- [ ] Complete endpoint coverage:
+- [x] Per-route rate limiting with automatic retries
+- [x] Detailed error payload decoding
+- [x] Initial endpoint coverage:
   - Channels
   - Guilds
   - Interactions

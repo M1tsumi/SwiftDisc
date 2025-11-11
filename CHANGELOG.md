@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.2.0] - 2025-11-11
+
+### Added
+- REST Phase 2 maturity:
+  - Per-route rate limiting with automatic retries and global limit handling.
+  - Retry/backoff for 429 and 5xx, with exponential backoff.
+  - Detailed API error decoding (message/code) and improved HTTP error reporting.
+  - New models: Guild, Interaction, Webhook.
+  - Initial endpoint coverage: Channels, Guilds, Interactions, Webhooks.
+- DiscordClient: Convenience REST methods for channels (get/modify, delete message), guild (get), interactions (create response), webhooks (create/execute).
+
+### Changed
+- README: Bumped version to 0.2.0 and marked Phase 2 roadmap items complete with REST details.
+- Developer docs: Expanded REST section for per-route buckets, error decoding, endpoints.
+- Install guide: Updated SPM version references to 0.2.0.
+
+### Notes
+- Additional REST endpoints will continue to be added; report priorities via Issues.
+
 ## [0.1.0] - 2025-11-11
 
 ### Added
