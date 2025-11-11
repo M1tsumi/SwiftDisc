@@ -1,0 +1,44 @@
+# Swift / SwiftPM
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Xcode
+DerivedData/
+*.xcuserstate
+*.xcworkspace/
+*.xcscmblueprint
+*.xccheckout
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/xcshareddata/WorkspaceSettings.xcsettings
+xcuserdata/
+
+# OS / Editor
+.DS_Store
+*.swp
+*.swo
+*.orig
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets (never commit tokens)
+.env
+.env.*
+Secrets/
+
+# Coverage / Reports
+*.gcno
+*.gcda
+*.profraw
+coverage/
+
+# Carthage / CocoaPods (not used, but ignore if present)
+Carthage/
+Pods/
+
+# SPM Artifacts
+.artifacts/

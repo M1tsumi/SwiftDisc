@@ -1,0 +1,115 @@
+SwiftDisc Developer Documentation
+================================
+
+Overview
+--------
+SwiftDisc is a Swift-native library for the Discord API, inspired by discord.py and built on Swift concurrency. It targets iOS, macOS, tvOS, watchOS, and Windows (where supported by Foundation networking).
+
+Architecture
+------------
+- Package layout:
+  - Sources/SwiftDisc
+    - Internal: Config and shared error types
+    - Models: Core data models (Snowflake, User, Channel, Message)
+    - REST: HTTP client and rate limiter
+    - Gateway: WebSocket abstraction, gateway models, client
+    - DiscordClient.swift: High-level facade
+  - Tests/SwiftDiscTests: Unit tests
+
+Key Modules
+-----------
+1) DiscordClient (High-level API)
+   - loginAndConnect(intents:): Connects to the Gateway and begins streaming events.
+   - events: AsyncStream<DiscordEvent> to consume gateway events.
+   - getCurrentUser(): Fetches the current bot user via REST.
+   - sendMessage(channelId:content:): Sends a message to a channel via REST.
+
+2) REST Layer
+   - HTTPClient: Performs JSON GET/POST requests with Authorization header.
+   - RateLimiter: Basic spacing between requests (upgrade to route buckets planned).
+   - Errors: DiscordError for HTTP status, encoding/decoding, and network issues.
+
+3) Gateway Layer
+   - WebSocket abstraction: URLSessionWebSocketAdapter (Apple platforms), placeholder on Windows (adapter to be implemented if needed).
+   - Models: GatewayOpcode, GatewayPayload, GatewayHello, IdentifyPayload, Intents, ReadyEvent.
+   - Client: Connects, receives HELLO, sends Identify, starts heartbeat, decodes events (READY, MESSAGE_CREATE), streams via event sink.
+
+Intents
+-------
+- GatewayIntents is an OptionSet of UInt64.
+- Common useful intents: .guilds, .guildMessages, .messageContent (privileged).
+- You must enable privileged intents (like message content) in the Discord Developer Portal.
+
+Events
+------
+- Current: READY, MESSAGE_CREATE.
+- Plan: GUILD_CREATE, INTERACTION_CREATE, and more per Discord docs.
+- Access via DiscordClient.events (AsyncStream<DiscordEvent>).
+
+Usage Examples
+--------------
+- Connecting with intents:
+  try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+
+- Handling events:
+  for await event in client.events {
+      switch event {
+      case .ready(let info):
+          print("Logged in as: \(info.user.username)")
+      case .messageCreate(let msg):
+          print("#\(msg.channel_id): \(msg.author.username): \(msg.content)")
+      }
+  }
+
+- Sending a message:
+  let sent: Message = try await client.sendMessage(channelId: "123456789012345678", content: "Hello from SwiftDisc!")
+
+Platform Notes
+--------------
+- Windows: If URLSessionWebSocketTask is unavailable, current build will surface a gateway unavailable error; a dedicated adapter is planned.
+- iOS/watchOS: Be mindful of background execution limits for long-lived WebSocket connections.
+
+Error Handling
+--------------
+- DiscordError.http(status, body): Non-2xx HTTP responses.
+- DiscordError.encoding/decoding: JSON issues.
+- DiscordError.network: Transport errors (URLSession).
+- DiscordError.gateway: Gateway protocol or platform-specific WebSocket issues.
+
+Rate Limiting
+-------------
+- Basic global throttle currently. Future: per-route buckets with automatic retries and backoff.
+
+Testing Strategy
+----------------
+- REST: Use URLProtocol mocking to simulate HTTP responses.
+- Gateway: Provide a mock WebSocket to simulate HELLO, DISPATCH, and HEARTBEAT frames.
+- Add assertions for identify, heartbeat cadence, and event decoding.
+
+Security
+--------
+- Never hardcode bot tokens. Use environment variables or secure storage.
+- Privileged intents require proper justification and compliance with Discord policies.
+
+Versioning & Changelog
+----------------------
+- Semantic Versioning (MAJOR.MINOR.PATCH) with pre-release tags (e.g., 0.1.0-alpha).
+- All changes documented in CHANGELOG.md.
+
+Roadmap Highlights
+------------------
+- Gateway: Resume/reconnect, heartbeat ACK tracking, presence updates, sharding.
+- REST: Route buckets, error model decoding, more endpoints (Guilds, Interactions, Webhooks).
+- High-level: Command helpers, caching layer, callback adapter for UI frameworks.
+- Cross-platform: Windows WebSocket adapter and CI.
+
+Support
+-------
+- Discord: https://discord.com/invite/r4rCAXvb8d
+- Issues/requests: GitHub Issues on the project repository.
+
+Contributing
+------------
+- Open an issue to discuss significant changes.
+- Follow Swift API Design Guidelines and keep public APIs concise and well-documented.
+- Include tests with changes when possible.
