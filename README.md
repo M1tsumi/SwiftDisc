@@ -11,7 +11,7 @@ Zero dependencies • Full Discord v10 • Async/Await • SwiftPM Ready
 ![MIT](https://img.shields.io/badge/License-MIT-lightgrey)
 
 [![Stars](https://img.shields.io/github/stars/M1tsumi/SwiftDisc?style=social)](https://github.com/M1tsumi/SwiftDisc)
-[![Discord](https://img.shields.io/discord/1437906962070372403?logo=discord&label=Support&color=5865F2)](https://discord.gg/YOUR_INVITE)
+[![Discord](https://img.shields.io/discord/1302695959864414319?logo=discord&label=Support&color=5865F2)](https://discord.gg/r4rCAXvb8d))
 
 </div>
 
