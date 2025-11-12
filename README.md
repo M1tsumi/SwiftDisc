@@ -274,39 +274,6 @@ SwiftDisc is in active development. The following components are currently avail
   - Basic initialization tests
   - Mock infrastructure in development
 
-## Roadmap
-
-SwiftDisc's development roadmap is inspired by battle-tested libraries like discord.py:
-
-### Phase 1: Gateway Stability
-- [x] Complete Identify, Resume, and Reconnect logic
-- [x] Robust heartbeat/ACK tracking with jitter
-- [x] Comprehensive intent support
-- [x] Priority event coverage: `READY`, `MESSAGE_CREATE`, `GUILD_CREATE`, `INTERACTION_CREATE`
-- [x] Sharding support
-- [x] Presence updates
-
-### Phase 2: REST Maturity
-- [x] Per-route rate limiting with automatic retries
-- [x] Detailed error payload decoding
-- [x] Initial endpoint coverage:
-  - Channels
-  - Guilds
-  - Interactions
-  - Webhooks
-
-### Phase 3: High-Level API
-- [x] AsyncSequence as primary pattern with callback adapters
-- [x] Command framework (prefix commands)
-- [x] Initial caching layer for users, guilds, channels, and recent messages
-- [x] Helper utilities for common bot patterns
-
-### Phase 4: Cross-Platform Excellence
-- [x] Custom WebSocket adapter path for Windows compatibility (URLSession-based adapter used across platforms)
-- [x] Continuous integration for macOS and Windows
-- [x] Platform-specific optimizations
-- [x] Embeds support in message sending and interaction responses
-- [x] Minimal slash commands: create global/guild commands and reply to interactions
 
 ## Production Deployment
 
