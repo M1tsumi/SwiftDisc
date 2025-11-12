@@ -1,6 +1,6 @@
 <div align="center">
 
-![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/asset/typing-swiftdisc.svg)
+![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/assets/typing-swiftdisc.svg)
 
 **A Swift-native, cross-platform Discord API library**  
 Build Discord bots and integrations natively in Swift — fast, modern, and fully async.
