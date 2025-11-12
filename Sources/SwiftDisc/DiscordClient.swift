@@ -36,13 +36,15 @@ public final class DiscordClient {
             continuation.onTermination = { _ in }
             localContinuation = continuation
         }
-
+        self.eventContinuation = localContinuation
+    }
     // MARK: - REST: Bulk Messages and Crosspost
     // Bulk delete messages (2-100, not older than 14 days)
     public func bulkDeleteMessages(channelId: ChannelID, messageIds: [MessageID]) async throws {
         struct Body: Encodable { let messages: [MessageID] }
         struct Ack: Decodable {}
-        let _: Ack = try await http.post(path: "/channels/\(channelId)/messages/bulk-delete", body: Body(messages: messageIds))
+        let body = Body(messages: messageIds)
+        let _: Ack = try await http.post(path: "/channels/\(channelId)/messages/bulk-delete", body: body)
     }
 
     // Crosspost message
@@ -259,8 +261,7 @@ public final class DiscordClient {
         let body = positions.map { Entry(id: $0.id, position: $0.position) }
         return try await http.patch(path: "/guilds/\(guildId)/roles", body: body)
     }
-        self.eventContinuation = localContinuation
-    }
+    
 
     public func loginAndConnect(intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: nil, eventSink: { [weak self] event in
