@@ -5,15 +5,15 @@ public struct GatewayHello: Codable {
 }
 
 public struct VoiceState: Codable, Hashable {
-    public let guild_id: Snowflake?
-    public let channel_id: Snowflake?
-    public let user_id: Snowflake
+    public let guild_id: GuildID?
+    public let channel_id: ChannelID?
+    public let user_id: UserID
     public let session_id: String
 }
 
 public struct VoiceServerUpdate: Codable, Hashable {
     public let token: String
-    public let guild_id: Snowflake
+    public let guild_id: GuildID
     public let endpoint: String?
 }
 
@@ -39,6 +39,13 @@ public struct GatewayPayload<D: Codable>: Codable {
 public enum DiscordEvent: Hashable {
     case ready(ReadyEvent)
     case messageCreate(Message)
+    case messageUpdate(Message)
+    case messageDelete(MessageDelete)
+    case messageDeleteBulk(MessageDeleteBulk)
+    case messageReactionAdd(MessageReactionAdd)
+    case messageReactionRemove(MessageReactionRemove)
+    case messageReactionRemoveAll(MessageReactionRemoveAll)
+    case messageReactionRemoveEmoji(MessageReactionRemoveEmoji)
     case guildCreate(Guild)
     case channelCreate(Channel)
     case channelUpdate(Channel)
@@ -46,6 +53,57 @@ public enum DiscordEvent: Hashable {
     case interactionCreate(Interaction)
     case voiceStateUpdate(VoiceState)
     case voiceServerUpdate(VoiceServerUpdate)
+    case guildMemberAdd(GuildMemberAdd)
+    case guildMemberRemove(GuildMemberRemove)
+    case guildMemberUpdate(GuildMemberUpdate)
+    case guildRoleCreate(GuildRoleCreate)
+    case guildRoleUpdate(GuildRoleUpdate)
+    case guildRoleDelete(GuildRoleDelete)
+    case guildEmojisUpdate(GuildEmojisUpdate)
+    case guildStickersUpdate(GuildStickersUpdate)
+    case guildMembersChunk(GuildMembersChunk)
+}
+
+public struct MessageDelete: Codable, Hashable {
+    public let id: MessageID
+    public let channel_id: ChannelID
+    public let guild_id: GuildID?
+}
+
+public struct MessageDeleteBulk: Codable, Hashable {
+    public let ids: [MessageID]
+    public let channel_id: ChannelID
+    public let guild_id: GuildID?
+}
+
+public struct MessageReactionAdd: Codable, Hashable {
+    public let user_id: UserID
+    public let channel_id: ChannelID
+    public let message_id: MessageID
+    public let guild_id: GuildID?
+    public let member: GuildMember?
+    public let emoji: PartialEmoji
+}
+
+public struct MessageReactionRemove: Codable, Hashable {
+    public let user_id: UserID
+    public let channel_id: ChannelID
+    public let message_id: MessageID
+    public let guild_id: GuildID?
+    public let emoji: PartialEmoji
+}
+
+public struct MessageReactionRemoveAll: Codable, Hashable {
+    public let channel_id: ChannelID
+    public let message_id: MessageID
+    public let guild_id: GuildID?
+}
+
+public struct MessageReactionRemoveEmoji: Codable, Hashable {
+    public let channel_id: ChannelID
+    public let message_id: MessageID
+    public let guild_id: GuildID?
+    public let emoji: PartialEmoji
 }
 
 public struct ReadyEvent: Codable, Hashable {
@@ -54,15 +112,97 @@ public struct ReadyEvent: Codable, Hashable {
 }
 
 public struct Guild: Codable, Hashable {
-    public let id: Snowflake
+    public let id: GuildID
     public let name: String
 }
 
 public struct Interaction: Codable, Hashable {
-    public let id: Snowflake
+    public let id: InteractionID
     public let type: Int
-    public let guild_id: Snowflake?
-    public let channel_id: Snowflake?
+    public let guild_id: GuildID?
+    public let channel_id: ChannelID?
+}
+
+// MARK: - Guild Member Events
+public struct GuildMemberAdd: Codable, Hashable {
+    public let guild_id: GuildID
+    public let user: User
+    public let nick: String?
+    public let avatar: String?
+    public let roles: [RoleID]
+    public let joined_at: String
+    public let premium_since: String?
+    public let deaf: Bool
+    public let mute: Bool
+    public let pending: Bool?
+    public let permissions: String?
+}
+
+public struct GuildMemberRemove: Codable, Hashable {
+    public let guild_id: GuildID
+    public let user: User
+}
+
+public struct GuildMemberUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let user: User
+    public let nick: String?
+    public let roles: [RoleID]
+    public let premium_since: String?
+    public let pending: Bool?
+}
+
+// MARK: - Role CRUD Events
+public struct GuildRoleCreate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let role: Role
+}
+
+public struct GuildRoleUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let role: Role
+}
+
+public struct GuildRoleDelete: Codable, Hashable {
+    public let guild_id: GuildID
+    public let role_id: RoleID
+}
+
+// MARK: - Emoji / Sticker Update
+public struct GuildEmojisUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let emojis: [Emoji]
+}
+
+public struct GuildStickersUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let stickers: [Sticker]
+}
+
+// MARK: - Request/Receive Guild Members
+public struct RequestGuildMembers: Codable, Hashable {
+    public let op: Int = 8
+    public let d: Payload
+    public struct Payload: Codable, Hashable {
+        public let guild_id: GuildID
+        public let query: String?
+        public let limit: Int?
+        public let presences: Bool?
+        public let user_ids: [UserID]?
+        public let nonce: String?
+    }
+}
+
+public struct Presence: Codable, Hashable {}
+
+public struct GuildMembersChunk: Codable, Hashable {
+    public let guild_id: GuildID
+    public let members: [GuildMember]
+    public let chunk_index: Int
+    public let chunk_count: Int
+    public let not_found: [UserID]?
+    public let presences: [Presence]?
+    public let nonce: String?
 }
 
 public struct IdentifyPayload: Codable {

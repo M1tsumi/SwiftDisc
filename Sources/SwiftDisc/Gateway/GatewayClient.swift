@@ -27,6 +27,15 @@ actor GatewayClient {
         case resuming
         case reconnecting
     }
+
+    // Public: request guild members (OP 8)
+    func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
+        let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
+        let enc = JSONEncoder()
+        let envelope = GatewayPayload(op: .dispatch, d: payload, s: nil, t: nil)
+        let data = try enc.encode(envelope)
+        try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+    }
     private var status: Status = .disconnected
 
     private var lastIntents: GatewayIntents = []
@@ -123,9 +132,73 @@ actor GatewayClient {
                             if let payload = try? dec.decode(GatewayPayload<Message>.self, from: data), let msg = payload.d {
                                 eventSink(.messageCreate(msg))
                             }
+                        } else if t == "MESSAGE_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<Message>.self, from: data), let msg = payload.d {
+                                eventSink(.messageUpdate(msg))
+                            }
+                        } else if t == "MESSAGE_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageDelete>.self, from: data), let del = payload.d {
+                                eventSink(.messageDelete(del))
+                            }
+                        } else if t == "MESSAGE_DELETE_BULK" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageDeleteBulk>.self, from: data), let bulk = payload.d {
+                                eventSink(.messageDeleteBulk(bulk))
+                            }
+                        } else if t == "MESSAGE_REACTION_ADD" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageReactionAdd>.self, from: data), let ev = payload.d {
+                                eventSink(.messageReactionAdd(ev))
+                            }
+                        } else if t == "MESSAGE_REACTION_REMOVE" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageReactionRemove>.self, from: data), let ev = payload.d {
+                                eventSink(.messageReactionRemove(ev))
+                            }
+                        } else if t == "MESSAGE_REACTION_REMOVE_ALL" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageReactionRemoveAll>.self, from: data), let ev = payload.d {
+                                eventSink(.messageReactionRemoveAll(ev))
+                            }
+                        } else if t == "MESSAGE_REACTION_REMOVE_EMOJI" {
+                            if let payload = try? dec.decode(GatewayPayload<MessageReactionRemoveEmoji>.self, from: data), let ev = payload.d {
+                                eventSink(.messageReactionRemoveEmoji(ev))
+                            }
                         } else if t == "GUILD_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<Guild>.self, from: data), let guild = payload.d {
                                 eventSink(.guildCreate(guild))
+                            }
+                        } else if t == "GUILD_MEMBER_ADD" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildMemberAdd>.self, from: data), let ev = payload.d {
+                                eventSink(.guildMemberAdd(ev))
+                            }
+                        } else if t == "GUILD_MEMBER_REMOVE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildMemberRemove>.self, from: data), let ev = payload.d {
+                                eventSink(.guildMemberRemove(ev))
+                            }
+                        } else if t == "GUILD_MEMBER_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildMemberUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildMemberUpdate(ev))
+                            }
+                        } else if t == "GUILD_ROLE_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildRoleCreate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildRoleCreate(ev))
+                            }
+                        } else if t == "GUILD_ROLE_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildRoleUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildRoleUpdate(ev))
+                            }
+                        } else if t == "GUILD_ROLE_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildRoleDelete>.self, from: data), let ev = payload.d {
+                                eventSink(.guildRoleDelete(ev))
+                            }
+                        } else if t == "GUILD_EMOJIS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildEmojisUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildEmojisUpdate(ev))
+                            }
+                        } else if t == "GUILD_STICKERS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildStickersUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildStickersUpdate(ev))
+                            }
+                        } else if t == "GUILD_MEMBERS_CHUNK" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildMembersChunk>.self, from: data), let ev = payload.d {
+                                eventSink(.guildMembersChunk(ev))
                             }
                         } else if t == "CHANNEL_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<Channel>.self, from: data), let channel = payload.d {

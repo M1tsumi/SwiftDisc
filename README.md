@@ -5,6 +5,8 @@
 **A Swift-native, cross-platform Discord API library**  
 Build Discord bots and integrations natively in Swift — fast, modern, and fully async.
 
+<a href="https://discord.com/invite/r4rCAXvb8d" target="_blank"><img alt="Join our Discord" src="https://img.shields.io/badge/🔥%20JOIN%20OUR%20DISCORD-Click%20to%20Chat-EC4899?style=for-the-badge&logo=discord&logoColor=white"></a>
+
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/r4rCAXvb8d)
 [![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -58,7 +60,7 @@ Add SwiftDisc to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.5.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.7.0")
 ]
 ```
 
@@ -238,7 +240,7 @@ try await client.sendMessage(channelId: "123456789", content: "Hello, Discord!")
 
 ## Current Status
 
-**Version:** 0.5.0
+**Version:** 0.7.0
 
 SwiftDisc is in active development. The following components are currently available:
 

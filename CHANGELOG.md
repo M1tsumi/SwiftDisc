@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.0] - 2025-11-12
+
+### Highlights
+- Full switch to generic `Snowflake<T>` for compile-time ID safety across core models and APIs.
+- Major REST coverage additions: reactions, threads, bulk ops, pins, file uploads, emojis, user/bot profile, prune, roles, permission overwrites, interaction follow-ups.
+- Gateway event coverage expanded: message updates/deletes/reactions and comprehensive guild events.
+
+### Added
+- Models
+  - Generic `Snowflake<T>` and typed aliases: `UserID`, `ChannelID`, `MessageID`, `GuildID`, `RoleID`, `EmojiID`, `ApplicationID`, `AttachmentID`, `OverwriteID`, `InteractionID`, `ApplicationCommandID`.
+  - Reaction models: `Reaction`, `PartialEmoji`.
+  - Thread models: `ThreadMember`, `ThreadListResponse`.
+- REST Endpoints
+  - Reactions: add/remove (self/user), get, remove-all, remove-all-for-emoji.
+  - Threads: start from message / without message, join/leave, add/remove/get/list members, list active/public/private/joined archived threads.
+  - Bulk Ops: bulk delete messages, crosspost message.
+  - Pins: get/pin/unpin.
+  - File uploads: `sendMessageWithFiles`, `editMessageWithFiles` with multipart/form-data.
+  - Emojis: list/get/create/modify/delete.
+  - User/Bot: get user, modify current user, list current user guilds, leave guild, create DM/group DM.
+  - Prune: `getGuildPruneCount`, `beginGuildPrune`, `pruneGuild(guildId:payload:)` with typed payload/response.
+  - Roles: list/create/modify/delete via `RoleCreate`/`RoleUpdate`; bulk role positions (typed IDs).
+  - Permission overwrites: edit/delete (typed `OverwriteID`).
+  - Interaction follow-ups: get/edit/delete original; create/get/edit/delete followups.
+- Gateway
+  - Message: `MESSAGE_UPDATE`, `MESSAGE_DELETE`, `MESSAGE_DELETE_BULK`, reaction add/remove/remove_all/remove_emoji.
+  - Guild: member add/remove/update, role create/update/delete, emojis update, stickers update, members chunk.
+  - Request members (op 8) typed sender.
+- HTTP
+  - Multipart helpers: `postMultipart`, `patchMultipart`, `payload_json` + `files[n]` wiring.
+  - Convenience no-body `put(path:)` and `delete(path:)` (204).
+- Docs
+  - README: version bump to 0.7.0, prominent Discord CTA button, install snippet update.
+
+### Changed
+- Migrated core models (`User`, `Guild`, `Channel`, `Message`, `GuildMember`, `Emoji`, `Interaction`) and `DiscordClient`/Gateway models to use typed Snowflakes.
+- Refactored REST method signatures to typed IDs for compile-time safety.
+
+### Notes
+- Remaining auxiliary models will be migrated to typed IDs in follow-up PRs as needed.
+- `permissions` fields remain `String?` for compatibility; a typed bitset may be introduced later.
+
 ## [0.6.1] - 2025-11-12
 
 ### Highlights

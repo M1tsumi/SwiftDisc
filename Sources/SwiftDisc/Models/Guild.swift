@@ -1,8 +1,8 @@
 import Foundation
 
 public struct Guild: Codable, Hashable {
-    public let id: Snowflake
+    public let id: GuildID
     public let name: String
-    public let owner_id: Snowflake?
+    public let owner_id: UserID?
     public let member_count: Int?
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Role: Codable, Hashable {
-    public let id: Snowflake
+    public let id: RoleID
     public let name: String
     public let color: Int?
     public let hoist: Bool?
