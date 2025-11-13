@@ -48,6 +48,8 @@ public enum DiscordEvent: Hashable {
     case messageReactionRemoveAll(MessageReactionRemoveAll)
     case messageReactionRemoveEmoji(MessageReactionRemoveEmoji)
     case guildCreate(Guild)
+    case guildUpdate(Guild)
+    case guildDelete(GuildDelete)
     case channelCreate(Channel)
     case channelUpdate(Channel)
     case channelDelete(Channel)
@@ -115,6 +117,11 @@ public struct ReadyEvent: Codable, Hashable {
 public struct Guild: Codable, Hashable {
     public let id: GuildID
     public let name: String
+}
+
+public struct GuildDelete: Codable, Hashable {
+    public let id: GuildID
+    public let unavailable: Bool?
 }
 
 public struct Interaction: Codable, Hashable {
@@ -253,13 +260,7 @@ public struct IdentifyConnectionProperties: Codable {
     }
 }
 
-public struct HeartbeatPayload: Codable {
-    public let heartbeat: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case heartbeat = "d"
-    }
-}
+public typealias HeartbeatPayload = Int?
 
 public struct ResumePayload: Codable {
     public let token: String
