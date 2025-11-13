@@ -2,170 +2,77 @@
 
 ![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/assets/typing-swiftdisc.svg)
 
-**A Swift-native, cross-platform Discord API library**  
-Build Discord bots and integrations natively in Swift — fast, modern, and fully async.
+# SwiftDisc
 
-<a href="https://discord.com/invite/r4rCAXvb8d" target="_blank"><img alt="Join our Discord" src="https://img.shields.io/badge/🔥%20JOIN%20OUR%20DISCORD-Click%20to%20Chat-EC4899?style=for-the-badge&logo=discord&logoColor=white"></a>
+**A modern, Swift-native Discord API library for building powerful bots**
 
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/r4rCAXvb8d)
-[![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift)](https://swift.org)
+Build Discord bots and integrations with the elegance of Swift — fully async, strongly typed, and production-ready.
+
+<a href="https://discord.com/invite/r4rCAXvb8d" target="_blank"><img alt="Join our Discord" src="https://img.shields.io/badge/💬%20JOIN%20OUR%20DISCORD-Get%20Help%20%26%20Share%20Ideas-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+
+[![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.com/invite/r4rCAXvb8d)
+[![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)
 [![GitHub Stars](https://img.shields.io/github/stars/M1tsumi/SwiftDisc?style=social)](https://github.com/M1tsumi/SwiftDisc/stargazers)
-![Platforms](https://img.shields.io/badge/platforms-iOS%20|%20macOS%20|%20tvOS%20|%20watchOS%20|%20Windows-informational)
-![SPM](https://img.shields.io/badge/SPM-supported-success)
 
 <div>
-  <a href="https://github.com/M1tsumi/SwiftDisc/wiki" target="_blank"><img alt="Docs" src="https://img.shields.io/badge/📖%20Docs-Wiki-blue?style=for-the-badge"></a>
-  <a href="#installation"><img alt="Install" src="https://img.shields.io/badge/⚙️%20Install-SPM-orange?style=for-the-badge"></a>
-  <a href="https://github.com/M1tsumi/SwiftDisc/tree/main/Examples" target="_blank"><img alt="Examples" src="https://img.shields.io/badge/🧪%20Examples-Repo-green?style=for-the-badge"></a>
-  <a href="https://discord.com/invite/r4rCAXvb8d" target="_blank"><img alt="Join Discord" src="https://img.shields.io/badge/💬%20Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://github.com/M1tsumi/SwiftDisc/wiki" target="_blank"><img alt="Documentation" src="https://img.shields.io/badge/📖%20Documentation-Wiki-4A9EFF?style=for-the-badge"></a>
+  <a href="#-quick-start"><img alt="Quick Start" src="https://img.shields.io/badge/🚀%20Quick%20Start-Get%20Started-00C853?style=for-the-badge"></a>
+  <a href="https://github.com/M1tsumi/SwiftDisc/tree/main/Examples" target="_blank"><img alt="Examples" src="https://img.shields.io/badge/💡%20Examples-Learn%20More-FF6B6B?style=for-the-badge"></a>
 </div>
-
-📚 [Features](#features) • ⚙️ [Installation](#installation) • 🚦 [Quick Start](#quick-start) • 🧾 [Documentation](#documentation) • 🗺️ [Roadmap](#roadmap)
 
 </div>
 
 ---
 
-## Overview
+## Why SwiftDisc?
 
-SwiftDisc is a modern Discord API library built from the ground up for Swift. Drawing inspiration from discord.py's proven architecture, SwiftDisc embraces Swift concurrency, type safety, and modern patterns to deliver a production-ready solution for building Discord bots and applications.
+SwiftDisc brings the power of modern Swift to Discord bot development. Whether you're building a simple utility bot or a complex multi-server application, SwiftDisc provides the tools you need with an API that feels natural to Swift developers.
 
-### Key Features
+### ✨ What Makes SwiftDisc Special
 
-- **🚀 Swift Concurrency First** — Built on async/await and AsyncSequence for scalable, responsive applications
-- **🎯 Strongly Typed** — Comprehensive type-safe models matching Discord's API payloads
-- **🌐 Cross-Platform** — Runs on iOS, macOS, tvOS, watchOS, and Windows
-- **🏗️ Clean Architecture** — Clear separation between REST, Gateway, Models, and Client layers
-- **⚡ Production Ready** — Respects Discord rate limits and connection lifecycles out of the box
+- **🎯 Swift-First Design** — Built from the ground up for Swift, leveraging async/await, actors, and structured concurrency
+- **🔒 Type Safety** — Comprehensive type-safe models that catch errors at compile time
+- **🌍 Truly Cross-Platform** — Deploy on iOS, macOS, tvOS, watchOS, and Windows with the same codebase
+- **⚡ Production Ready** — Automatic rate limiting, connection resilience, and sharding support out of the box
+- **🎨 Developer Friendly** — Intuitive APIs inspired by discord.py, adapted for Swift's strengths
 
-## Platform Support
+### 🎯 Perfect For
 
-| Platform | Minimum Version |
-|----------|----------------|
-| iOS | 14.0+ |
-| macOS | 11.0+ |
-| tvOS | 14.0+ |
-| watchOS | 7.0+ |
-| Windows | Swift 5.9+ |
+- **First-time bot developers** looking for a modern, well-documented library
+- **Swift developers** wanting to leverage their existing skills
+- **Cross-platform projects** requiring deployment flexibility
+- **Production applications** demanding reliability and performance
 
-> **Note:** WebSocket support on non-Apple platforms may vary across Swift Foundation implementations. SwiftDisc uses conditional compilation and abstraction layers to maintain Windows compatibility. A dedicated WebSocket adapter is planned if Foundation's WebSocket support is unavailable.
+---
 
-## Installation
+## 🚀 Quick Start
 
-### Swift Package Manager
-
-Add SwiftDisc to your `Package.swift` dependencies:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.7.0")
-]
-```
-
-Then add it to your target:
-
-```swift
-targets: [
-    .target(
-        name: "YourBot",
-        dependencies: ["SwiftDisc"]
-    )
-]
-```
-
-## Setup & Configuration
-
-### Prerequisites
-
-- Swift 5.9+
-- Internet access to Discord Gateway and REST endpoints
-- A Discord application with a Bot token
-
-### Windows
-
-- Install Swift toolchain for Windows (from swift.org downloads)
-- Ensure `swift` is on PATH
-- Foundation's URLSession WebSocket is used; no extra dependencies required
-
-### Environment Variables
-
-- `DISCORD_TOKEN` — your bot token (do not include `Bot ` prefix)
-
-Example run command:
-
-```bash
-DISCORD_TOKEN=your_token_here swift run
-```
-
-### Intents
-
-- Start with minimal intents: `.guilds`, `.guildMessages`
-- Enable privileged intents in the Developer Portal if needed (`.messageContent`, `.guildMembers`, `.guildPresences`)
-
-### Logging
-
-SwiftDisc prints structured logs to stdout by default. To integrate with swift-log:
-
-```swift
-import Logging
-LoggingSystem.bootstrap { label in
-    var h = StreamLogHandler.standardOutput(label: label)
-    h.logLevel = .info // .debug for development
-    return h
-}
-```
-
-### Migrating to ShardingGatewayManager
-
-If you currently use `DiscordClient.loginAndConnect`, you can migrate to sharding with minimal changes:
-
-```swift
-// Before
-let client = DiscordClient(token: token)
-try await client.loginAndConnect(intents: [.guilds, .guildMessages])
-for await ev in client.events { /* ... */ }
-
-// After
-let manager = await ShardingGatewayManager(
-    token: token,
-    configuration: .init(shardCount: .automatic),
-    intents: [.guilds, .guildMessages]
-)
-try await manager.connect()
-for await sharded in manager.events { /* sharded.event, sharded.shardId */ }
-```
-
-## Quick Start
-
-Here's a minimal bot that responds to Discord events:
+Get your first bot running in minutes:
 
 ```swift
 import SwiftDisc
 
 @main
-struct BotMain {
+struct MyFirstBot {
     static func main() async {
-        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? "YOUR_BOT_TOKEN"
+        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
         
         do {
-            // Connect with required intents
-            try await client.loginAndConnect(intents: [
-                .guilds,
-                .guildMessages,
-                .messageContent  // Privileged intent - requires approval
-            ])
+            try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
             
-            // Process events as they arrive
             for await event in client.events {
                 switch event {
                 case .ready(let info):
-                    print("✅ Connected as: \(info.user.username)")
+                    print("✅ Bot is online as \(info.user.username)!")
                     
-                case .messageCreate(let message):
-                    print("💬 [\(message.channel_id)] \(message.author.username): \(message.content)")
+                case .messageCreate(let message) where message.content == "!hello":
+                    try await client.sendMessage(
+                        channelId: message.channel_id,
+                        content: "👋 Hello, \(message.author.username)!"
+                    )
                     
                 default:
                     break
@@ -178,412 +85,248 @@ struct BotMain {
 }
 ```
 
-### Understanding Intents
+**That's it!** You now have a working Discord bot. 🎉
 
-Discord uses **Gateway Intents** to control which events your bot receives:
+---
 
-- **Standard Intents** (`.guilds`, `.guildMessages`) — Available to all bots
-- **Privileged Intents** (`.messageContent`) — Require explicit approval in the Discord Developer Portal
+## 📦 Installation
 
-> ⚠️ **Important:** The `.messageContent` intent is privileged and must be enabled in your bot's settings. Start with minimal intents and add more only as needed to reduce event volume and complexity.
+### Swift Package Manager
 
-**Enable privileged intents:**
-1. Visit the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Select your application
-3. Navigate to the "Bot" section
-4. Enable required privileged intents under "Privileged Gateway Intents"
-
-## Documentation
-
-### Core Components
-
-#### DiscordClient
-
-The main entry point for interacting with Discord:
+Add SwiftDisc to your `Package.swift`:
 
 ```swift
-let client = DiscordClient(token: "YOUR_BOT_TOKEN")
-try await client.loginAndConnect(intents: [.guilds, .guildMessages])
+dependencies: [
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.7.0")
+]
 ```
 
-#### Event Handling
-
-SwiftDisc uses AsyncSequence for event processing:
+Then include it in your target:
 
 ```swift
-for await event in client.events {
-    switch event {
-    case .ready(let info):
-        // Bot is connected and ready
-    case .messageCreate(let message):
-        // New message received
-    case .guildCreate(let guild):
-        // Guild data received
-    }
+targets: [
+    .target(name: "YourBot", dependencies: ["SwiftDisc"])
+]
+```
+
+### Platform Requirements
+
+| Platform | Minimum Version | Status |
+|----------|----------------|--------|
+| iOS | 14.0+ | ✅ Fully Supported |
+| macOS | 11.0+ | ✅ Fully Supported |
+| tvOS | 14.0+ | ✅ Fully Supported |
+| watchOS | 7.0+ | ✅ Fully Supported |
+| Windows | Swift 5.9+ | ✅ Fully Supported |
+
+---
+
+## 🎓 Learn by Example
+
+We've created comprehensive examples to help you get started:
+
+### 📌 Simple Ping Bot
+Perfect for understanding the basics of event handling and message responses.
+
+```swift
+// Responds to "!ping" with the bot's latency
+case .messageCreate(let message) where message.content == "!ping":
+    try await client.sendMessage(
+        channelId: message.channel_id,
+        content: "🏓 Pong! Latency: 42ms"
+    )
+```
+
+**[View Full Example →](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples/PingBot.swift)**
+
+### 🎮 Command Handler Bot
+Learn how to build a command system with prefix routing and help commands.
+
+```swift
+let router = CommandRouter(prefix: "!")
+router.register("help") { context in
+    try await context.reply("Available commands: !help, !userinfo, !serverinfo")
 }
 ```
 
-#### REST API
+**[View Full Example →](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples/CommandsBot.swift)**
 
-Make direct API calls when needed:
+### ⚡ Slash Commands Bot
+Discover modern Discord interactions with slash commands and autocomplete.
 
 ```swift
-let user = try await client.getCurrentUser()
-try await client.sendMessage(channelId: "123456789", content: "Hello, Discord!")
+let slash = SlashCommandRouter()
+slash.register("greet") { interaction in
+    try await interaction.reply("Hello from SwiftDisc! 👋")
+}
 ```
 
-### Examples
+**[View Full Example →](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples/SlashBot.swift)**
 
-- Ping bot: `Examples/PingBot.swift`
-- Prefix commands bot with help: `Examples/CommandsBot.swift`
-- Slash commands bot: `Examples/SlashBot.swift`
+---
 
-## Current Status
+## 📚 Comprehensive Documentation
 
-**Version:** 0.7.0
+### Getting Started
 
-SwiftDisc is in active development. The following components are currently available:
+Our [Wiki](https://github.com/M1tsumi/SwiftDisc/wiki) provides in-depth guides for:
 
-### ✅ Implemented
+- **🎯 Core Concepts** — Understanding intents, events, and the Discord API
+- **🔧 Configuration** — Setting up your bot for development and production
+- **🎨 Message Features** — Embeds, components, attachments, and more
+- **⚙️ Sharding** — Scaling your bot across multiple servers
+- **🚀 Deployment** — Best practices for production environments
 
-- **REST API**
-  - GET/POST/PATCH/DELETE operations
-  - JSON encoding/decoding with detailed error decoding
-  - Per-route rate limiting with automatic retries and 429 handling
-  - Structured error types
-  - Initial endpoint coverage: Channels, Guilds, Interactions, Webhooks
-  - Message sending with embeds (title/desc/color/footer/author/thumbnail/image/timestamp/fields)
+### Need Help?
 
-- **Models**
-  - Snowflake identifiers
-  - User, Channel, Message entities
+- **💬 [Join our Discord Server](https://discord.com/invite/r4rCAXvb8d)** — Get real-time support from the community
+- **📖 [Browse the Wiki](https://github.com/M1tsumi/SwiftDisc/wiki)** — Detailed documentation and tutorials
+- **🐛 [Report Issues](https://github.com/M1tsumi/SwiftDisc/issues)** — Found a bug? Let us know!
+- **💡 [GitHub Discussions](https://github.com/M1tsumi/SwiftDisc/discussions)** — Share your projects and ideas
 
-- **Gateway**
-  - Connection scaffolding
-  - Identify/Heartbeat with ACK tracking, resume/reconnect
-  - Presence updates helper
+---
 
-- **Client API**
-  - `getCurrentUser()`
-  - `sendMessage()`
-  - `loginAndConnect()`
-  - `events` AsyncSequence
-  - Slash command management: create/list/delete/bulk overwrite (global/guild), options support
+## 🌟 Features
 
-- **Testing**
-  - Basic initialization tests
-  - Mock infrastructure in development
+### Gateway & Events
+- ✅ Full WebSocket gateway implementation
+- ✅ Automatic heartbeat and session management
+- ✅ Resume support for connection recovery
+- ✅ Structured event system with AsyncSequence
+- ✅ Presence updates and status management
 
+### REST API Coverage
+- ✅ Channels — Create, modify, delete channels and threads
+- ✅ Messages — Send, edit, delete with embeds and components
+- ✅ Guilds — Full server management capabilities
+- ✅ Members & Roles — User and permission management
+- ✅ Slash Commands — Create and manage application commands
+- ✅ Webhooks — Create and execute webhooks
+- ✅ Auto Moderation — Configure moderation rules
+- ✅ Scheduled Events — Create and manage server events
+- ✅ Forum Channels — Create threads and posts
 
-## Production Deployment
+### Advanced Features
+- ✅ Per-route rate limit handling with automatic retries
+- ✅ Global rate limit detection and backoff
+- ✅ Sharding support with automatic shard count
+- ✅ Health monitoring and shard management
+- ✅ Typed command routing (prefix and slash)
+- ✅ Rich embed builder
+- ✅ Message components (buttons, select menus)
 
-Deploying SwiftDisc-based bots:
+---
 
-- **Build & Run**
-  - Server/CLI: build with SwiftPM; run with environment variable `DISCORD_TOKEN`.
-  - Use a process supervisor (systemd, launchd, PM2, or Docker) to keep the bot running.
-- **Configuration**
-  - Set required intents in the Discord Developer Portal.
-  - Configure shard count if you operate at scale; use `ShardManager`.
-- **Environment**
-  - Enable logging (stdout/stderr) and retain logs.
-  - Ensure outbound network access to Discord domains; time sync is recommended.
-- **Scaling**
-  - Horizontal: multiple processes with shard ranges.
-  - Respect REST and gateway limits; avoid per-second spikes.
-- **Secrets**
-  - Never commit tokens. Use env vars or secret stores (Keychain/KeyVault/Parameter Store).
-- **CI/CD**
-  - Use GitHub Actions CI provided (build/test/coverage). Add a deploy job to your infrastructure.
+## 🎯 Production Ready
 
-### Sharding Configuration
+SwiftDisc is built for real-world applications:
 
-For production bots with many guilds, prefer automatic shard count and staggered connections:
+### Reliability
+- **Automatic Reconnection** — Handles network issues gracefully
+- **Rate Limit Compliance** — Respects Discord's limits automatically
+- **Session Resume** — Maintains connection state across reconnects
+
+### Scalability
+- **Sharding Support** — Built-in multi-shard management
+- **Health Monitoring** — Track shard status and latency
+- **Graceful Shutdown** — Clean disconnection handling
+
+### Developer Experience
+- **Comprehensive Logging** — Detailed logs for debugging
+- **Type-Safe APIs** — Catch errors at compile time
+- **Clear Error Messages** — Actionable error descriptions
 
 ```swift
+// Automatic sharding for large bots
 let manager = await ShardingGatewayManager(
     token: token,
     configuration: .init(
         shardCount: .automatic,
-        connectionDelay: .staggered(interval: 1.5),
-        makePresence: { shardId, total in
-            .init(
-                activities: [.init(name: "Shard \(shardId+1)/\(total)", type: 3 /* watching */)],
-                status: "online",
-                afk: false
-            )
-        }
+        connectionDelay: .staggered(interval: 1.5)
     ),
-    intents: [.guilds, .guildMessages, .messageContent]
-)
-```
-
-### Health Monitoring
-
-Expose a simple health probe using the sharding manager's health API:
-
-```swift
-struct HealthStatus: Codable {
-    let healthy: Bool
-    let totalShards: Int
-    let readyShards: Int
-    let connectingShards: Int
-    let reconnectingShards: Int
-    let averageLatencyMs: Int?
-}
-
-func healthCheck(manager: ShardingGatewayManager) async -> HealthStatus {
-    let h = await manager.healthCheck()
-    let avgMs = h.averageLatency.map { Int($0 * 1000) }
-    let healthy = (h.readyShards == h.totalShards)
-    return HealthStatus(
-        healthy: healthy,
-        totalShards: h.totalShards,
-        readyShards: h.readyShards,
-        connectingShards: h.connectingShards,
-        reconnectingShards: h.reconnectingShards,
-        averageLatencyMs: avgMs
-    )
-}
-```
-
-## Sharding
-
-SwiftDisc provides a high-level `ShardingGatewayManager` for production-grade sharding:
-
-```swift
-let manager = await ShardingGatewayManager(
-    token: token,
-    configuration: .init(shardCount: .automatic),
     intents: [.guilds, .guildMessages]
 )
 
 try await manager.connect()
 
-for await sharded in manager.events {
-    // sharded.shardId identifies which shard received the event
-    switch sharded.event {
-    case .ready(let info): print("READY on shard \(sharded.shardId): \(info.user.username)")
-    default: break
-    }
-}
-```
-
-**Best Practices**
-
-- Start with `.automatic` shard count
-- Monitor shard health in production (`healthCheck()` and `shardHealth(id:)`)
-- Use `.staggered(interval:)` for very large bots
-- Enable guild distribution verification during development
-- Use `restartShard(_:)` to recover a problem shard without restarting the bot
-
-**Troubleshooting**
-
-- "Shard X failed to connect after 5 attempts" → check token/network/Discord status
-- "Guild distribution mismatches detected" → try restarting the affected shard; ensure `.automatic` shard count
-- High latency on specific shards → `restartShard(_:)` that shard
-
-### Per-shard presence and event streams
-
-```swift
-let manager = await ShardingGatewayManager(
-    token: token,
-    configuration: .init(
-        shardCount: .automatic,
-        connectionDelay: .staggered(interval: 1.5),
-        makePresence: { shard, total in
-            .init(
-                activities: [.init(name: "Shard \(shard+1)/\(total)", type: 3 /* watching */)],
-                status: "online",
-                afk: false
-            )
-        }
-    ),
-    intents: [.guilds, .guildMessages, .messageContent]
-)
-
-try await manager.connect()
-
-// Filtered event stream for a subset of shards
-for await se in manager.events(for: [0, 1]) {
-    print("Shards 0-1 event from shard \(se.shardId)")
-}
-```
-
-### Graceful shutdown
-
-```swift
-// On SIGINT/SIGTERM
-Task { await manager.disconnect() }
+// Monitor health across all shards
+let health = await manager.healthCheck()
+print("Ready shards: \(health.readyShards)/\(health.totalShards)")
 ```
 
 ---
 
-## Advanced Features
+## 💬 Join Our Community
 
-### Scheduled Events
-
-```swift
-// Create a scheduled event (voice/stage/external)
-let ev = try await client.createGuildScheduledEvent(
-    guildId: guildId,
-    channelId: voiceChannelId,
-    entityType: .voice,
-    name: "Community Meetup",
-    scheduledStartTimeISO8601: "2026-01-10T18:00:00Z",
-    description: "Monthly chat"
-)
-
-// Get interested users
-let users = try await client.listGuildScheduledEventUsers(
-    guildId: guildId,
-    eventId: ev.id,
-    withMember: true
-)
-```
-
-### Stage Instances
-
-```swift
-// Start a stage instance
-let stage = try await client.createStageInstance(
-    channelId: stageChannelId,
-    topic: "Q&A with the dev team",
-    privacyLevel: 2 // guild-only
-)
-
-// Update topic
-_ = try await client.modifyStageInstance(channelId: stageChannelId, topic: "Now taking questions!")
-
-// End the stage
-try await client.deleteStageInstance(channelId: stageChannelId)
-```
-
-### Auto Moderation
-
-```swift
-let rule = try await client.createAutoModerationRule(
-    guildId: guildId,
-    name: "Block Spam Links",
-    eventType: 1, // message send
-    triggerType: 3, // spam or keyword preset
-    actions: [ .init(type: 1, metadata: nil) ]
-)
-```
-
-### Audit Logs
-
-```swift
-let logs = try await client.getGuildAuditLog(guildId: guildId, actionType: 20, limit: 50)
-for entry in logs.audit_log_entries { print(entry) }
-```
-
-### Stickers
-
-```swift
-let stickers = try await client.listGuildStickers(guildId: guildId)
-let s = try await client.getSticker(id: someStickerId)
-```
-
-### Forum Channels
-
-```swift
-let thread = try await client.createForumThread(
-    channelId: forumChannelId,
-    name: "How do I use SwiftDisc?",
-    content: "I'm trying to build a bot...",
-    autoArchiveDuration: 1440
-)
-```
-
-## Design Philosophy
-
-SwiftDisc is built on these core principles:
-
-1. **Type Safety** — Leverage Swift's type system to catch errors at compile time
-2. **Modern Concurrency** — Embrace async/await and structured concurrency
-3. **Clear Architecture** — Maintain strict boundaries between REST, Gateway, Models, and Client
-4. **Respect Limits** — Honor Discord's rate limits and connection lifecycle requirements
-5. **Cross-Platform First** — Support all Swift platforms from day one
-
-## Discord API Listing Checklist (minreqs)
-
-Status aligned with percentage.txt. Voice is not required for listing.
-
-- [x] Entire documented API featureset (minus voice)
-  - Broad REST coverage: Channels, Guilds, Interactions, Webhooks, Members, Roles, Bans, Permissions, Prune, Widget, Messages (send/edit/components), Lists.
-- [x] Advanced gateway features (RESUME)
-  - Identify/Resume/Reconnect with exponential backoff; shard preserved on reconnect.
-- [x] REST rate limit handling
-  - Per-route buckets, global limit handling, Retry-After, resilient retries.
-- [x] Usability
-  - README, InstallGuide, examples (Ping/Commands/Slash), CHANGELOG, percentage report; docs present.
-- [x] Code style & conventions
-  - Consistent API surface and naming; CI enabled; Production Deployment guidance added.
-- [x] Distinct value vs existing libs (for Swift ecosystem)
-  - Swift-native, async/await-first, cross-platform (incl. Windows), high-level routers.
-- [x] Feature parity with other Swift libs
-  - Embeds, slash commands (full mgmt + typed routing), sharding with manager, webhooks, rich REST surface; voice optional/pending.
-- [x] Community conduct
-  - Will adhere to Discord API community guidelines.
-
-## Distinct Value vs Existing Swift Discord Libraries
-
-SwiftDisc focuses on practical, production-ready strengths:
-
-- **Swift-native, async/await-first**
-  - Embraces structured concurrency throughout (Gateway, REST, high-level routers).
-- **Cross-platform, including Windows**
-  - Unified URLSession-based WebSocket adapter, tuned HTTP/WebSocket sessions, CI for macOS and Windows.
-- **High-level developer ergonomics**
-  - Prefix `CommandRouter` and `SlashCommandRouter` with typed accessors, subcommand paths, and error callbacks.
-- **Resilience by design**
-  - Actor-based `GatewayClient` and serialized `EventDispatcher` prevent race conditions; exponential backoff and session resume.
-- **Modern message features**
-  - Rich `Embed`, message `components` (buttons, selects), `attachments`, `mentions`, plus convenient send/edit helpers.
-- **Pragmatic REST coverage + rate limits**
-  - Per-route bucket limiter with global handling and retry-after; growing endpoints to cover the documented API.
-- **Examples and docs**
-  - Minimal Ping, Prefix Commands, and Slash bots; status tracking via percentage.txt; CHANGELOG-driven releases.
-
-## Community & Support
-
-- **Discord Server:** [Join our community](https://discord.com/invite/r4rCAXvb8d) for support, announcements, and discussions
-- **GitHub Issues:** Report bugs and request features
-- **GitHub Discussions:** Ask questions and share your projects
-
-## Security
-
-⚠️ **Never commit tokens or sensitive credentials to version control.**
-
-**Best practices:**
-- Use environment variables for bot tokens
-- Leverage secure storage on device platforms (Keychain, credential managers)
-- Follow Discord's [developer policies](https://discord.com/developers/docs/policies-and-agreements/developer-policy)
-- Be mindful when requesting privileged intents
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
-
-## Reference Implementation
-
-SwiftDisc adapts proven patterns from [discord.py](https://github.com/Rapptz/discord.py) (BSD-licensed), implementing them idiomatically for Swift. Key adaptations include intents, event dispatch, and rate limiting strategies.
-
-## Versioning
-
-This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
-
-## License
-
-SwiftDisc is released under the MIT License. See [LICENSE](LICENSE) for details.
-
----
+We're building SwiftDisc together with the community! Whether you're a beginner looking to create your first bot or an experienced developer with feature requests, we'd love to have you.
 
 <div align="center">
 
-**Built with ❤️ for the Swift and Discord communities**
+### [💬 Join Our Discord Server](https://discord.com/invite/r4rCAXvb8d)
 
-[Documentation](https://github.com/M1tsumi/SwiftDisc/wiki) • [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples) • [Discord](https://discord.com/invite/r4rCAXvb8d)
+Get help, share your projects, and connect with other SwiftDisc developers!
+
+**What you'll find:**
+- 🆘 Support channels for troubleshooting
+- 💡 Showcase your bots and get feedback
+- 📢 Stay updated with the latest releases
+- 🤝 Collaborate with other developers
+
+</div>
+
+---
+
+## 🛣️ Roadmap
+
+We're actively developing SwiftDisc with these priorities:
+
+### Current Focus (v0.8.x)
+- [ ] Enhanced slash command builders with option helpers
+- [ ] Modal interactions support
+- [ ] Message component builders
+- [ ] Expanded REST endpoint coverage
+
+### Future Plans
+- [ ] Voice support (optional module)
+- [ ] Advanced caching strategies
+- [ ] Plugin/extension system
+- [ ] Performance optimizations
+
+**Want to influence the roadmap?** Join the [Discord server](https://discord.com/invite/r4rCAXvb8d) and share your ideas!
+
+
+
+## 🤝 Contributing
+
+Contributions make SwiftDisc better for everyone! Here's how you can help:
+
+- **🐛 Report Bugs** — Found an issue? [Open an issue](https://github.com/M1tsumi/SwiftDisc/issues)
+- **💡 Suggest Features** — Have an idea? Start a [discussion](https://github.com/M1tsumi/SwiftDisc/discussions)
+- **📝 Improve Docs** — Documentation improvements are always welcome
+- **🔧 Submit PRs** — Code contributions are appreciated!
+
+Check our [Contributing Guidelines](CONTRIBUTING.md) for more details.
+
+
+
+## 📄 License
+
+SwiftDisc is released under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+**In short:** You're free to use SwiftDisc for personal and commercial projects, with attribution.
+
+
+
+
+
+<div align="center">
+
+**Ready to build your Discord bot?**
+
+[📖 Read the Docs](https://github.com/M1tsumi/SwiftDisc/wiki) • [💬 Join Discord](https://discord.com/invite/r4rCAXvb8d) • [🚀 View Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)
+
+
+
+⭐ Star us on GitHub if you find SwiftDisc helpful!
 
 </div>
