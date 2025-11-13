@@ -37,6 +37,7 @@ Secrets/
 coverage/
 
 # Local reports (not committed)
+VoiceActivity.txt
 percentage.txt
 Reports/
 

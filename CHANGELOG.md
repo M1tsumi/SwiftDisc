@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.8.0] - 2025-11-13
+
+### Highlights
+- Enhanced developer UX for interactions: fluent Slash Command builder, Modal support with Text Inputs, and Message Component builders.
+- Rich Presence upgrade: full activity model including buttons, with simple `setStatus` and `setActivity` helpers.
+- Reliability: confirmed heartbeat timing and reconnect logic per Discord guidance (jitter, ACK check-before-send, indefinite backoff).
+
+### Added
+- Slash Commands
+  - `SlashCommandBuilder` with option helpers (string/integer/number/boolean/user/channel/role/mentionable/attachment) and choices.
+  - End-to-end REST support for application commands: list/create/delete, bulk overwrite (global and guild).
+- Interactions: Modals
+  - `InteractionResponseType.modal (=9)` and `DiscordClient.createInteractionModal(...)` helper.
+  - `MessageComponent.textInput` (type 4) with `TextInput.Style` and validation helpers.
+- Message Components
+  - Fluent builders: `ComponentsBuilder`, `ActionRowBuilder`, `ButtonBuilder`, `SelectMenuBuilder`, `TextInputBuilder`.
+- Presence
+  - Expanded `PresenceUpdatePayload.Activity` with `state`, `details`, `timestamps`, `assets`, `party`, `secrets`, and `buttons`.
+  - `ActivityBuilder` for composing rich activities, plus `setStatus(_:)` and `setActivity(...)` helpers.
+
+### Fixed
+- Gateway heartbeat loop sends before sleeping and includes initial jitter.
+- Reconnect attempts are retried indefinitely with exponential backoff (capped) while allowed.
+
+
+
 ## [0.7.0] - 2025-11-12
 
 ### Highlights

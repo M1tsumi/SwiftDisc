@@ -299,9 +299,28 @@ public final class DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: Body(content: content, embeds: embeds, components: components))
     }
 
-    // Phase 3: Presence helper
+    // Phase 3: Presence helpers
     public func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
         await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
+    }
+
+    public func setStatus(_ status: String) async {
+        await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
+    }
+
+    public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
+        let act = PresenceUpdatePayload.Activity(
+            name: name,
+            type: type,
+            state: state,
+            details: details,
+            timestamps: nil,
+            assets: nil,
+            buttons: buttons,
+            party: nil,
+            secrets: nil
+        )
+        await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
     }
 
     // MARK: - Phase 2 REST: Channels
@@ -610,6 +629,7 @@ public final class DiscordClient {
         case deferredChannelMessageWithSource = 5
         case deferredUpdateMessage = 6
         case updateMessage = 7
+        case modal = 9
     }
 
     public func createInteractionResponse(interactionId: InteractionID, token: String, type: InteractionResponseType, content: String? = nil, embeds: [Embed]? = nil) async throws {
@@ -618,6 +638,21 @@ public final class DiscordClient {
         struct Ack: Decodable {}
         let data = (content == nil && embeds == nil) ? nil : DataObj(content: content, embeds: embeds)
         let body = Body(type: type.rawValue, data: data)
+        let _: Ack = try await http.post(path: "/interactions/\(interactionId)/\(token)/callback", body: body)
+    }
+
+    // Modal response helper (type 9)
+    public func createInteractionModal(
+        interactionId: InteractionID,
+        token: String,
+        title: String,
+        customId: String,
+        components: [MessageComponent]
+    ) async throws {
+        struct DataObj: Encodable { let custom_id: String; let title: String; let components: [MessageComponent] }
+        struct Body: Encodable { let type: Int; let data: DataObj }
+        struct Ack: Decodable {}
+        let body = Body(type: InteractionResponseType.modal.rawValue, data: DataObj(custom_id: customId, title: title, components: components))
         let _: Ack = try await http.post(path: "/interactions/\(interactionId)/\(token)/callback", body: body)
     }
 

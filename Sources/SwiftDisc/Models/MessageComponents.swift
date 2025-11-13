@@ -4,8 +4,9 @@ public enum MessageComponent: Codable, Hashable {
     case actionRow(ActionRow)
     case button(Button)
     case select(SelectMenu)
+    case textInput(TextInput)
 
-    private enum Discriminator: String, Codable { case actionRow = "1", button = "2" }
+    private enum Discriminator: String, Codable { case actionRow = "1", button = "2", select = "3", textInput = "4" }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -20,6 +21,9 @@ public enum MessageComponent: Codable, Hashable {
         case 3: // select menu
             let sel = try SelectMenu(from: decoder)
             self = .select(sel)
+        case 4: // text input (for modals)
+            let ti = try TextInput(from: decoder)
+            self = .textInput(ti)
         default:
             // Fallback: attempt button
             let btn = try Button(from: decoder)
@@ -32,6 +36,7 @@ public enum MessageComponent: Codable, Hashable {
         case .actionRow(let row): try row.encode(to: encoder)
         case .button(let btn): try btn.encode(to: encoder)
         case .select(let sel): try sel.encode(to: encoder)
+        case .textInput(let ti): try ti.encode(to: encoder)
         }
     }
 
@@ -81,6 +86,29 @@ public enum MessageComponent: Codable, Hashable {
             self.min_values = min_values
             self.max_values = max_values
             self.disabled = disabled
+        }
+    }
+
+    public struct TextInput: Codable, Hashable {
+        public enum Style: Int, Codable { case short = 1, paragraph = 2 }
+        public let type: Int = 4
+        public let custom_id: String
+        public let style: Style
+        public let label: String
+        public let min_length: Int?
+        public let max_length: Int?
+        public let required: Bool?
+        public let value: String?
+        public let placeholder: String?
+        public init(custom_id: String, style: Style, label: String, min_length: Int? = nil, max_length: Int? = nil, required: Bool? = nil, value: String? = nil, placeholder: String? = nil) {
+            self.custom_id = custom_id
+            self.style = style
+            self.label = label
+            self.min_length = min_length
+            self.max_length = max_length
+            self.required = required
+            self.value = value
+            self.placeholder = placeholder
         }
     }
 }

@@ -270,8 +270,40 @@ public struct ResumePayload: Codable {
 
 public struct PresenceUpdatePayload: Codable {
     public struct Activity: Codable {
+        public struct Timestamps: Codable { public let start: Int64?; public let end: Int64? }
+        public struct Assets: Codable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
+        public struct Party: Codable { public let id: String?; public let size: [Int]? }
+        public struct Secrets: Codable { public let join: String?; public let spectate: String?; public let match: String? }
         public let name: String
         public let type: Int
+        public let state: String?
+        public let details: String?
+        public let timestamps: Timestamps?
+        public let assets: Assets?
+        public let buttons: [String]?
+        public let party: Party?
+        public let secrets: Secrets?
+        public init(
+            name: String,
+            type: Int,
+            state: String? = nil,
+            details: String? = nil,
+            timestamps: Timestamps? = nil,
+            assets: Assets? = nil,
+            buttons: [String]? = nil,
+            party: Party? = nil,
+            secrets: Secrets? = nil
+        ) {
+            self.name = name
+            self.type = type
+            self.state = state
+            self.details = details
+            self.timestamps = timestamps
+            self.assets = assets
+            self.buttons = buttons
+            self.party = party
+            self.secrets = secrets
+        }
     }
     public struct Data: Codable {
         public let since: Int?

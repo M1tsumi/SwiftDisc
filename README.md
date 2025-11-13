@@ -97,7 +97,7 @@ Add SwiftDisc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.7.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.8.0")
 ]
 ```
 
@@ -281,10 +281,10 @@ Get help, share your projects, and connect with other SwiftDisc developers!
 We're actively developing SwiftDisc with these priorities:
 
 ### Current Focus (v0.8.x)
-- [ ] Enhanced slash command builders with option helpers
-- [ ] Modal interactions support
-- [ ] Message component builders
-- [ ] Expanded REST endpoint coverage
+- [x] Enhanced slash command builders with option helpers
+- [x] Modal interactions support
+- [x] Message component builders
+- [x] Expanded REST endpoint coverage
 
 ### Future Plans
 - [ ] Voice support (optional module)
