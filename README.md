@@ -185,7 +185,7 @@ case .messageCreate(let message) where message.content == "!ping":
         content: "🏓 Pong! Latency: 42ms"
     )
 ```
-
+ 
 **[View Full Example →](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples/PingBot.swift)**
 
 ### 🎮 Command Handler Bot
