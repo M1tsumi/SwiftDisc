@@ -13,7 +13,6 @@ Build Discord bots and integrations with the elegance of Swift — fully async, 
 [![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.com/invite/r4rCAXvb8d)
 [![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)
 [![GitHub Stars](https://img.shields.io/github/stars/M1tsumi/SwiftDisc?style=social)](https://github.com/M1tsumi/SwiftDisc/stargazers)
 
 <div>
