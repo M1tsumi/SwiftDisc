@@ -8,9 +8,9 @@
 
 Build Discord bots and integrations with the elegance of Swift — fully async, strongly typed, and production-ready.
 
-<a href="https://discord.com/invite/r4rCAXvb8d" target="_blank"><img alt="Join our Discord" src="https://img.shields.io/badge/💬%20JOIN%20OUR%20DISCORD-Get%20Help%20%26%20Share%20Ideas-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+<a href="https://discord.gg/6nS2KqxQtj" target="_blank"><img alt="Join our Discord" src="https://img.shields.io/badge/💬%20JOIN%20OUR%20DISCORD-Get%20Help%20%26%20Share%20Ideas-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
 
-[![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.com/invite/r4rCAXvb8d)
+[![Discord](https://img.shields.io/discord/1439300942167146508?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
 [![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/M1tsumi/SwiftDisc?style=social)](https://github.com/M1tsumi/SwiftDisc/stargazers)
@@ -242,7 +242,7 @@ Our [Wiki](https://github.com/M1tsumi/SwiftDisc/wiki) provides in-depth guides f
 
 ### Need Help?
 
-- **💬 [Join our Discord Server](https://discord.com/invite/r4rCAXvb8d)** — Get real-time support from the community
+- **💬 [Join our Discord Server](https://discord.gg/6nS2KqxQtj)** — Get real-time support from the community
 - **📖 [Browse the Wiki](https://github.com/M1tsumi/SwiftDisc/wiki)** — Detailed documentation and tutorials
 - **🐛 [Report Issues](https://github.com/M1tsumi/SwiftDisc/issues)** — Found a bug? Let us know!
 - **💡 [GitHub Discussions](https://github.com/M1tsumi/SwiftDisc/discussions)** — Share your projects and ideas
@@ -464,7 +464,7 @@ We're building SwiftDisc together with the community! Whether you're a beginner 
 
 <div align="center">
 
-### [💬 Join Our Discord Server](https://discord.com/invite/r4rCAXvb8d)
+### [💬 Join Our Discord Server](https://discord.gg/6nS2KqxQtj)
 
 Get help, share your projects, and connect with other SwiftDisc developers!
 
@@ -494,7 +494,7 @@ We're actively developing SwiftDisc with these priorities:
 - [ ] Voice support (send‑only MVP)
 - [ ] Performance optimizations
 
-**Want to influence the roadmap?** Join the [Discord server](https://discord.com/invite/r4rCAXvb8d) and share your ideas!
+**Want to influence the roadmap?** Join the [Discord server](https://discord.gg/6nS2KqxQtj) and share your ideas!
 
 
 
@@ -591,7 +591,7 @@ SwiftDisc is released under the **MIT License**. See [LICENSE](LICENSE) for deta
 
 **Ready to build your Discord bot?**
 
-[📖 Read the Docs](https://github.com/M1tsumi/SwiftDisc/wiki) • [💬 Join Discord](https://discord.com/invite/r4rCAXvb8d) • [🚀 View Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)
+[📖 Read the Docs](https://github.com/M1tsumi/SwiftDisc/wiki) • [💬 Join Discord](https://discord.gg/6nS2KqxQtj) • [🚀 View Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)
 
 
 

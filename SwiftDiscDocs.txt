@@ -155,7 +155,7 @@ Roadmap Highlights
 
 Support
 -------
-- Discord: https://discord.com/invite/r4rCAXvb8d
+- Discord: https://discord.gg/6nS2KqxQtj
 - Issues/requests: GitHub Issues on the project repository.
 
 Contributing

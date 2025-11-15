@@ -85,7 +85,7 @@ Support & Documentation
 -----------------------
 - README.md for quick start, roadmap, and support links
 - SwiftDiscDocs.txt for deeper architecture and API notes
-- Discord Support: https://discord.com/invite/r4rCAXvb8d
+- Discord Support: https://discord.gg/6nS2KqxQtj
 
 Versioning
 ----------
