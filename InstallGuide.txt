@@ -17,7 +17,7 @@ Install via Swift Package Manager (SPM)
 Option A) Add to Package.swift (for server/CLI projects)
 
 1) In your Package.swift dependencies, add:
-   .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.5.0")
+   .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.10.2")
 
 2) Add "SwiftDisc" to your target dependencies.
 
@@ -25,7 +25,7 @@ Option B) Add to Xcode project (for App targets)
 
 1) Xcode > File > Add Packages...
 2) Enter URL: https://github.com/M1tsumi/SwiftDisc.git
-3) Choose version: Up to Next Major from 0.5.0
+3) Choose version: Up to Next Major from 0.10.2
 4) Add the SwiftDisc product to your app target
 
 Configuring your Token

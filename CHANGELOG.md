@@ -1,3 +1,34 @@
+## [0.11.0] - Unreleased
+
+### Planned Highlights
+- Voice receive and richer voice utilities building on the current experimental, send-only implementation.
+- Performance and memory improvements for large, multi-shard bots.
+- Windows platform parity work, including a dedicated WebSocket adapter where needed.
+- Continued coverage for new Discord APIs (Components V2, Polls, application resources) as they evolve.
+
+### Planned Breaking Changes
+- Experimental voice APIs and configuration flags may be refined before `0.11.0` ships (names and shapes subject to change).
+- Some internal helper types may be moved or renamed as part of performance and cleanup work; any user-facing breakage will be documented in the final `0.11.0` notes.
+
+## [0.10.2] - 2025-12-03
+
+### Highlights
+- Build and CI polish for newer Swift toolchains (including Swift 6) and Windows runners.
+- No public API or wire-format changes; this is a non-breaking patch release focused on build stability and compatibility.
+
+### Fixed
+- Gateway
+  - Clarified and documented the connection sequence in `GatewayClient` (HELLO, heartbeat start, Resume/Identify, read loop, READY/RESUMED) to make the flow easier to reason about and debug.
+- Voice
+  - Clarified the voice gateway handshake steps in `VoiceGateway` (HELLO, Identify, READY, protocol select, SessionDescription) to better reflect the actual runtime behavior.
+- Sharding
+  - Updated `ShardingGatewayManager`’s `cachedGatewayBot` cache to be instance-local instead of a static property, resolving potential actor-isolation/build issues on newer Swift toolchains while preserving 24‑hour caching semantics.
+
+### Docs & CI
+- CI
+  - Updated GitHub Actions workflows to use a newer Swift toolchain on Windows (Swift 6.2) and tightened Windows build server configuration.
+  - Iterated on CI configuration to reduce flaky failures and keep the matrix aligned with current project requirements.
+  
 ## [0.10.1] - 2025-11-16
 
 ### Highlights
