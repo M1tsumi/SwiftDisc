@@ -20,10 +20,12 @@ final class VoiceClient {
         var secretKey: [UInt8]?
         var discoveredIP: String?
         var sender: RTPVoiceSender?
+        var receiver: RTPVoiceReceiver?
     }
 
     private var sessions: [GuildID: Session] = [:]
     private var botUserId: UserID?
+    private var onFrame: ((VoiceFrame) -> Void)?
 
     init(token: String, configuration: DiscordConfiguration, sendVoiceStateUpdate: @escaping (GuildID, ChannelID?, Bool, Bool) async -> Void) {
         self.token = token
@@ -31,12 +33,16 @@ final class VoiceClient {
         self.sendVoiceStateUpdate = sendVoiceStateUpdate
     }
 
+    func setOnFrame(_ handler: @escaping (VoiceFrame) -> Void) {
+        self.onFrame = handler
+    }
+
     func joinVoiceChannel(guildId: GuildID, channelId: ChannelID, selfMute: Bool = false, selfDeaf: Bool = false) async throws {
         // Send VOICE_STATE_UPDATE; events will arrive and handled by onVoiceStateUpdate/onVoiceServerUpdate
         await sendVoiceStateUpdate(guildId, channelId, selfMute, selfDeaf)
         // Initialize session bucket
         if sessions[guildId] == nil {
-            sessions[guildId] = Session(guildId: guildId, channelId: channelId, sessionId: nil, endpoint: nil, token: nil, voiceGateway: nil, udpPort: nil, ssrc: nil, secretKey: nil, discoveredIP: nil, sender: nil)
+            sessions[guildId] = Session(guildId: guildId, channelId: channelId, sessionId: nil, endpoint: nil, token: nil, voiceGateway: nil, udpPort: nil, ssrc: nil, secretKey: nil, discoveredIP: nil, sender: nil, receiver: nil)
         } else {
             sessions[guildId]?.channelId = channelId
         }
@@ -45,6 +51,8 @@ final class VoiceClient {
     func leaveVoiceChannel(guildId: GuildID) async throws {
         await sendVoiceStateUpdate(guildId, nil, false, false)
         if var sess = sessions[guildId] {
+            sess.receiver?.stop()
+            sess.receiver = nil
             sess.voiceGateway = nil
             sessions[guildId] = sess
         }
@@ -85,7 +93,7 @@ final class VoiceClient {
 
     func onVoiceServerUpdate(_ vsu: VoiceServerUpdate, botUserId: UserID) async {
         self.botUserId = botUserId
-        var sess = sessions[vsu.guild_id] ?? Session(guildId: vsu.guild_id, channelId: nil, sessionId: nil, endpoint: nil, token: nil, voiceGateway: nil, udpPort: nil, ssrc: nil, secretKey: nil)
+        var sess = sessions[vsu.guild_id] ?? Session(guildId: vsu.guild_id, channelId: nil, sessionId: nil, endpoint: nil, token: nil, voiceGateway: nil, udpPort: nil, ssrc: nil, secretKey: nil, discoveredIP: nil, sender: nil, receiver: nil)
         sess.endpoint = vsu.endpoint
         sess.token = vsu.token
         sessions[vsu.guild_id] = sess
@@ -114,10 +122,25 @@ final class VoiceClient {
                 // Prepare RTP sender on demand in playOpusFrames
                 sessions[guildId] = sess
                 await vg.setSpeaking(speaking: true)
+                startReceiverIfPossible(guildId: guildId)
             }
         } catch {
             // For now, swallow; TODO: surface via logging callback
         }
+    }
+
+    private func startReceiverIfPossible(guildId: GuildID) {
+        guard var sess = sessions[guildId] else { return }
+        guard let key = sess.secretKey, let host = sess.discoveredIP, let port = sess.udpPort, let ssrc = sess.ssrc else { return }
+        sess.receiver?.stop()
+        let receiver = RTPVoiceReceiver(ssrc: ssrc, key: key, host: host, port: port) { [weak self] sequence, timestamp, opus in
+            guard let self, let handler = self.onFrame else { return }
+            let frame = VoiceFrame(guildId: guildId, ssrc: ssrc, sequence: sequence, timestamp: timestamp, opus: opus)
+            handler(frame)
+        }
+        sess.receiver = receiver
+        sessions[guildId] = sess
+        receiver.start()
     }
 
     private func udpIPDiscovery(host: String, port: UInt16, ssrc: UInt32) async throws -> (ip: String, port: UInt16)? {

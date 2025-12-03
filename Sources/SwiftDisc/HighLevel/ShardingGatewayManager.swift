@@ -107,8 +107,12 @@ public actor ShardingGatewayManager {
 
     // Logging
     private enum LogLevel: String { case info = "INFO", warning = "WARN", error = "ERROR", debug = "DEBUG" }
+    private static let logDateFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        return f
+    }()
     private func log(_ level: LogLevel, _ message: @autoclosure () -> String) {
-        let ts = ISO8601DateFormatter().string(from: Date())
+        let ts = ShardingGatewayManager.logDateFormatter.string(from: Date())
         print("[SwiftDisc][\(level.rawValue)] \(ts) - \(message())")
     }
 
@@ -155,15 +159,26 @@ public actor ShardingGatewayManager {
         let total = shardHandles.count
         var ready = 0, connecting = 0, reconnecting = 0
         var latencies: [TimeInterval] = []
-        for h in shardHandles {
-            let st = await h.status()
+        let snapshots = await withTaskGroup(of: (String, TimeInterval?).self, returning: [(String, TimeInterval?)].self) { group in
+            for h in shardHandles {
+                group.addTask {
+                    let st = await h.status()
+                    let l = await h.heartbeatLatency()
+                    return (st, l)
+                }
+            }
+            var result: [(String, TimeInterval?)] = []
+            for await s in group { result.append(s) }
+            return result
+        }
+        for (st, l) in snapshots {
             switch st {
             case "ready": ready += 1
             case "connecting", "identifying", "resuming": connecting += 1
             case "reconnecting": reconnecting += 1
             default: break
             }
-            if let l = await h.heartbeatLatency() { latencies.append(l) }
+            if let l { latencies.append(l) }
         }
         let avg = latencies.isEmpty ? nil : (latencies.reduce(0, +) / Double(latencies.count))
         let totalGuilds = guildsByShard.values.reduce(0) { $0 + $1.count }

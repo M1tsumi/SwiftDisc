@@ -1,4 +1,4 @@
-## [0.11.0] - Unreleased
+## [0.11.0] - 2025-12-03
 
 ### Planned Highlights
 - Voice receive and richer voice utilities building on the current experimental, send-only implementation.
@@ -9,6 +9,11 @@
 ### Planned Breaking Changes
 - Experimental voice APIs and configuration flags may be refined before `0.11.0` ships (names and shapes subject to change).
 - Some internal helper types may be moved or renamed as part of performance and cleanup work; any user-facing breakage will be documented in the final `0.11.0` notes.
+
+### Added
+- Experimental voice receive path on Apple platforms: decrypts inbound voice RTP to Opus frames and exposes them via `onVoiceFrame`, gated behind `enableVoiceExperimental`.
+ - Sharding health improvements for large, multi-shard bots: concurrent shard status/latency collection and less logging overhead.
+ - Windows gateway parity improvements: extended URLSession-based WebSocket adapter usage to supported Windows Swift toolchains.
 
 ## [0.10.2] - 2025-12-03
 

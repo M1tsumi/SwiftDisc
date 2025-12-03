@@ -3,6 +3,10 @@ import Foundation
 // Minimal pure-Swift XSalsa20-Poly1305 (NaCl secretbox) implementation
 // API: seal(nonce:key:plaintext:) -> ciphertext_with_mac
 
+private enum SecretboxError: Error {
+    case authenticationFailed
+}
+
 struct Secretbox: VoiceEncryptor {
     func seal(nonce: Data, key: [UInt8], plaintext: Data) throws -> Data {
         precondition(key.count == 32, "Secretbox key must be 32 bytes")
@@ -29,6 +33,30 @@ struct Secretbox: VoiceEncryptor {
         out.append(contentsOf: mac)
         out.append(cipher)
         return out
+    }
+
+    func open(nonce: Data, key: [UInt8], box: Data) throws -> Data {
+        precondition(key.count == 32, "Secretbox key must be 32 bytes")
+        precondition(nonce.count == 24, "Secretbox nonce must be 24 bytes")
+        precondition(box.count >= 16, "Secretbox box must be at least 16 bytes (MAC)")
+
+        let k = Array(key)
+        let n = Array(nonce)
+        let mac = Array(box[0..<16])
+        let cipher = Array(box[16..<box.count])
+
+        let subKey = hsalsa20(nonce16: Array(n[0..<16]), key: k)
+        let ks = salsa20Stream(key: subKey, nonce8: Array(n[16..<24]), count: 32 + cipher.count)
+        let polyKey = Array(ks[0..<32])
+
+        let expectedMac = poly1305Authenticate(message: cipher, key: polyKey)
+        guard expectedMac == mac else { throw SecretboxError.authenticationFailed }
+
+        var plain = Data(count: cipher.count)
+        for i in 0..<cipher.count {
+            plain[i] = cipher[i] ^ ks[32 + i]
+        }
+        return plain
     }
 }
 

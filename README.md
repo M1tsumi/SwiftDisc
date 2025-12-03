@@ -33,7 +33,7 @@ Add SwiftDisc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.10.2")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.11.0")
 ]
 
 ```swift
@@ -281,7 +281,7 @@ MessageFormat.escapeSpecialCharacters(text)
 
 ## Voice (Experimental)
 
-Send-only voice support. Connects to Discord voice, handles UDP discovery, negotiates encryption, and transmits Opus frames.
+Experimental voice support. Connects to Discord voice, handles UDP discovery, negotiates encryption, and can transmit Opus frames (and, on Apple platforms, receive them).
 
 ```swift
 let config = DiscordConfiguration(enableVoiceExperimental: true)
@@ -296,6 +296,14 @@ try await client.playVoiceOpus(guildId: guildId, data: opusPacket)
 try await client.play(source: MyOpusSource(), guildId: guildId)
 
 try await client.leaveVoice(guildId: guildId)
+```
+
+On Apple platforms, you can observe inbound Opus frames via `onVoiceFrame`:
+
+```swift
+client.onVoiceFrame = { frame in
+    // frame.opus contains a decrypted Opus packet for the guild
+}
 ```
 
 Input must be Opus-encoded at 48kHz. SwiftDisc doesn't include an encoder—use ffmpeg or similar externally and pipe the output in.
@@ -328,16 +336,14 @@ CI runs on macOS (Xcode 16.4 / Swift 5.10.1) and Windows Server 2022 (Swift 5.10
 
 ## Roadmap
 
-### Current Focus (v0.10.x)
+### Current Focus (v0.11.x)
 - [x] Autocomplete
 - [x] File uploads polish (MIME + guardrails)
 - [x] Gateway parity: Threads & Scheduled Events + raw fallback
+- [x] Experimental voice receive support (Apple platforms)
+- [x] Performance work for large, multi-shard bots
 - Caching and permissions utilities
 - Extensions/cogs system
-
-Planned:
-- Voice receive support
-- Performance work
 
 ## Contributing
 

@@ -42,6 +42,8 @@ public final class DiscordClient {
     public var autocomplete: AutocompleteRouter?
     public func useAutocomplete(_ router: AutocompleteRouter) { self.autocomplete = router }
 
+    public var onVoiceFrame: ((VoiceFrame) async -> Void)?
+
     public init(token: String, configuration: DiscordConfiguration = .init()) {
         self.token = token
         self.http = HTTPClient(token: token, configuration: configuration)
@@ -57,6 +59,15 @@ public final class DiscordClient {
             )
         } else {
             self.voiceClient = nil
+        }
+
+        if let vc = self.voiceClient {
+            vc.setOnFrame { [weak self] frame in
+                guard let self, let cb = self.onVoiceFrame else { return }
+                Task {
+                    await cb(frame)
+                }
+            }
         }
 
         var localContinuation: AsyncStream<DiscordEvent>.Continuation!
