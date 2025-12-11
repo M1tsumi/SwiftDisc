@@ -109,6 +109,8 @@ Covers most of the Discord API:
 - Auto moderation
 - Scheduled events
 - Forum channels
+- Role Connections: Fully supported now, with intuitive tools to manage linked roles and user metadata, helping you create bots that adapt dynamically to user data for better community interactions.
+- Permissions: Upgraded to a typed bitset with cache integration, offering efficient and safe permission handling that scales well and reduces the risk of bugs in complex applications.
 
 For endpoints we haven't wrapped yet, use `rawGET`, `rawPOST`, etc.
 

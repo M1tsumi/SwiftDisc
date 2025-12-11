@@ -54,3 +54,14 @@ Pods/
 /design/
 /docs/
 .github/PULL_REQUEST_TEMPLATE.md
+
+# Ignore SwiftDisc-specific build and cache files
+/Sources/SwiftDisc/Models/PermissionBitset.swift
+/Examples/LinkedRolesBot.swift
+
+# Standard Swift and IDE ignores
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+roadmap.txt

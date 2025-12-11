@@ -61,6 +61,12 @@ High-Level Routers
   - Typed accessors: `string`, `int`, `bool`, `double`.
   - Subcommands/groups supported via full-path resolution; optional `onError`.
 
+## Role Connections and Linked Roles
+SwiftDisc has added robust support for Discord's role connections feature. This means you can now define custom metadata schemas and update user connections with ease, which is great for creating bots that assign roles based on external factors like premium status or account levels. It's designed to feel intuitive, with typed models and methods that handle the underlying API details, so you can focus on building awesome features without getting bogged down in complexity.
+
+## Typed Permissions and Cache Integration
+We've upgraded the permissions system in SwiftDisc to use a typed bitset, which makes your code cleaner and less prone to mistakes. On top of that, we've integrated it with the cache to speed things up—now permission checks can be lightning-fast by pulling data from memory instead of querying the API repeatedly. This not only boosts performance but also sets things up for future expansions, like handling more advanced permission scenarios, all while keeping the API straightforward and easy to use.
+
 Usage Examples
 --------------
 - Connecting with intents:

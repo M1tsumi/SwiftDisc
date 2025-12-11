@@ -47,4 +47,58 @@ public enum PermissionsUtil {
         }
         return allow
     }
+
+    // New method using cache for effective permissions
+    public static func effectivePermissionsWithCache(cache: Cache, userId: UserID, guildId: GuildID, channelId: ChannelID) async -> PermissionBitset? {
+        // Fetch guild and channel from cache
+        guard let guild = await cache.getGuild(id: guildId),
+              let channel = await cache.getChannel(id: channelId) else { return nil }
+        
+        // Fetch member roles from cache or assume they are provided; for simplicity, assume roles are cached or passed
+        // In a real scenario, you'd need to handle member roles, perhaps by fetching from cache or DiscordClient
+        let memberRoleIds = [RoleID]() // Placeholder; integrate with member cache if available
+        let everyoneRoleId = guild.id // @everyone role ID is the guild ID
+        
+        // Convert string permissions to PermissionBitset (assuming guild roles have permissions)
+        let guildRoles = guild.roles?.compactMap { role in
+            PermissionBitset(rawValue: UInt64(role.permissions ?? "0") ?? 0)
+        } ?? []
+        
+        // Compute effective permissions similar to existing logic but with PermissionBitset
+        var allow = PermissionBitset(rawValue: 0)
+        
+        // 1) Base = @everyone role perms (find @everyone role)
+        if let everyoneRole = guildRoles.first(where: { $0.id == everyoneRoleId }) {
+            allow.insert(everyoneRole.permissionsBitset) // Assume roles have a permissionsBitset property or adapt
+        }
+        
+        // 2) Aggregate member roles (OR operation)
+        let rolePerms = memberRoleIds.compactMap { roleId in guildRoles.first { $0.id == roleId }?.permissionsBitset }.reduce(PermissionBitset(), { $0.union($1) })
+        allow.formUnion(rolePerms)
+        
+        // 3) Apply channel overwrites (similar to existing logic)
+        let overwrites = channel.permission_overwrites ?? []
+        // Apply @everyone overwrite
+        if let everyoneOW = overwrites.first(where: { $0.type == 0 && $0.id.rawValue == everyoneRoleId.rawValue }) {
+            let deny = PermissionBitset(rawValue: UInt64(everyoneOW.deny ?? "0") ?? 0)
+            let add = PermissionBitset(rawValue: UInt64(everyoneOW.allow ?? "0") ?? 0)
+            allow.subtract(deny)
+            allow.formUnion(add)
+        }
+        // Apply role overwrites
+        let roleOW = overwrites.filter { ow in ow.type == 0 && memberRoleIds.contains(where: { $0.rawValue == ow.id.rawValue }) }
+        let roleDeny = roleOW.reduce(PermissionBitset(), { $0.union(PermissionBitset(rawValue: UInt64($1.deny ?? "0") ?? 0)) })
+        let roleAdd = roleOW.reduce(PermissionBitset(), { $0.union(PermissionBitset(rawValue: UInt64($1.allow ?? "0") ?? 0)) })
+        allow.subtract(roleDeny)
+        allow.formUnion(roleAdd)
+        // Apply member overwrite
+        if let memberOW = overwrites.first(where: { $0.type == 1 && $0.id.rawValue == userId.rawValue }) {
+            let deny = PermissionBitset(rawValue: UInt64(memberOW.deny ?? "0") ?? 0)
+            let add = PermissionBitset(rawValue: UInt64(memberOW.allow ?? "0") ?? 0)
+            allow.subtract(deny)
+            allow.formUnion(add)
+        }
+        
+        return allow
+    }
 }

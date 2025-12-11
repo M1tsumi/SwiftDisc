@@ -427,3 +427,16 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ### Notes
 - Windows WebSocket adapter to be implemented if Foundation’s WebSocket is unavailable.
+
+## [0.12.0] - 2025-12-10
+
+### Added
+- Comprehensive support for Discord's role connections and linked roles, making it simpler to handle user metadata and automate role assignments for a more engaging bot experience.
+- A typed permission bitset with seamless cache integration, which boosts performance by minimizing API calls and makes permission management more intuitive and error-resistant.
+
+### Changed
+- README: Documented the new features and improvements in the 0.12.0 release.
+- Developer docs: Expanded permission section to include typed permission bitset and cache-integrated permission checks.
+
+### Notes
+- The new features and improvements in this release enhance the overall usability and performance of the library, making it easier for developers to build and manage their Discord bots.
