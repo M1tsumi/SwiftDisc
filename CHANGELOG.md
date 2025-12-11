@@ -432,11 +432,11 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ### Added
 - Comprehensive support for Discord's role connections and linked roles, making it simpler to handle user metadata and automate role assignments for a more engaging bot experience.
-- A typed permission bitset with seamless cache integration, which boosts performance by minimizing API calls and makes permission management more intuitive and error-resistant.
+- A typed permission bitset that makes permission management more intuitive and less error-prone, and aligns with the existing permissions utilities.
 
 ### Changed
-- README: Documented the new features and improvements in the 0.12.0 release.
-- Developer docs: Expanded permission section to include typed permission bitset and cache-integrated permission checks.
+- README: Documented the new role connections feature and surfaced the typed permission bitset in the feature list.
+- Developer docs: Expanded the permissions section to mention the typed bitset and how it fits alongside existing helpers.
 
 ### Notes
-- The new features and improvements in this release enhance the overall usability and performance of the library, making it easier for developers to build and manage their Discord bots.
+- This release focuses on closing the gap with Discord's linked roles feature and smoothing out permission handling, without introducing breaking changes to existing bots.

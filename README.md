@@ -33,7 +33,7 @@ Add SwiftDisc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.11.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.12.0")
 ]
 
 ```swift
@@ -109,8 +109,8 @@ Covers most of the Discord API:
 - Auto moderation
 - Scheduled events
 - Forum channels
-- Role Connections: Fully supported now, with intuitive tools to manage linked roles and user metadata, helping you create bots that adapt dynamically to user data for better community interactions.
-- Permissions: Upgraded to a typed bitset with cache integration, offering efficient and safe permission handling that scales well and reduces the risk of bugs in complex applications.
+- Role Connections: Full support for Discord's linked roles, with helpers to register metadata and update user connections so your app can assign roles based on external data.
+- Permissions: A typed permission bitset that makes permission flags easier to reason about and lays the groundwork for higher-level permission helpers.
 
 For endpoints we haven't wrapped yet, use `rawGET`, `rawPOST`, etc.
 
