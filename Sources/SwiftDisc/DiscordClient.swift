@@ -1346,4 +1346,34 @@ public final class DiscordClient {
     public func deleteStageInstance(channelId: ChannelID) async throws {
         try await http.delete(path: "/stage-instances/\(channelId)")
     }
+
+    // MARK: - REST: Role Connections
+    public func updateApplicationRoleConnectionMetadata(applicationId: ApplicationID, metadata: [ApplicationRoleConnectionMetadata]) async throws -> [ApplicationRoleConnectionMetadata] {
+        return try await http.put(path: "/applications/\(applicationId)/role-connections/metadata", body: metadata)
+    }
+
+    public func getApplicationRoleConnectionMetadata(applicationId: ApplicationID) async throws -> [ApplicationRoleConnectionMetadata] {
+        return try await http.get(path: "/applications/\(applicationId)/role-connections/metadata")
+    }
+
+    public func getUserApplicationRoleConnection(applicationId: ApplicationID) async throws -> ApplicationRoleConnection {
+        return try await http.get(path: "/users/@me/applications/\(applicationId)/role-connection")
+    }
+
+    public func updateUserApplicationRoleConnection(applicationId: ApplicationID, platformName: String? = nil, platformUsername: String? = nil, metadata: [String: String] = [:]) async throws -> ApplicationRoleConnection {
+        struct Body: Encodable {
+            let platformName: String?
+            let platformUsername: String?
+            let metadata: [String: String]
+            
+            enum CodingKeys: String, CodingKey {
+                case platformName = "platform_name"
+                case platformUsername = "platform_username"
+                case metadata
+            }
+        }
+        
+        let body = Body(platformName: platformName, platformUsername: platformUsername, metadata: metadata)
+        return try await http.put(path: "/users/@me/applications/\(applicationId)/role-connection", body: body)
+    }
 }

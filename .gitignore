@@ -54,3 +54,10 @@ Pods/
 /design/
 /docs/
 .github/PULL_REQUEST_TEMPLATE.md
+
+# Standard Swift and IDE ignores
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+roadmap.txt
