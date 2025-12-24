@@ -33,7 +33,7 @@ Add SwiftDisc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.11.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.13.0")
 ]
 
 ```swift
@@ -88,35 +88,40 @@ struct MyBot {
 
 ## Features
 
-### Gateway
+### 🚀 Professional Gateway Management
+- **Advanced Heartbeat System**: Configurable jitter, zombie connection detection, and automatic recovery
+- **Health Monitoring**: Real-time connection health tracking with latency monitoring and quality assessment
+- **Smart Reconnection**: Reason-specific backoff strategies with exponential backoff and jitter
+- **Connection State Tracking**: Detailed state monitoring with resume metrics and failure tracking
 
-- WebSocket connection with automatic heartbeat
-- Session resume on disconnect
-- Event stream via AsyncSequence
-- Presence/status updates
-- Thread and scheduled event support
-- Raw event fallback for unmodeled dispatches
+### 🔧 Enhanced Sharding
+- **Auto-Recovery System**: Built-in automatic shard recovery with configurable retry limits
+- **Health Scoring**: Comprehensive shard health assessment with quality metrics
+- **Enhanced Monitoring**: Real-time shard health monitoring with automatic recovery attempts
+- **Graceful Degradation**: Improved handling of shard failures with minimal service disruption
 
-### REST API
+### 📚 Complete API Coverage
+- **Template System**: Full guild template support including creation, synchronization, and management
+- **Voice State Management**: Complete voice state API with region management and state updates
+- **Onboarding & Welcome Screens**: Guild onboarding configuration and welcome screen management
+- **Enhanced Models**: Expanded data models with comprehensive Discord API coverage
 
-Covers most of the Discord API:
+### 🛠️ Developer Utilities
+- **Message Formatting**: Comprehensive markdown formatting utilities with escaping and styling helpers
+- **Message Splitting**: Intelligent message splitting for long content with word boundary preservation
+- **Time Utilities**: Discord timestamp formatting and parsing with multiple style support
+- **Validation Helpers**: Input validation for usernames, discriminators, colors, and invites
+- **Permission Utilities**: Enhanced permission checking and channel permission calculations
+- **Color Helpers**: Color conversion utilities and contrasting color generation
+- **Embed Builders**: Fluent embed creation helpers with method chaining support
 
-- Channels and threads
-- Messages (with embeds, components, attachments)
-- Guilds, members, roles
-- Slash commands
-- Webhooks
-- Auto moderation
-- Scheduled events
-- Forum channels
-- Role Connections: Fully supported now, with intuitive tools to manage linked roles and user metadata, helping you create bots that adapt dynamically to user data for better community interactions.
-- Permissions: Upgraded to a typed bitset with cache integration, offering efficient and safe permission handling that scales well and reduces the risk of bugs in complex applications.
-
-For endpoints we haven't wrapped yet, use `rawGET`, `rawPOST`, etc.
-
-### Rate Limiting
-
-Per-route and global rate limits are handled automatically. The client backs off and retries when needed.
+### 🏗️ Core Features
+- **Modern Swift**: Built with Swift 5.9+, async/await, and structured concurrency
+- **WebSocket Connection**: Automatic heartbeat, session resume, and event streaming
+- **REST API**: Comprehensive coverage of Discord's REST endpoints
+- **Rate Limiting**: Per-route and global rate limiting handled automatically
+- **Type Safety**: Strongly typed models and comprehensive error handling
+- **Cross-Platform**: iOS, macOS, tvOS, watchOS, and Windows support
 
 ### Sharding
 
@@ -332,8 +337,48 @@ CI runs on macOS (Xcode 16.4 / Swift 5.10.1) and Windows Server 2022 (Swift 5.10
 
 ## Documentation
 
+📚 **[Complete Documentation](./docs/README.md)**
+
+### Getting Started
+- [Installation Guide](./docs/getting-started/installation.md) - Step-by-step setup instructions
+- [Quick Start](./docs/getting-started/quick-start.md) - Your first bot in minutes
+- [Configuration](./docs/getting-started/configuration.md) - Detailed configuration options
+
+### Core Features
+- [Gateway & Events](./docs/core/gateway.md) - WebSocket connections, events, and heartbeat management
+- [REST API](./docs/core/rest-api.md) - HTTP client and API endpoints
+- [Authentication](./docs/core/authentication.md) - Tokens, OAuth2, and security
+
+### Advanced Topics
+- [Sharding](./docs/advanced/sharding.md) - Multi-shard bot management with auto-recovery
+- [Caching](./docs/advanced/caching.md) - Data caching strategies and optimization
+- [Rate Limiting](./docs/advanced/rate-limiting.md) - Understanding and handling rate limits
+- [Error Handling](./docs/advanced/error-handling.md) - Robust error management
+
+### Guides & Examples
+- [Slash Commands](./guides/slash-commands.md) - Building interactive slash command bots
+- [Message Components](./guides/message-components.md) - Buttons, select menus, and modals
+- [Threads & Forums](./guides/threads-forums.md) - Working with threads and forum channels
+- [Role Connections](./guides/role-connections.md) - Linked roles and user metadata
+- [Permissions](./guides/permissions.md) - Permission system and utilities
+
+### API Reference
+- [Models Reference](./api/models.md) - Complete data model documentation
+- [REST Endpoints](./api/rest-endpoints.md) - All available REST API methods
+- [Gateway Events](./api/gateway-events.md) - Complete event reference
+- [Voice API](./api/voice.md) - Voice channel support (experimental)
+
+### Developer Utilities
+- **Message Formatting**: `BotUtils.MessageFormat` for markdown and escaping
+- **Time Utilities**: `BotUtils.TimeUtils` for Discord timestamps
+- **Validation**: `BotUtils.Validation` for input validation
+- **Permission Helpers**: `BotUtils.PermissionHelpers` for enhanced permission checking
+- **Color Utils**: `BotUtils.ColorUtils` for color conversion and manipulation
+- **Embed Builders**: `BotUtils.EmbedBuilder` for fluent embed creation
+
+### Additional Resources
 - [Wiki](https://github.com/M1tsumi/SwiftDisc/wiki) — setup guides, concepts, deployment
-- [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)
+- [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples) — ready-to-use example bots
 - [Discord server](https://discord.gg/6nS2KqxQtj) — questions and discussion
 
 ## Roadmap

@@ -12,6 +12,10 @@ actor GatewayClient {
     private var awaitingHeartbeatAck = false
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
+    private var missedHeartbeats = 0
+    private var consecutiveZombieDetections = 0
+    private var heartbeatLatencies: [TimeInterval] = []
+    private let maxLatencySamples = 10
     private var resumeCount: Int = 0
     private var resumeSuccessCount: Int = 0
     private var resumeFailureCount: Int = 0
@@ -27,6 +31,15 @@ actor GatewayClient {
         case ready
         case resuming
         case reconnecting
+    }
+    
+    enum ReconnectReason {
+        case normal
+        case zombieConnection
+        case persistentZombie
+        case heartbeatSendFailed
+        case invalidSession
+        case gatewayRequest
     }
 
     // Public: request guild members (OP 8)
@@ -315,6 +328,15 @@ actor GatewayClient {
                     case .heartbeatAck:
                         awaitingHeartbeatAck = false
                         lastHeartbeatAckAt = Date()
+                        
+                        // Calculate and track latency
+                        if let sentAt = lastHeartbeatSentAt {
+                            let latency = lastHeartbeatAckAt!.timeIntervalSince(sentAt)
+                            heartbeatLatencies.append(latency)
+                            if heartbeatLatencies.count > maxLatencySamples {
+                                heartbeatLatencies.removeFirst()
+                            }
+                        }
                         break
                     case .invalidSession:
                         // Resume failed; clear session to force new identify next connect
@@ -351,15 +373,38 @@ actor GatewayClient {
 
     private func runHeartbeatLoop() async {
         let intervalNs = UInt64(heartbeatIntervalMs) * 1_000_000
-        // Initial jitter before first heartbeat per Discord guidance
-        let jitterNs = UInt64.random(in: 0..<UInt64(heartbeatIntervalMs)) * 1_000_000
-        try? await Task.sleep(nanoseconds: jitterNs)
+        let jitterFactor = configuration.heartbeatJitter
+        
+        // Enhanced initial jitter: random between 0 and interval
+        let initialJitterNs = UInt64.random(in: 0..<intervalNs)
+        try? await Task.sleep(nanoseconds: initialJitterNs)
+        
         while !Task.isCancelled {
-            // If previous heartbeat wasn't ACKed, reconnect
+            // Zombie connection detection
             if awaitingHeartbeatAck {
-                await attemptReconnect()
-                break
+                missedHeartbeats += 1
+                consecutiveZombieDetections += 1
+                
+                // Check if we've missed too many heartbeats
+                let maxMissedHeartbeats = configuration.maxMissedHeartbeats
+                if missedHeartbeats >= maxMissedHeartbeats {
+                    print("⚠️ Gateway zombie detected: \(missedHeartbeats) missed heartbeats")
+                    await attemptReconnect(reason: .zombieConnection)
+                    break
+                }
+                
+                // Check for consecutive zombie detections
+                if consecutiveZombieDetections >= 3 {
+                    print("⚠️ Multiple zombie detections, forcing reconnection")
+                    await attemptReconnect(reason: .persistentZombie)
+                    break
+                }
+            } else {
+                // Reset counters on successful heartbeat
+                missedHeartbeats = 0
+                consecutiveZombieDetections = 0
             }
+            
             do {
                 let hb: HeartbeatPayload = seq
                 let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
@@ -368,38 +413,89 @@ actor GatewayClient {
                 awaitingHeartbeatAck = true
                 lastHeartbeatSentAt = Date()
             } catch {
-                await attemptReconnect()
+                print("❌ Failed to send heartbeat: \(error)")
+                await attemptReconnect(reason: .heartbeatSendFailed)
                 break
             }
-            // Wait full interval before next heartbeat and ACK check
-            try? await Task.sleep(nanoseconds: intervalNs)
+            
+            // Enhanced jitter for subsequent heartbeats
+            let jitterNs = UInt64(Double(intervalNs) * jitterFactor * Double.random(in: -1...1))
+            let adjustedIntervalNs = intervalNs + jitterNs
+            
+            // Wait for next heartbeat interval
+            try? await Task.sleep(nanoseconds: max(0, adjustedIntervalNs))
         }
     }
 
-    private func attemptReconnect() async {
-        // Basic reconnect: close existing socket and perform a fresh connect
+    private func attemptReconnect(reason: ReconnectReason = .normal) async {
+        // Enhanced reconnect logic with reason-specific handling
         if !allowReconnect { return }
+        
+        print("🔄 Reconnecting (reason: \(reason))")
+        
         await socket?.close()
         socket = nil
         heartbeatTask?.cancel()
         heartbeatTask = nil
         awaitingHeartbeatAck = false
+        missedHeartbeats = 0
+        consecutiveZombieDetections = 0
         status = .reconnecting
+        
         let intents = lastIntents
         guard let sink = lastEventSink else { return }
-        var delay: UInt64 = 500_000_000
+        
+        // Exponential backoff with jitter based on reason
+        var baseDelay: UInt64 = 500_000_000 // 0.5 seconds base
+        var maxDelay: UInt64 = 16_000_000_000 // 16 seconds max
+        
+        switch reason {
+        case .zombieConnection:
+            baseDelay = 1_000_000_000 // 1 second for zombie connections
+        case .persistentZombie:
+            baseDelay = 2_000_000_000 // 2 seconds for persistent zombies
+        case .heartbeatSendFailed:
+            baseDelay = 2_000_000_000 // 2 seconds for heartbeat failures
+        case .invalidSession:
+            baseDelay = 5_000_000_000 // 5 seconds for invalid sessions
+        case .gatewayRequest:
+            baseDelay = 1_000_000_000 // 1 second for gateway requests
+        case .normal:
+            break
+        }
+        
         var attemptCount = 0
-        while allowReconnect {
+        var currentDelay = baseDelay
+        
+        while allowReconnect && attemptCount < 10 { // Max 10 attempts
             attemptCount += 1
-            try? await Task.sleep(nanoseconds: delay)
+            
+            // Add jitter to prevent thundering herd
+            let jitter = UInt64.random(in: 0...<(currentDelay / 4))
+            let totalDelay = currentDelay + jitter
+            
+            try? await Task.sleep(nanoseconds: totalDelay)
+            
             do {
+                print("🔄 Reconnection attempt \(attemptCount)/10")
                 try await connect(intents: intents, shard: lastShard, eventSink: sink)
+                print("✅ Reconnection successful after \(attemptCount) attempts")
                 return
             } catch {
-                delay = min(delay * 2, 16_000_000_000)
-                continue
+                print("❌ Reconnection attempt \(attemptCount) failed: \(error)")
+                
+                // Exponential backoff with jitter
+                currentDelay = min(currentDelay * 2, maxDelay)
+                
+                // If we've had too many failures, wait longer
+                if attemptCount >= 5 {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000) // Extra 5 second wait
+                }
             }
         }
+        
+        print("❌ Failed to reconnect after \(attemptCount) attempts")
+        status = .disconnected
     }
 
     func close() async {
@@ -425,6 +521,25 @@ actor GatewayClient {
         guard let sent = lastHeartbeatSentAt, let ack = lastHeartbeatAckAt else { return nil }
         return ack.timeIntervalSince(sent)
     }
+    
+    func averageHeartbeatLatency() -> TimeInterval? {
+        guard !heartbeatLatencies.isEmpty else { return nil }
+        return heartbeatLatencies.reduce(0, +) / Double(heartbeatLatencies.count)
+    }
+    
+    func connectionHealth() -> GatewayHealth {
+        return GatewayHealth(
+            status: status,
+            latency: heartbeatLatency(),
+            averageLatency: averageHeartbeatLatency(),
+            missedHeartbeats: missedHeartbeats,
+            sessionId: sessionId,
+            sequenceNumber: seq,
+            resumeAttempts: resumeCount,
+            successfulResumes: resumeSuccessCount,
+            failedResumes: resumeFailureCount
+        )
+    }
 
     func currentStatus() -> Status { status }
     func currentSessionId() -> String? { sessionId }
@@ -436,6 +551,41 @@ actor GatewayClient {
   func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
   func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
   func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
+}
+
+// MARK: - Health Monitoring
+public struct GatewayHealth {
+    public let status: GatewayClient.Status
+    public let latency: TimeInterval?
+    public let averageLatency: TimeInterval?
+    public let missedHeartbeats: Int
+    public let sessionId: String?
+    public let sequenceNumber: Int?
+    public let resumeAttempts: Int
+    public let successfulResumes: Int
+    public let failedResumes: Int
+    
+    public var isHealthy: Bool {
+        switch status {
+        case .ready:
+            return missedHeartbeats < 3 && (latency ?? 1000) < 1000 // Less than 1 second latency
+        case .connecting, .identifying, .resuming, .reconnecting:
+            return true // Still trying to connect
+        case .disconnected:
+            return false
+        }
+    }
+    
+    public var connectionQuality: String {
+        guard let latency = latency else { return "Unknown" }
+        switch latency {
+        case 0..<100: return "Excellent"
+        case 100..<250: return "Good"
+        case 250..<500: return "Fair"
+        case 500..<1000: return "Poor"
+        default: return "Very Poor"
+        }
+    }
 }
 
 // MARK: - Lightweight decoding helpers

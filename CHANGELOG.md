@@ -428,6 +428,176 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Notes
 - Windows WebSocket adapter to be implemented if Foundation’s WebSocket is unavailable.
 
+# Changelog
+
+All notable changes to SwiftDisc will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Professional Discord API library transformation
+- Enhanced gateway management with advanced heartbeat system
+- Comprehensive shard management with auto-recovery
+- Complete API coverage for templates, voice states, and onboarding
+- Developer utilities and helper functions
+- Professional documentation structure
+
+## [0.13.0] - 2025-12-23
+
+### 🎉 Major Release - Professional Discord API Library
+
+This release represents a major milestone for SwiftDisc, transforming it into a comprehensive, professional Discord API library with complete coverage, enhanced reliability, and developer-friendly features.
+
+### ✨ New Features
+
+#### 🏗️ Enhanced Gateway & Heartbeat Management
+- **Advanced Heartbeat System**: Implemented sophisticated heartbeat management with configurable jitter, zombie connection detection, and automatic recovery
+- **Health Monitoring**: Added comprehensive connection health tracking with latency monitoring and quality assessment
+- **Smart Reconnection**: Enhanced reconnection logic with reason-specific backoff strategies and exponential backoff with jitter
+- **Connection State Tracking**: Detailed connection state monitoring with resume metrics and failure tracking
+
+#### 🔧 Professional Shard Management
+- **Auto-Recovery System**: Built-in automatic shard recovery with configurable retry limits and health monitoring
+- **Health Scoring**: Comprehensive shard health assessment with quality metrics and unhealthy shard detection
+- **Enhanced Monitoring**: Real-time shard health monitoring with automatic recovery attempts
+- **Graceful Degradation**: Improved handling of shard failures with minimal service disruption
+
+#### 📚 Complete API Coverage
+- **Template System**: Full guild template support including creation, synchronization, and management
+- **Voice State Management**: Complete voice state API with region management and state updates
+- **Onboarding & Welcome Screens**: Guild onboarding configuration and welcome screen management
+- **Enhanced Models**: Expanded data models with comprehensive Discord API coverage
+
+#### 🛠️ Developer Utilities
+- **Message Formatting**: Comprehensive markdown formatting utilities with escaping and styling helpers
+- **Message Splitting**: Intelligent message splitting for long content with word boundary preservation
+- **Time Utilities**: Discord timestamp formatting and parsing with multiple style support
+- **Validation Helpers**: Input validation for usernames, discriminators, colors, and invites
+- **Permission Utilities**: Enhanced permission checking and channel permission calculations
+- **Color Helpers**: Color conversion utilities and contrasting color generation
+- **Embed Builders**: Fluent embed creation helpers with method chaining support
+
+#### 📖 Comprehensive Documentation
+- **Professional Documentation**: Complete docs folder with structured markdown documentation
+- **Getting Started Guides**: Step-by-step installation and quick start guides
+- **API Reference**: Comprehensive API documentation with examples
+- **Advanced Topics**: In-depth guides for sharding, caching, and production deployment
+- **Best Practices**: Professional development patterns and deployment strategies
+
+### 🔧 Improvements
+
+#### Gateway Enhancements
+- Enhanced heartbeat jitter calculation with configurable factors
+- Improved zombie connection detection with configurable thresholds
+- Better error handling and logging throughout the gateway system
+- Optimized connection state management and recovery procedures
+
+#### Shard Management
+- Added configurable auto-recovery with health monitoring
+- Enhanced health checking with detailed metrics and scoring
+- Improved shard lifecycle management and graceful shutdown
+- Better concurrency handling and resource management
+
+#### Configuration System
+- Expanded DiscordConfiguration with heartbeat settings
+- Added auto-recovery configuration options
+- Improved configuration validation and defaults
+- Better documentation for all configuration options
+
+### 🐛 Bug Fixes
+
+- Fixed heartbeat ACK tracking for more accurate latency calculations
+- Resolved shard reconnection issues under high load
+- Improved error handling in template and voice state operations
+- Fixed memory leaks in long-running shard operations
+- Corrected permission calculation edge cases
+
+### ⚡ Performance Improvements
+
+- Optimized heartbeat loop with reduced CPU usage
+- Improved shard health monitoring efficiency
+- Enhanced connection pooling and resource management
+- Reduced memory footprint for large-scale deployments
+- Better async/await performance throughout the library
+
+### 🔄 Breaking Changes
+
+- **DiscordConfiguration**: Added new heartbeat and auto-recovery configuration options (backward compatible)
+- **ShardingGatewayManager**: Enhanced constructor with auto-recovery parameters (backward compatible)
+- **GatewayClient**: Added new health monitoring methods (non-breaking additions)
+
+### 📋 API Additions
+
+#### REST Endpoints
+- `getGuildTemplates`, `createGuildTemplate`, `syncGuildTemplate`
+- `getGuildTemplate`, `updateGuildTemplate`, `deleteGuildTemplate`
+- `getTemplate`, `createGuildFromTemplate`
+- `getGuildOnboarding`, `modifyGuildOnboarding`
+- `getGuildWelcomeScreen`, `modifyGuildWelcomeScreen`
+- `getVoiceRegions`, `getGuildVoiceRegions`
+- `getGuildVoiceStates`, `getGuildVoiceState`
+- `updateVoiceState`, `updateMemberVoiceState`
+
+#### Gateway Enhancements
+- Enhanced heartbeat management with jitter and zombie detection
+- Comprehensive health monitoring and metrics
+- Improved reconnection strategies and error handling
+
+#### Utility Classes
+- `BotUtils.MessageFormat`: Markdown formatting and escaping
+- `BotUtils.MessageSplitter`: Intelligent message splitting
+- `BotUtils.TimeUtils`: Discord timestamp utilities
+- `BotUtils.Validation`: Input validation helpers
+- `BotUtils.PermissionHelpers`: Enhanced permission checking
+- `BotUtils.ColorUtils`: Color conversion and manipulation
+- `BotUtils.EmbedBuilder`: Fluent embed creation
+
+### 📊 Metrics & Monitoring
+
+- Added comprehensive connection health tracking
+- Implemented shard health scoring and monitoring
+- Enhanced latency tracking with averaging capabilities
+- Added recovery attempt tracking and success metrics
+- Improved logging throughout the system
+
+### 🛡️ Security & Reliability
+
+- Enhanced error handling for all network operations
+- Improved input validation and sanitization
+- Better resource cleanup and memory management
+- Enhanced timeout handling and connection management
+- Improved rate limiting compliance
+
+### 📚 Documentation
+
+- **Complete docs folder** with structured documentation
+- **Getting Started** guides for new users
+- **API Reference** with comprehensive examples
+- **Advanced Topics** for experienced developers
+- **Deployment guides** for production environments
+
+### 🎯 Developer Experience
+
+- **Type Safety**: Enhanced throughout the library with better error handling
+- **Async/Await**: Consistent use across all APIs
+- **Documentation**: Comprehensive inline documentation and examples
+- **Error Messages**: Clear and actionable error messages
+- **Performance**: Optimized for high-throughput applications
+
+### 🚀 Production Ready
+
+This release makes SwiftDisc production-ready with:
+- **Reliability**: Enhanced connection management and auto-recovery
+- **Scalability**: Improved sharding and resource management
+- **Monitoring**: Comprehensive health tracking and metrics
+- **Documentation**: Professional documentation and guides
+- **Support**: Extensive examples and best practices
+
+---
+
 ## [0.12.0] - 2025-12-10
 
 ### Added

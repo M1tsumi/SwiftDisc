@@ -73,18 +73,56 @@ public actor ShardingGatewayManager {
         public let reconnectingShards: Int
         public let averageLatency: TimeInterval?
         public let totalGuilds: Int
+        public let unhealthyShards: [Int]
+        public let lastHealthCheck: Date
+        
+        public var isHealthy: Bool {
+            let readyRatio = Double(readyShards) / Double(totalShards)
+            return readyRatio >= 0.8 && unhealthyShards.isEmpty
+        }
+        
+        public var healthScore: Double {
+            let readyScore = Double(readyShards) / Double(totalShards)
+            let latencyScore = (averageLatency ?? 1000) < 500 ? 1.0 : 0.5
+            let healthScore = (readyScore + latencyScore) / 2.0
+            return healthScore
+        }
+    }
+    
+    public struct AutoRecoveryConfig {
+        public let enabled: Bool
+        public let maxRetryAttempts: Int
+        public let retryDelay: TimeInterval
+        public let healthCheckInterval: TimeInterval
+        
+        public init(
+            enabled: Bool = true,
+            maxRetryAttempts: Int = 3,
+            retryDelay: TimeInterval = 30.0,
+            healthCheckInterval: TimeInterval = 60.0
+        ) {
+            self.enabled = enabled
+            self.maxRetryAttempts = maxRetryAttempts
+            self.retryDelay = retryDelay
+            self.healthCheckInterval = healthCheckInterval
+        }
     }
 
     private let token: String
     private let shardingConfiguration: Configuration
     private let httpConfiguration: DiscordConfiguration
     private let fallbackIntents: GatewayIntents
+    private let autoRecoveryConfig: AutoRecoveryConfig
 
     private struct GatewayBotCache {
         var info: GatewayBotInfo
         var fetchedAt: Date
     }
     private var cachedGatewayBot: GatewayBotCache?
+    
+    // Auto-recovery state
+    private var healthCheckTask: Task<Void, Never>?
+    private var recoveryAttempts: [Int: Int] = [:] // shardId -> attempt count
 
     private struct GatewayBotInfo: Decodable {
         struct SessionStartLimit: Decodable { let total: Int; let remaining: Int; let reset_after: Int; let max_concurrency: Int }
@@ -93,11 +131,18 @@ public actor ShardingGatewayManager {
         let session_start_limit: SessionStartLimit
     }
 
-    public init(token: String, configuration: Configuration = .init(), intents: GatewayIntents, httpConfiguration: DiscordConfiguration = .init()) {
+    public init(
+        token: String, 
+        configuration: Configuration = .init(), 
+        intents: GatewayIntents, 
+        httpConfiguration: DiscordConfiguration = .init(),
+        autoRecovery: AutoRecoveryConfig = .init()
+    ) {
         self.token = token
         self.shardingConfiguration = configuration
         self.httpConfiguration = httpConfiguration
         self.fallbackIntents = intents
+        self.autoRecoveryConfig = autoRecovery
     }
 
     // Unified event stream
@@ -159,30 +204,54 @@ public actor ShardingGatewayManager {
         let total = shardHandles.count
         var ready = 0, connecting = 0, reconnecting = 0
         var latencies: [TimeInterval] = []
-        let snapshots = await withTaskGroup(of: (String, TimeInterval?).self, returning: [(String, TimeInterval?)].self) { group in
+        var unhealthyShards: [Int] = []
+        
+        let snapshots = await withTaskGroup(of: (Int, String, TimeInterval?).self, returning: [(Int, String, TimeInterval?)].self) { group in
             for h in shardHandles {
                 group.addTask {
+                    let id = h.id
                     let st = await h.status()
                     let l = await h.heartbeatLatency()
-                    return (st, l)
+                    return (id, st, l)
                 }
             }
-            var result: [(String, TimeInterval?)] = []
+            var result: [(Int, String, TimeInterval?)] = []
             for await s in group { result.append(s) }
             return result
         }
-        for (st, l) in snapshots {
+        
+        for (shardId, st, l) in snapshots {
             switch st {
-            case "ready": ready += 1
-            case "connecting", "identifying", "resuming": connecting += 1
-            case "reconnecting": reconnecting += 1
-            default: break
+            case "ready": 
+                ready += 1
+                // Check if shard is unhealthy despite being "ready"
+                if let latency = l, latency > 5000 { // > 5 seconds is unhealthy
+                    unhealthyShards.append(shardId)
+                }
+            case "connecting", "identifying", "resuming": 
+                connecting += 1
+            case "reconnecting": 
+                reconnecting += 1
+                unhealthyShards.append(shardId)
+            default:
+                unhealthyShards.append(shardId)
             }
             if let l { latencies.append(l) }
         }
+        
         let avg = latencies.isEmpty ? nil : (latencies.reduce(0, +) / Double(latencies.count))
         let totalGuilds = guildsByShard.values.reduce(0) { $0 + $1.count }
-        return .init(totalShards: total, readyShards: ready, connectingShards: connecting, reconnectingShards: reconnecting, averageLatency: avg, totalGuilds: totalGuilds)
+        
+        return .init(
+            totalShards: total, 
+            readyShards: ready, 
+            connectingShards: connecting, 
+            reconnectingShards: reconnecting, 
+            averageLatency: avg, 
+            totalGuilds: totalGuilds,
+            unhealthyShards: unhealthyShards,
+            lastHealthCheck: Date()
+        )
     }
 
     public func connect() async throws {
@@ -381,7 +450,114 @@ public actor ShardingGatewayManager {
         }
     }
 
-    // MARK: - Presence & Validation Helpers
+    // MARK: - Auto-Recovery & Health Monitoring
+    
+    public func startHealthMonitoring() async {
+        guard autoRecoveryConfig.enabled else { return }
+        
+        healthCheckTask?.cancel()
+        healthCheckTask = Task { [weak self] in
+            guard let self = self else { return }
+            await self.runHealthCheckLoop()
+        }
+        
+        log(.info, "Started health monitoring with interval: \(autoRecoveryConfig.healthCheckInterval)s")
+    }
+    
+    public func stopHealthMonitoring() async {
+        healthCheckTask?.cancel()
+        healthCheckTask = nil
+        log(.info, "Stopped health monitoring")
+    }
+    
+    private func runHealthCheckLoop() async {
+        while !Task.isCancelled && !isShuttingDown {
+            await performHealthCheck()
+            
+            // Wait for next health check
+            let intervalNs = UInt64(autoRecoveryConfig.healthCheckInterval * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: intervalNs)
+        }
+    }
+    
+    private func performHealthCheck() async {
+        let health = await healthCheck()
+        
+        if !health.isHealthy {
+            log(.warning, "Sharding health degraded: \(health.readyShards)/\(health.totalShards) ready, score: \(String(format: "%.2f", health.healthScore))")
+            
+            // Attempt recovery for unhealthy shards
+            for shardId in health.unhealthyShards {
+                await attemptShardRecovery(shardId: shardId)
+            }
+        }
+    }
+    
+    private func attemptShardRecovery(shardId: Int) async {
+        guard autoRecoveryConfig.enabled else { return }
+        
+        let attempts = recoveryAttempts[shardId, default: 0]
+        if attempts >= autoRecoveryConfig.maxRetryAttempts {
+            log(.error, "Shard \(shardId) exceeded max recovery attempts (\(autoRecoveryConfig.maxRetryAttempts))")
+            return
+        }
+        
+        recoveryAttempts[shardId] = attempts + 1
+        log(.info, "Attempting recovery for shard \(shardId) (attempt \(recoveryAttempts[shardId]!))")
+        
+        guard let handle = await shard(id: shardId) else { return }
+        
+        // Check current status
+        let status = await handle.status()
+        
+        switch status {
+        case "disconnected", "reconnecting":
+            // Try to reconnect the shard
+            do {
+                let totalShards = shardHandles.count
+                let intents = shardingConfiguration.makeIntents?(shardId, totalShards) ?? fallbackIntents
+                
+                // Close existing connection
+                await handle.client.close()
+                
+                // Reconnect
+                try await handle.client.connect(intents: intents, shard: (shardId, totalShards)) { [weak self] event in
+                    guard let self = self else { return }
+                    Task {
+                        let latency = await handle.client.heartbeatLatency()
+                        await self.emitEvent(ShardedEvent(shardId: shardId, event: event, receivedAt: Date(), shardLatency: latency))
+                    }
+                }
+                
+                // Reset recovery attempts on success
+                recoveryAttempts[shardId] = 0
+                log(.info, "Successfully recovered shard \(shardId)")
+                
+            } catch {
+                log(.error, "Failed to recover shard \(shardId): \(error)")
+                
+                // Schedule next attempt
+                Task {
+                    let delayNs = UInt64(autoRecoveryConfig.retryDelay * 1_000_000_000)
+                    try? await Task.sleep(nanoseconds: delayNs)
+                    await self.attemptShardRecovery(shardId: shardId)
+                }
+            }
+            
+        default:
+            log(.debug, "Shard \(shardId) is in state '\(status)', no recovery needed")
+            recoveryAttempts[shardId] = 0
+        }
+    }
+    
+    public func resetRecoveryAttempts() async {
+        recoveryAttempts.removeAll()
+        log(.info, "Reset all recovery attempts")
+    }
+    
+    public func getRecoveryAttempts() async -> [Int: Int] {
+        return recoveryAttempts
+    }
     private func presenceForShard(_ shardId: Int, total: Int) async -> Configuration.PresenceConfig? {
         if let make = shardingConfiguration.makePresence { return make(shardId, total) }
         return shardingConfiguration.fallbackPresence

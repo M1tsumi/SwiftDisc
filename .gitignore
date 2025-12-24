@@ -52,7 +52,6 @@ Pods/
 # Local documentation/design artifacts (hygiene freeze - do not commit)
 /RFCs/
 /design/
-/docs/
 .github/PULL_REQUEST_TEMPLATE.md
 
 # Standard Swift and IDE ignores

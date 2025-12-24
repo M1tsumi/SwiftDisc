@@ -89,7 +89,44 @@ public final class DiscordClient {
         loadedExtensions.removeAll()
         for ext in exts { await ext.onUnload(client: self) }
     }
-    // MARK: - REST: Bulk Messages and Crosspost
+    // MARK: - REST: Templates
+    public func getGuildTemplates(guildId: GuildID) async throws -> [Template] {
+        return try await http.get(path: "/guilds/\(guildId)/templates")
+    }
+    
+    public func createGuildTemplate(guildId: GuildID, template: TemplateCreate) async throws -> Template {
+        return try await http.post(path: "/guilds/\(guildId)/templates", body: template)
+    }
+    
+    public func syncGuildTemplate(guildId: GuildID, templateCode: String) async throws -> Template {
+        return try await http.put(path: "/guilds/\(guildId)/templates/\(templateCode)")
+    }
+    
+    public func getGuildTemplate(guildId: GuildID, templateCode: String) async throws -> Template {
+        return try await http.get(path: "/guilds/\(guildId)/templates/\(templateCode)")
+    }
+    
+    public func updateGuildTemplate(guildId: GuildID, templateCode: String, template: TemplateUpdate) async throws -> Template {
+        return try await http.patch(path: "/guilds/\(guildId)/templates/\(templateCode)", body: template)
+    }
+    
+    public func deleteGuildTemplate(guildId: GuildID, templateCode: String) async throws -> Template {
+        return try await http.delete(path: "/guilds/\(guildId)/templates/\(templateCode)")
+    }
+    
+    public func getTemplate(templateCode: String) async throws -> Template {
+        return try await http.get(path: "/templates/\(templateCode)")
+    }
+    
+    // Create guild from template
+    public func createGuildFromTemplate(templateCode: String, name: String, icon: String? = nil) async throws -> PartialGuild {
+        struct Body: Codable {
+            let name: String
+            let icon: String?
+        }
+        let body = Body(name: name, icon: icon)
+        return try await http.post(path: "/templates/\(templateCode)", body: body)
+    }
     // Bulk delete messages (2-100, not older than 14 days)
     public func bulkDeleteMessages(channelId: ChannelID, messageIds: [MessageID]) async throws {
         struct Body: Encodable { let messages: [MessageID] }
@@ -117,7 +154,61 @@ public final class DiscordClient {
         try await http.delete(path: "/channels/\(channelId)/pins/\(messageId)")
     }
 
-    // MARK: - REST: Messages with Files
+    // MARK: - REST: Onboarding & Welcome Screen
+    public func getGuildOnboarding(guildId: GuildID) async throws -> GuildOnboarding {
+        return try await http.get(path: "/guilds/\(guildId)/onboarding")
+    }
+    
+    public func modifyGuildOnboarding(guildId: GuildID, onboarding: GuildOnboardingUpdate) async throws -> GuildOnboarding {
+        return try await http.put(path: "/guilds/\(guildId)/onboarding", body: onboarding)
+    }
+    
+    public func getGuildWelcomeScreen(guildId: GuildID) async throws -> WelcomeScreen {
+        return try await http.get(path: "/guilds/\(guildId)/welcome-screen")
+    }
+    
+    public func modifyGuildWelcomeScreen(guildId: GuildID, welcomeScreen: WelcomeScreenUpdate) async throws -> WelcomeScreen {
+        return try await http.patch(path: "/guilds/\(guildId)/welcome-screen", body: welcomeScreen)
+    }
+
+    // MARK: - REST: Voice States & Regions
+    public func getVoiceRegions() async throws -> [VoiceRegion] {
+        return try await http.get(path: "/voice/regions")
+    }
+    
+    public func getGuildVoiceRegions(guildId: GuildID) async throws -> [VoiceRegion] {
+        return try await http.get(path: "/guilds/\(guildId)/regions")
+    }
+    
+    public func getGuildVoiceStates(guildId: GuildID) async throws -> [VoiceState] {
+        return try await http.get(path: "/guilds/\(guildId)/voice-states")
+    }
+    
+    public func getGuildVoiceState(guildId: GuildID, userId: UserID) async throws -> VoiceState {
+        return try await http.get(path: "/guilds/\(guildId)/voice-states/\(userId)")
+    }
+    
+    // Update own voice state
+    public func updateVoiceState(guildId: GuildID, channelId: ChannelID?, selfMute: Bool = false, selfDeaf: Bool = false) async throws {
+        let voiceStateUpdate = VoiceStateUpdate(
+            guild_id: guildId,
+            channel_id: channelId,
+            self_mute: selfMute,
+            self_deaf: selfDeaf
+        )
+        try await http.post(path: "/guilds/\(guildId)/voice-states/@me", body: voiceStateUpdate)
+    }
+    
+    // Update another user's voice state (requires MUTE_MEMBERS permission)
+    public func updateMemberVoiceState(guildId: GuildID, userId: UserID, channelId: ChannelID?, selfMute: Bool = false, selfDeaf: Bool = false) async throws {
+        let voiceStateUpdate = VoiceStateUpdate(
+            guild_id: guildId,
+            channel_id: channelId,
+            self_mute: selfMute,
+            self_deaf: selfDeaf
+        )
+        try await http.patch(path: "/guilds/\(guildId)/voice-states/\(userId)", body: voiceStateUpdate)
+    }
     public func sendMessageWithFiles(
         channelId: ChannelID,
         content: String? = nil,
