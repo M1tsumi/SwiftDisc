@@ -15,10 +15,12 @@ actor GatewayClient {
     private var missedHeartbeats = 0
     private var consecutiveZombieDetections = 0
     private var heartbeatLatencies: [TimeInterval] = []
-    private let maxLatencySamples = 10
-    private var resumeCount: Int = 0
-    private var resumeSuccessCount: Int = 0
-    private var resumeFailureCount: Int = 0
+    private let maxLatencySamples = 100
+    
+    // Resume tracking
+    private var resumeCount = 0
+    private var resumeSuccessCount = 0
+    private var resumeFailureCount = 0
     private var lastResumeAttemptAt: Date?
     private var lastResumeSuccessAt: Date?
     private var allowReconnect: Bool = true
@@ -42,6 +44,42 @@ actor GatewayClient {
         case gatewayRequest
     }
 
+    // Resume tracking methods
+    public func getResumeCount() -> Int { resumeCount }
+    public func getResumeSuccessCount() -> Int { resumeSuccessCount }
+    public func getResumeFailureCount() -> Int { resumeFailureCount }
+    public func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
+    public func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
+    
+    // Health monitoring methods
+    public func getAverageLatency() -> TimeInterval? {
+        guard !heartbeatLatencies.isEmpty else { return nil }
+        return heartbeatLatencies.reduce(0, +) / Double(heartbeatLatencies.count)
+    }
+    
+    public func getGatewayHealth() -> GatewayHealth {
+        let latency = getAverageLatency()
+        return GatewayHealth(
+            status: status,
+            latency: latency,
+            missedHeartbeats: missedHeartbeats,
+            lastHeartbeatAt: lastHeartbeatAckAt,
+            sessionId: sessionId
+        )
+    }
+    
+    public struct GatewayHealth {
+        public let status: Status
+        public let latency: TimeInterval?
+        public let missedHeartbeats: Int
+        public let lastHeartbeatAt: Date?
+        public let sessionId: String?
+        
+        public var isHealthy: Bool {
+            return missedHeartbeats < 3 && (latency ?? 1000) < 1000 // Less than 1 second latency
+        }
+    }
+    
     // Public: request guild members (OP 8)
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
