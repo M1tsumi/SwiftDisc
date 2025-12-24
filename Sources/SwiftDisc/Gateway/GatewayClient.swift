@@ -62,18 +62,32 @@ actor GatewayClient {
         return GatewayHealth(
             status: status,
             latency: latency,
+            averageLatency: latency,
             missedHeartbeats: missedHeartbeats,
             lastHeartbeatAt: lastHeartbeatAckAt,
-            sessionId: sessionId
+            sessionId: sessionId,
+            sequenceNumber: seq,
+            resumeAttempts: resumeCount,
+            successfulResumes: resumeSuccessCount,
+            failedResumes: resumeFailureCount,
+            lastResumeAttemptAt: lastResumeAttemptAt,
+            lastResumeSuccessAt: lastResumeSuccessAt
         )
     }
     
     public struct GatewayHealth {
         public let status: Status
         public let latency: TimeInterval?
+        public let averageLatency: TimeInterval?
         public let missedHeartbeats: Int
         public let lastHeartbeatAt: Date?
         public let sessionId: String?
+        public let sequenceNumber: Int?
+        public let resumeAttempts: Int
+        public let successfulResumes: Int
+        public let failedResumes: Int
+        public let lastResumeAttemptAt: Date?
+        public let lastResumeSuccessAt: Date?
         
         public var isHealthy: Bool {
             return missedHeartbeats < 3 && (latency ?? 1000) < 1000 // Less than 1 second latency
@@ -571,11 +585,14 @@ actor GatewayClient {
             latency: heartbeatLatency(),
             averageLatency: averageHeartbeatLatency(),
             missedHeartbeats: missedHeartbeats,
+            lastHeartbeatAt: lastHeartbeatAckAt,
             sessionId: sessionId,
             sequenceNumber: seq,
             resumeAttempts: resumeCount,
             successfulResumes: resumeSuccessCount,
-            failedResumes: resumeFailureCount
+            failedResumes: resumeFailureCount,
+            lastResumeAttemptAt: lastResumeAttemptAt,
+            lastResumeSuccessAt: lastResumeSuccessAt
         )
     }
 
@@ -584,11 +601,12 @@ actor GatewayClient {
     func currentSeq() -> Int? { seq }
     func incrementResumeCount() { resumeCount += 1 }
     func currentResumeCount() -> Int { resumeCount }
-  func getResumeSuccessCount() -> Int { resumeSuccessCount }
-  func getResumeFailureCount() -> Int { resumeFailureCount }
-  func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
-  func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
-  func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
+    func getResumeSuccessCount() -> Int { resumeSuccessCount }
+    func getResumeFailureCount() -> Int { resumeFailureCount }
+    func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
+    func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
+    func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
+    func getAllowReconnect() -> Bool { allowReconnect }
 }
 
 // MARK: - Health Monitoring
