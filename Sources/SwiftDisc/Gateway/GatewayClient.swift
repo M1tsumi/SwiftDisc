@@ -609,41 +609,6 @@ actor GatewayClient {
     func getAllowReconnect() -> Bool { allowReconnect }
 }
 
-// MARK: - Health Monitoring
-public struct GatewayHealth {
-    public let status: GatewayClient.Status
-    public let latency: TimeInterval?
-    public let averageLatency: TimeInterval?
-    public let missedHeartbeats: Int
-    public let sessionId: String?
-    public let sequenceNumber: Int?
-    public let resumeAttempts: Int
-    public let successfulResumes: Int
-    public let failedResumes: Int
-    
-    public var isHealthy: Bool {
-        switch status {
-        case .ready:
-            return missedHeartbeats < 3 && (latency ?? 1000) < 1000 // Less than 1 second latency
-        case .connecting, .identifying, .resuming, .reconnecting:
-            return true // Still trying to connect
-        case .disconnected:
-            return false
-        }
-    }
-    
-    public var connectionQuality: String {
-        guard let latency = latency else { return "Unknown" }
-        switch latency {
-        case 0..<100: return "Excellent"
-        case 100..<250: return "Good"
-        case 250..<500: return "Fair"
-        case 500..<1000: return "Poor"
-        default: return "Very Poor"
-        }
-    }
-}
-
 // MARK: - Lightweight decoding helpers
 
 private struct GatewayOpBox: Codable {
