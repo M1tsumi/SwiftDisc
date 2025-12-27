@@ -33,7 +33,7 @@ Add SwiftDisc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.11.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.0.0")
 ]
 
 ```swift
@@ -52,6 +52,111 @@ targets: [
 | Windows | Swift 5.9+ |
 
 ## Quick Start
+### Command Framework
+
+SwiftDisc includes a small, developer-friendly command framework to get started quickly with prefix and slash-style commands. The framework is intentionally lightweight and designed to be extended by applications or higher-level frameworks.
+
+Example (see `Examples/CommandFrameworkBot.swift`):
+
+```swift
+let router = CommandRouter(prefix: "!")
+router.register("ping") { ctx in
+    try? await ctx.reply("Pong!")
+}
+
+client.onMessageCreate { message in
+    await router.processMessage(message)
+}
+```
+
+The `CommandRouter` and `CommandContext` are in `Sources/SwiftDisc/HighLevel/CommandFramework.swift` and are intended as a foundation for a richer command framework (cogs, converters, cooldowns).
+
+### Cogs / Extensions
+
+SwiftDisc provides a minimal `Cog` protocol and an `ExtensionManager` for organizing features into loadable modules. A `Cog` exposes `onLoad(client:)` and `onUnload(client:)` hooks — ideal for registering commands, listeners, or background tasks when the extension is active. See `Sources/SwiftDisc/HighLevel/Cog.swift` and `Examples/CogExample.swift`.
+
+### Converters, Checks & Cooldowns
+
+The command framework now includes lightweight converters and utilities to make command development ergonomic:
+
+- `Converters`: helpers to parse mentions and plain IDs into typed `Snowflake<T>` aliases (e.g. `UserID`, `ChannelID`, `RoleID`). See `Sources/SwiftDisc/HighLevel/Converters.swift`.
+- `Check` functions: small async predicates that can be attached to commands to gate execution (permission checks, role checks, owner-only, etc.).
+- `CooldownManager`: per-command cooldown support with `user`, `guild`, and `global` scopes to throttle command usage.
+
+Example:
+
+```swift
+router.register("echo", checks: [isAdminCheck], cooldown: 5.0) { ctx in
+    try? await ctx.reply(ctx.args)
+}
+```
+
+These features are intentionally small and composable; they are a foundation for richer developer-facing frameworks (decorators, converters, and higher-level command frameworks) and are documented in `CHANGELOG.md` under the v1.0.0 notes.
+
+### Collectors & Paginators
+
+SwiftDisc now includes AsyncStream-based collectors and paginators to make common tasks easy and idiomatic with Swift concurrency. Highlights:
+
+- `createMessageCollector(...)`: attach a filter and stream matching messages from the client's event stream with optional timeout and maximum count.
+- `streamGuildMembers(...)`: paginated streaming helper that yields `GuildMember` entries lazily via `listGuildMembers`.
+- `streamChannelPins(...)`: existing helper that streams pinned messages using the paginated pins endpoint.
+
+These tools avoid manual paging/looping boilerplate and are designed to compose with higher-level collectors and view state utilities.
+
+### Components V2 (Complete Integration)
+
+Components V2 is now fully integrated and exposes typed models, fluent builders, and examples to make constructing message components ergonomic and type-safe:
+
+- Models: `MessageComponent` includes `ActionRow`, `Button`, `SelectMenu`, and `TextInput` with exact field names matching the API.
+- Builders: `ButtonBuilder`, `SelectMenuBuilder`, `TextInputBuilder`, `ActionRowBuilder`, and a top-level `ComponentsBuilder` for composing rows.
+- Embeds: `EmbedBuilder` provides a fluent API for constructing rich embeds.
+- Examples: see `Examples/ComponentsExample.swift` demonstrating constructing an embed and multiple component rows and sending a message.
+
+These builders produce values directly usable in `DiscordClient.sendMessage(..., components: [MessageComponent])` and interaction response payloads. They are covered by basic serialization and smoke tests in `Tests/SwiftDiscTests`.
+
+### Component Collectors / Persistent Views
+
+`createComponentCollector(customId:timeout:max:)` returns an `AsyncStream<Interaction>` that yields component interactions (buttons/selects) matching an optional `customId`. Use collectors to implement short-lived UIs or wire into a persistent view manager that maps `custom_id`s to handler callbacks and keeps state for the view lifecycle.
+
+Example (collector usage):
+
+```swift
+let collector = client.createComponentCollector(customId: "btn_confirm", timeout: 30)
+Task {
+    for await interaction in collector {
+        // handle interaction, e.g. acknowledge or edit message
+        try? await client.createInteractionResponseWithFiles(applicationId: interaction.application_id, interactionToken: interaction.token, payload: ["type": .number(6)], files: [])
+    }
+}
+```
+
+Collectors are a building block for a higher-level `View` system (persistent views + automatic timeout/unload). If you'd like, I can implement a `View` manager next that maps component `custom_id`s to callbacks and supports ephemeral state and automatic cleanup.
+
+### View Manager (Persistent Views)
+
+`ViewManager` provides a simple, concurrency-safe way to register persistent UI views that handle component interactions. Features:
+
+- Register a `View` with handlers mapped by `custom_id` (exact or prefix matching).
+- Automatic expiration by timeout, and optional one-shot views that unregister after first use.
+- Integration with `DiscordClient` via `client.useViewManager(_:)` which starts routing component interactions to registered views.
+
+See `Sources/SwiftDisc/HighLevel/ViewManager.swift` and `Examples/ViewExample.swift` for usage. `Tests/ViewManagerTests.swift` contains smoke tests for registration/unregistration.
+
+Example `Check` implementation:
+
+```swift
+let isAdminCheck: CommandRouter.Check = { ctx in
+    // Example: allow if author has ADMINISTRATOR permission or is the guild owner.
+    if let guildId = ctx.message.guild_id {
+        // Note: a real implementation would inspect the cache or fetch member permissions.
+        // This example assumes a helper `hasAdminPermissions(member:guildId:)` exists.
+        return await hasAdminPermissions(ctx.message.author.id, guildId: guildId)
+    }
+    return false
+}
+```
+
+`hasAdminPermissions` is intentionally left as an integration point for application-specific permission checks (cache lookups, REST fallbacks, etc.).
 
 ```swift
 import SwiftDisc
@@ -117,6 +222,22 @@ For endpoints we haven't wrapped yet, use `rawGET`, `rawPOST`, etc.
 ### Rate Limiting
 
 Per-route and global rate limits are handled automatically. The client backs off and retries when needed.
+
+### Modal File Uploads (v1.0.0)
+
+SwiftDisc provides helpers to send files with interaction responses and follow-ups. These helpers send multipart requests and enforce per-attachment limits configured via `DiscordConfiguration.maxUploadBytes`.
+
+Use `createInteractionResponseWithFiles` for initial interaction responses (the endpoint is the webhook path for an interaction token; the helper uses `wait=true` to return the created message).
+
+Example:
+
+```swift
+let file = FileAttachment(filename: "screenshot.png", data: pngData, contentType: "image/png")
+let payload: [String: JSONValue] = ["content": .string("Here's the file")]
+let message = try await client.createInteractionResponseWithFiles(applicationId: appId, interactionToken: token, payload: payload, files: [file])
+```
+
+To create follow-up messages with files, use `createFollowupMessageWithFiles` which returns the created `Message` when `wait=true`.
 
 ### Sharding
 
@@ -298,6 +419,17 @@ try await client.playVoiceOpus(guildId: guildId, data: opusPacket)
 try await client.play(source: MyOpusSource(), guildId: guildId)
 
 try await client.leaveVoice(guildId: guildId)
+
+## Running Tests
+
+To run the test suite locally you need Swift installed. On macOS with Xcode/toolchain:
+
+```bash
+cd /home/pepe/Desktop/Github\ DevWork/Discord\ API\ Libs/SwiftDisc-1
+swift test
+```
+
+CI is configured in `.github/workflows/ci.yml` to run on macOS and Windows; if you encounter environment issues locally, ensure your Swift toolchain matches the CI configuration (Xcode 16.4 / Swift 6.x where applicable).
 ```
 
 On Apple platforms, you can observe inbound Opus frames via `onVoiceFrame`:
@@ -338,14 +470,19 @@ CI runs on macOS (Xcode 16.4 / Swift 5.10.1) and Windows Server 2022 (Swift 5.10
 
 ## Roadmap
 
-### Current Focus (v0.11.x)
-- [x] Autocomplete
-- [x] File uploads polish (MIME + guardrails)
-- [x] Gateway parity: Threads & Scheduled Events + raw fallback
-- [x] Experimental voice receive support (Apple platforms)
-- [x] Performance work for large, multi-shard bots
-- Caching and permissions utilities
-- Extensions/cogs system
+### Released (v1.0.0) - 2025-12-27
+- Stable v1.0.0 released with broad REST and Gateway coverage, full Components V2, modal file uploads, and a focused set of developer-friendly high-level APIs.
+
+Completed highlights:
+- Command framework: `CommandRouter`, `CommandContext`, async `Check` predicates, and per-command cooldowns.
+- Cogs / Extensions: `Cog` protocol and `ExtensionManager` for modular bots and plugins.
+- Collectors & Paginators: AsyncStream collectors (`createMessageCollector`, `createComponentCollector`) and paginators (`streamGuildMembers`, `streamChannelPins`).
+- Components V2: typed `MessageComponent` models, fluent builders, and `EmbedBuilder`.
+- View Manager: concurrency-safe `ViewManager` with exact/prefix/regex matching, per-view state, automatic expiration, and edit-on-expire helpers.
+- Modal file uploads: `createInteractionResponseWithFiles` and `createFollowupMessageWithFiles` helpers.
+- Performance & stability: rate-limiter and HTTPClient improvements, sharding health checks, and CI coverage across macOS and Windows.
+
+See `CHANGELOG.md` for full release notes and migration guidance.
 
 ## Contributing
 

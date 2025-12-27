@@ -34,6 +34,13 @@ public final class DiscordClient {
     public var commands: CommandRouter?
     public func useCommands(_ router: CommandRouter) { self.commands = router }
 
+    // View manager (persistent component views)
+    public var viewManager: ViewManager?
+    public func useViewManager(_ manager: ViewManager) {
+        self.viewManager = manager
+        manager.start(client: self)
+    }
+
     // Phase 4+: Slash command router
     public var slashCommands: SlashCommandRouter?
     public func useSlashCommands(_ router: SlashCommandRouter) { self.slashCommands = router }
@@ -117,6 +124,24 @@ public final class DiscordClient {
         try await http.delete(path: "/channels/\(channelId)/pins/\(messageId)")
     }
 
+    // MARK: - REST: Paginated Pins (new endpoints)
+    /// Use paginated pins endpoint: GET /channels/{channel.id}/messages/pins
+    public func getChannelPinsPaginated(channelId: ChannelID, limit: Int? = nil, after: MessageID? = nil) async throws -> [Message] {
+        var query = ""
+        if let limit { query += (query.isEmpty ? "?" : "&") + "limit=\(limit)" }
+        if let after { query += (query.isEmpty ? "?" : "&") + "after=\(after)" }
+        return try await http.get(path: "/channels/\(channelId)/messages/pins\(query)")
+    }
+
+    /// New pin endpoints (typed routes). These coexist with older helpers for compatibility.
+    public func pinMessageV2(channelId: ChannelID, messageId: MessageID) async throws {
+        try await http.put(path: "/channels/\(channelId)/messages/pins/\(messageId)")
+    }
+
+    public func unpinMessageV2(channelId: ChannelID, messageId: MessageID) async throws {
+        try await http.delete(path: "/channels/\(channelId)/messages/pins/\(messageId)")
+    }
+
     // MARK: - REST: Messages with Files
     public func sendMessageWithFiles(
         channelId: ChannelID,
@@ -162,6 +187,18 @@ public final class DiscordClient {
         struct Body: Encodable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]?; let flags: Int? }
         let flags = ephemeral ? 64 : nil
         return try await http.post(path: "/webhooks/\(applicationId)/\(interactionToken)", body: Body(content: content, embeds: embeds, components: components, flags: flags))
+    }
+
+    /// Create a follow-up message with file attachments (multipart). Returns the created `Message` when `wait=true`.
+    public func createFollowupMessageWithFiles(applicationId: ApplicationID, interactionToken: String, content: String? = nil, embeds: [Embed]? = nil, components: [MessageComponent]? = nil, files: [FileAttachment]) async throws -> Message {
+        struct Body: Encodable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]? }
+        // Use the webhook endpoint and request a returned message with wait=true
+        return try await http.postMultipart(path: "/webhooks/\(applicationId)/\(interactionToken)?wait=true", jsonBody: Body(content: content, embeds: embeds, components: components), files: files)
+    }
+
+    /// Respond to an interaction (initial response) with files via webhook. This posts to the webhook URL and returns the created message when `wait=true` is used.
+    public func createInteractionResponseWithFiles(applicationId: ApplicationID, interactionToken: String, payload: [String: JSONValue], files: [FileAttachment]) async throws -> Message {
+        return try await http.postMultipart(path: "/webhooks/\(applicationId)/\(interactionToken)?wait=true", jsonBody: payload, files: files)
     }
 
     public func getFollowupMessage(applicationId: ApplicationID, interactionToken: String, messageId: MessageID) async throws -> Message {
@@ -514,6 +551,52 @@ public final class DiscordClient {
     // MARK: - Phase 2 REST: Channels
     public func getChannel(id: ChannelID) async throws -> Channel {
         try await http.get(path: "/channels/\(id)")
+    }
+
+    // MARK: - REST: Guild helpers
+    /// Get counts of members per-role using the new role member counts endpoint.
+    /// Endpoint: GET /guilds/{guild.id}/roles/member-counts
+    public func getGuildRoleMemberCounts(guildId: GuildID) async throws -> [RoleMemberCount] {
+        try await http.get(path: "/guilds/\(guildId)/roles/member-counts")
+    }
+
+    /// Convenience: get the member count for a single role (returns 0 if not present).
+    public func getGuildRoleMemberCount(guildId: GuildID, roleId: RoleID) async throws -> Int {
+        let counts = try await getGuildRoleMemberCounts(guildId: guildId)
+        return counts.first(where: { $0.role_id == roleId })?.count ?? 0
+    }
+
+    // MARK: - Stream helpers
+    /// Stream pinned messages for a channel using the paginated pins endpoint.
+    /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
+    public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
+        AsyncStream { continuation in
+            Task {
+                var after: MessageID? = nil
+                var lastSeen: String? = nil
+                while true {
+                    do {
+                        let page = try await getChannelPinsPaginated(channelId: channelId, limit: pageLimit, after: after)
+                        if page.isEmpty { break }
+                        for msg in page {
+                            continuation.yield(msg)
+                        }
+                        // detect progress to avoid infinite loops
+                        if let last = page.last?.id.description {
+                            if last == lastSeen { break }
+                            lastSeen = last
+                            after = page.last?.id
+                        } else {
+                            break
+                        }
+                    } catch {
+                        continuation.finish(throwing: error)
+                        return
+                    }
+                }
+                continuation.finish()
+            }
+        }
     }
 
     public func modifyChannelName(id: ChannelID, name: String) async throws -> Channel {

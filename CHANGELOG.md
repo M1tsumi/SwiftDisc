@@ -1,19 +1,49 @@
-## [0.11.0] - 2025-12-03
+## [1.0.0] - 2025-12-27
 
-### Planned Highlights
-- Voice receive and richer voice utilities building on the current experimental, send-only implementation.
-- Performance and memory improvements for large, multi-shard bots.
-- Windows platform parity work, including a dedicated WebSocket adapter where needed.
-- Continued coverage for new Discord APIs (Components V2, Polls, application resources) as they evolve.
+### Overview
+- Stable v1.0.0 release: broad REST and Gateway coverage, permission parity with platform changes, Components V2 + modal file upload support, and performance/optimization work to prepare for production-scale bots.
 
-### Planned Breaking Changes
-- Experimental voice APIs and configuration flags may be refined before `0.11.0` ships (names and shapes subject to change).
-- Some internal helper types may be moved or renamed as part of performance and cleanup work; any user-facing breakage will be documented in the final `0.11.0` notes.
+### Major Additions
 
-### Added
-- Experimental voice receive path on Apple platforms: decrypts inbound voice RTP to Opus frames and exposes them via `onVoiceFrame`, gated behind `enableVoiceExperimental`.
- - Sharding health improvements for large, multi-shard bots: concurrent shard status/latency collection and less logging overhead.
- - Windows gateway parity improvements: extended URLSession-based WebSocket adapter usage to supported Windows Swift toolchains.
+- Expanded endpoint coverage and convenience wrappers for message pins (paginated), per-attachment-aware file uploads in modals and interaction follow-ups, and the Get Guild Role Member Counts endpoint.
+- Permission bits added for recent platform splits: `PIN_MESSAGES`, `BYPASS_SLOWMODE`, `CREATE_GUILD_EXPRESSIONS`, `CREATE_EVENTS`, `USE_EXTERNAL_APPS`.
+- Added a lightweight Command Framework: `CommandRouter` and `CommandContext` for quick prefix-based command handling. See `Sources/SwiftDisc/HighLevel/CommandFramework.swift` and `Examples/CommandFrameworkBot.swift`.
+- Minimal Cog/Extension system: `Cog` protocol and `ExtensionManager` to modularize bot features. See `Sources/SwiftDisc/HighLevel/Cog.swift` and `Examples/CogExample.swift`.
+- Initial collectors and paginator helpers: AsyncStream-based paginators to help iterate large result-sets (pins, members) without manual paging boilerplate.
+ - Initial collectors and paginator helpers: `createMessageCollector` (AsyncStream-based message collector), `streamGuildMembers` paginator, and `streamChannelPins` for pin streaming. These helpers reduce pagination and event-filtering boilerplate and integrate with the client's event stream.
+
+- Components V2: full typed integration with `MessageComponent` models, fluent builders (`ButtonBuilder`, `SelectMenuBuilder`, `TextInputBuilder`, `ActionRowBuilder`, `ComponentsBuilder`), and an `EmbedBuilder` for rich messages. Added `Examples/ComponentsExample.swift` and serialization smoke-tests to verify output. These builders are intended for direct use with `DiscordClient.sendMessage(..., components: [MessageComponent])` and interaction payloads.
+
+- View Manager: added a concurrency-safe `ViewManager` for persistent UI views, prefix or exact `custom_id` matching, automatic expiration, and a simple integration via `client.useViewManager(_:)`. See `Sources/SwiftDisc/HighLevel/ViewManager.swift` and `Examples/ViewExample.swift`.
+- Developer experience improvements: example scaffolds, a small smoke-test suite for new features, and expanded README documentation describing the new command framework and examples.
+
+### Developer Experience & Command Framework
+
+- Added a lightweight, extensible command framework to accelerate common bot workflows: `CommandRouter`, `CommandContext`, async `Check` predicates, and per-command cooldowns with `user`, `guild`, and `global` scopes. This is intentionally small and composable so projects may layer richer frameworks on top.
+- Converters: small helpers to parse common argument formats (mentions and plain IDs) into typed `Snowflake<T>` aliases (`UserID`, `ChannelID`, `RoleID`), reducing parsing boilerplate in commands.
+- Cogs / Extensions: a minimal `Cog` protocol and `ExtensionManager` to group related handlers and lifecycle hooks for modular bots and plugins.
+- Tests & Examples: added example bots demonstrating command routing and cogs, plus basic smoke tests for converters, cooldowns, and the cog loader to improve confidence in CI.
+
+These additions were added to improve developer ergonomics and to provide a stable foundation for larger, higher-level command/extension frameworks (e.g., converters, decorators, persistent views, collectors).
+
+### Performance & Stability
+- Rate-limiter and `HTTPClient` improvements for robustness under burst operations, and guidance for respecting gateway limits (e.g., Request Guild Members 1 request/guild/30s).
+- Sharding & health collection improvements (concurrent sampling, less logging noise) and memory/perf guards for large bots.
+
+### Migration Notes
+- This is a major release (v1.0.0) but efforts were made to preserve existing public APIs; deprecated endpoints (old pin routes) are still available via compatibility helpers but new V2 helpers are recommended.
+
+### Breaking Changes
+- `getPinnedMessages(channelId:)` was previously the primary pins helper. For v1.0.0 the library introduces paginated pins endpoints and a streaming helper `streamChannelPins(channelId:pageLimit:)`. While the old `getPinnedMessages` is still available for compatibility, prefer the paginated API for reliability in large channels — callers that rely on exact ordering should migrate to `streamChannelPins` or `getChannelPinsPaginated`.
+- Permission bit names: several new flags were added to `PermissionBitset` and `PermissionsUtil` behavior expects you to request specific new permission bits for pinning, bypassing slowmode, creating events and expressions. Callers that previously assumed `MANAGE_MESSAGES` or `MANAGE_EVENTS` would grant these abilities must update their requested permissions.
+
+### Migration Guidance
+- Pins: replace `getPinnedMessages(channelId:)` uses where you need paginated results with `streamChannelPins(channelId:pageLimit:)` for streaming consumption or `getChannelPinsPaginated(channelId:limit:after:)` for explicit paging.
+- Permissions: add the new flags to your install scopes / permission requests: `pinMessages`, `bypassSlowmode`, `createGuildExpressions`, `createEvents`, `useExternalApps` (see `Models/PermissionBitset.swift`).
+- File uploads in modals: use the new `createInteractionResponseWithFiles` and `createFollowupMessageWithFiles` helpers; check `DiscordConfiguration.maxUploadBytes` to confirm allowed per-attachment sizes.
+
+
+
 
 ## [0.10.2] - 2025-12-03
 

@@ -20,6 +20,10 @@ public struct Interaction: Codable, Hashable {
         public let name: String
         public let type: Int?
         public let options: [Option]?
+        // Component interaction fields (optional): `custom_id` for buttons/selects, `component_type` and `values` for select menus.
+        public let custom_id: String?
+        public let component_type: Int?
+        public let values: [String]?
     }
     public let data: ApplicationCommandData?
 }

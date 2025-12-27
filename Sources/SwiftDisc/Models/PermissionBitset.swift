@@ -46,6 +46,12 @@ public struct PermissionBitset: OptionSet, Codable, Hashable {
     public static let sendMessagesInThreads = PermissionBitset(rawValue: 1 << 38)
     public static let useEmbeddedActivities = PermissionBitset(rawValue: 1 << 39)
     public static let moderateMembers = PermissionBitset(rawValue: 1 << 40)
+    // New permission flags added to match Discord platform changes (2024-2025)
+    public static let createGuildExpressions = PermissionBitset(rawValue: 1 << 43)
+    public static let createEvents = PermissionBitset(rawValue: 1 << 44)
+    public static let useExternalApps = PermissionBitset(rawValue: 1 << 50)
+    public static let pinMessages = PermissionBitset(rawValue: 1 << 51)
+    public static let bypassSlowmode = PermissionBitset(rawValue: 1 << 52)
     
     // Codable conformance for serialization
     public init(from decoder: Decoder) throws {
