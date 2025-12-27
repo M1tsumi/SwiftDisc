@@ -103,9 +103,19 @@ public struct CommandContext {
         self.args = args
     }
 
+    /// Fetches a channel object by its ID.
+    private func fetchChannel(byId channelId: ChannelID) async throws -> Channel? {
+        // Placeholder implementation. Replace with actual API call or cache lookup.
+        return nil
+    }
+
     /// Convenience: reply to the channel the command was invoked in.
     public func reply(_ content: String) async throws {
-        _ = try await message.channelId.createMessage(content: content)
+        if let channel = try await fetchChannel(byId: message.channelId) {
+            _ = try await channel.createMessage(content: content)
+        } else {
+            throw NSError(domain: "ChannelNotFound", code: 404, userInfo: nil)
+        }
     }
 }
 

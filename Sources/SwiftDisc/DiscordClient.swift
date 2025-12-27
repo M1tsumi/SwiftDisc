@@ -1380,7 +1380,7 @@ public final class DiscordClient {
             status: status?.rawValue,
             entity_metadata: entityMetadata
         )
-        return try await http.patch(path: "/guilds/\(guildId)/scheduled-events/\(eventId)", body: body)
+        return try await http.patch(path: "/guilds/\(guildId)/scheduled-events/\(eventId)", body: body: body)
     }
 
     public func deleteGuildScheduledEvent(guildId: GuildID, eventId: GuildScheduledEventID) async throws {

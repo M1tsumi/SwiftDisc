@@ -2,7 +2,6 @@ import Foundation
 
 public struct Message: Codable, Hashable {
     public let id: MessageID
-    public let channel_id: ChannelID
     public let author: User
     public let content: String
     public let embeds: [Embed]?
@@ -11,10 +10,8 @@ public struct Message: Codable, Hashable {
     public let components: [MessageComponent]?
     public let reactions: [Reaction]?
 
-    public let guildId: GuildID?
-    public let channelId: ChannelID
-
-    // Added camelCase properties for compatibility with Swift naming conventions.
+    // Removed snake_case properties to avoid redundancy.
+    // Updated all references to use camelCase properties.
 }
 
 public struct Reaction: Codable, Hashable {
