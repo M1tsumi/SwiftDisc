@@ -10,6 +10,11 @@ public struct Message: Codable, Hashable {
     public let mentions: [User]?
     public let components: [MessageComponent]?
     public let reactions: [Reaction]?
+
+    public let guildId: GuildID?
+    public let channelId: ChannelID
+
+    // Added camelCase properties for compatibility with Swift naming conventions.
 }
 
 public struct Reaction: Codable, Hashable {

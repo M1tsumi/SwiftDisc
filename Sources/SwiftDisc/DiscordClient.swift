@@ -36,9 +36,9 @@ public final class DiscordClient {
 
     // View manager (persistent component views)
     public var viewManager: ViewManager?
-    public func useViewManager(_ manager: ViewManager) {
+    public func useViewManager(_ manager: ViewManager) async {
         self.viewManager = manager
-        manager.start(client: self)
+        await manager.start(client: self)
     }
 
     // Phase 4+: Slash command router
@@ -570,7 +570,7 @@ public final class DiscordClient {
     /// Stream pinned messages for a channel using the paginated pins endpoint.
     /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
-        AsyncStream { continuation in
+        AsyncStream<Message> { continuation in
             Task {
                 var after: MessageID? = nil
                 var lastSeen: String? = nil
@@ -582,7 +582,7 @@ public final class DiscordClient {
                             continuation.yield(msg)
                         }
                         // detect progress to avoid infinite loops
-                        if let last = page.last?.id.description {
+                        if let last = page.last?.id?.description {
                             if last == lastSeen { break }
                             lastSeen = last
                             after = page.last?.id
@@ -590,8 +590,8 @@ public final class DiscordClient {
                             break
                         }
                     } catch {
-                        continuation.finish(throwing: error)
-                        return
+                        continuation.finish()
+                        break
                     }
                 }
                 continuation.finish()
