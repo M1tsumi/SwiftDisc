@@ -233,11 +233,11 @@ private func poly1305Authenticate(message: [UInt8], key: [UInt8]) -> [UInt8] {
     clampR(&r)
     let s = Array(key[16..<32])
 
-    var r0 = UInt32(loadLE(r[0..<4])) & 0x3ffffff
-    var r1 = (UInt32(loadLE(r[3..<7])) >> 2) & 0x3ffff03
-    var r2 = (UInt32(loadLE(r[6..<10])) >> 4) & 0x3ffc0ff
-    var r3 = (UInt32(loadLE(r[9..<13])) >> 6) & 0x3f03fff
-    var r4 = (UInt32(loadLE(r[12..<16])) >> 8) & 0x00fffff
+    let r0 = UInt32(loadLE(r[0..<4])) & 0x3ffffff
+    let r1 = (UInt32(loadLE(r[3..<7])) >> 2) & 0x3ffff03
+    let r2 = (UInt32(loadLE(r[6..<10])) >> 4) & 0x3ffc0ff
+    let r3 = (UInt32(loadLE(r[9..<13])) >> 6) & 0x3f03fff
+    let r4 = (UInt32(loadLE(r[12..<16])) >> 8) & 0x00fffff
 
     var h0: UInt32 = 0, h1: UInt32 = 0, h2: UInt32 = 0, h3: UInt32 = 0, h4: UInt32 = 0
     let r1_5 = r1 * 5
@@ -300,10 +300,10 @@ private func poly1305Authenticate(message: [UInt8], key: [UInt8]) -> [UInt8] {
     h4 = (h4 & mask) | g4
 
     // Serialize h
-    var f0 = (h0 | (h1 << 26)) & 0xffffffff
-    var f1 = ((h1 >> 6) | (h2 << 20)) & 0xffffffff
-    var f2 = ((h2 >> 12) | (h3 << 14)) & 0xffffffff
-    var f3 = ((h3 >> 18) | (h4 << 8)) & 0xffffffff
+    let f0 = (h0 | (h1 << 26)) & 0xffffffff
+    let f1 = ((h1 >> 6) | (h2 << 20)) & 0xffffffff
+    let f2 = ((h2 >> 12) | (h3 << 14)) & 0xffffffff
+    let f3 = ((h3 >> 18) | (h4 << 8)) & 0xffffffff
 
     // Add s
     var out = [UInt8](repeating: 0, count: 16)

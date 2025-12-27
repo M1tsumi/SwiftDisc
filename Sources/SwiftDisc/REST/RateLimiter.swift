@@ -23,7 +23,7 @@ actor RateLimiter {
         }
 
         // Per-route bucket control
-        if let state = buckets[routeKey], let resetAt = state.resetAt, let remaining = state.remaining, let limit = state.limit {
+        if let state = buckets[routeKey], let resetAt = state.resetAt, let remaining = state.remaining {
             if remaining <= 0 {
                 let now = Date()
                 if resetAt > now {
