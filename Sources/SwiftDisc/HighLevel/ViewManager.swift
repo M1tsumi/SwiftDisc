@@ -9,7 +9,7 @@ public enum MatchType {
 }
 
 /// A persistent view with handlers keyed by `custom_id` or matching prefixes.
-public struct View {
+public struct View: @unchecked Sendable {
     public let id: String
     public let timeout: TimeInterval?
     /// Patterns: (pattern string, match type, handler)
@@ -45,7 +45,7 @@ public actor ViewManager {
         views[view.id] = view
         if let t = view.timeout {
             let id = view.id
-            let task = Task.detached { [weak client] in
+            let task = Task { [weak client] in
                 try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                 await self.expireView(id: id, client: client)
             }
@@ -86,7 +86,7 @@ public actor ViewManager {
     public func start(client: DiscordClient) {
         // do not start twice
         if listeningTask != nil { return }
-        listeningTask = Task.detached { [weak client] in
+        listeningTask = Task { [weak client] in
             guard let client else { return }
             for await event in client.events {
                 switch event {
