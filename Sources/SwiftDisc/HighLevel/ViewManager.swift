@@ -2,6 +2,12 @@ import Foundation
 
 public typealias ViewHandler = (Interaction, DiscordClient) async -> Void
 
+public enum MatchType {
+    case exact
+    case prefix
+    case regex
+}
+
 /// A persistent view with handlers keyed by `custom_id` or matching prefixes.
 public struct View {
     public let id: String
