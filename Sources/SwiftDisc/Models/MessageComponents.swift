@@ -43,13 +43,13 @@ public enum MessageComponent: Codable, Hashable {
     private enum CodingKeys: String, CodingKey { case type }
 
     public struct ActionRow: Codable, Hashable {
-        public let type: Int = 1
+        public var type: Int = 1
         public let components: [MessageComponent]
         public init(components: [MessageComponent]) { self.components = components }
     }
 
     public struct Button: Codable, Hashable {
-        public let type: Int = 2
+        public var type: Int = 2
         public let style: Int
         public let label: String?
         public let custom_id: String?
@@ -72,7 +72,7 @@ public enum MessageComponent: Codable, Hashable {
             public let emoji: String?
             public let `default`: Bool?
         }
-        public let type: Int = 3
+        public var type: Int = 3
         public let custom_id: String
         public let options: [Option]
         public let placeholder: String?
@@ -91,7 +91,7 @@ public enum MessageComponent: Codable, Hashable {
 
     public struct TextInput: Codable, Hashable {
         public enum Style: Int, Codable { case short = 1, paragraph = 2 }
-        public let type: Int = 4
+        public var type: Int = 4
         public let custom_id: String
         public let style: Style
         public let label: String
