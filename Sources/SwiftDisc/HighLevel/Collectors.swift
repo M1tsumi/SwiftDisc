@@ -43,7 +43,7 @@ public extension DiscordClient {
     /// Stream guild members via the paginated `listGuildMembers` endpoint.
     /// This yields members lazily and avoids manual paging logic.
     func streamGuildMembers(guildId: GuildID, pageLimit: Int = 1000) -> AsyncStream<GuildMember> {
-        AsyncStream { continuation in
+        AsyncStream(GuildMember.self) { continuation in
             Task {
                 var after: UserID? = nil
                 var lastSeen: String? = nil
@@ -52,13 +52,13 @@ public extension DiscordClient {
                         let page = try await listGuildMembers(guildId: guildId, limit: pageLimit, after: after)
                         if page.isEmpty { break }
                         for m in page { continuation.yield(m) }
-                        if let last = page.last?.user.id.description {
+                        if let last = page.last?.user?.id.description {
                             if last == lastSeen { break }
                             lastSeen = last
-                            after = page.last?.user.id
+                            after = page.last?.user?.id
                         } else { break }
                     } catch {
-                        continuation.finish(throwing: error)
+                        continuation.finish()
                         return
                     }
                 }

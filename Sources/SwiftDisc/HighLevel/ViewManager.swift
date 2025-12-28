@@ -2,6 +2,13 @@ import Foundation
 
 public typealias ViewHandler = (Interaction, DiscordClient) async -> Void
 
+/// Pattern matching type for view custom_id routing.
+public enum MatchType {
+    case exact
+    case prefix
+    case regex
+}
+
 /// A persistent view with handlers keyed by `custom_id` or matching prefixes.
 public struct View {
     public let id: String
@@ -77,21 +84,28 @@ public actor ViewManager {
     public func list() -> [String] { Array(views.keys) }
     
     /// Start listening to the client's event stream and route component interactions.
-    public func start(client: DiscordClient) {
-        // do not start twice
-        if listeningTask != nil { return }
-        listeningTask = Task.detached { [weak client] in
-            guard let client else { return }
-            for await event in client.events {
-                switch event {
-                case .interactionCreate(let interaction):
-                    if let data = interaction.data, let cid = data.custom_id {
-                        await self.routeInteraction(customId: cid, interaction: interaction, client: client)
+    nonisolated public func start(client: DiscordClient) {
+        Task {
+            // do not start twice
+            if await listeningTask != nil { return }
+            let task = Task.detached { [weak client] in
+                guard let client else { return }
+                for await event in client.events {
+                    switch event {
+                    case .interactionCreate(let interaction):
+                        if let data = interaction.data, let cid = data.custom_id {
+                            await self.routeInteraction(customId: cid, interaction: interaction, client: client)
+                        }
+                    default: break
                     }
-                default: break
                 }
             }
+            await setListeningTask(task)
         }
+    }
+    
+    private func setListeningTask(_ task: Task<Void, Never>) {
+        listeningTask = task
     }
     
     private func routeInteraction(customId: String, interaction: Interaction, client: DiscordClient) async {

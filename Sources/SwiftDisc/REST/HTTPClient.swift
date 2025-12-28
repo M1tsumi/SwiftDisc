@@ -16,10 +16,7 @@ final class HTTPClient {
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
         self.configuration = configuration
-        let config = URLSessionConfiguration.default
-        #if !os(Windows)
-        config.waitsForConnectivity = true
-        #endif
+        let config = URLSessionConfiguration.ephemeral
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
