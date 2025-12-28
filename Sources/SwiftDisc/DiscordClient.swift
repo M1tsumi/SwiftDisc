@@ -570,7 +570,7 @@ public final class DiscordClient {
     /// Stream pinned messages for a channel using the paginated pins endpoint.
     /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
-        AsyncStream { continuation in
+        AsyncStream(Message.self) { continuation in
             Task {
                 var after: MessageID? = nil
                 var lastSeen: String? = nil
@@ -590,7 +590,7 @@ public final class DiscordClient {
                             break
                         }
                     } catch {
-                        continuation.finish(throwing: error)
+                        continuation.finish()
                         return
                     }
                 }

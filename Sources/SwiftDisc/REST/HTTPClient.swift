@@ -17,9 +17,6 @@ final class HTTPClient {
         self.token = token
         self.configuration = configuration
         let config = URLSessionConfiguration.ephemeral
-        #if !os(Windows)
-        config.waitsForConnectivity = true
-        #endif
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
