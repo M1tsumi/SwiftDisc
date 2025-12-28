@@ -16,7 +16,7 @@ final class HTTPClient {
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
         self.configuration = configuration
-        let config = URLSessionConfiguration.default
+        let config = URLSessionConfiguration.ephemeral
         #if !os(Windows)
         config.waitsForConnectivity = true
         #endif
