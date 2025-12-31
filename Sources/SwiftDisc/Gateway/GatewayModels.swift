@@ -74,6 +74,15 @@ public enum DiscordEvent: Hashable {
     case guildEmojisUpdate(GuildEmojisUpdate)
     case guildStickersUpdate(GuildStickersUpdate)
     case guildMembersChunk(GuildMembersChunk)
+    case typingStart(TypingStart)
+    case channelPinsUpdate(ChannelPinsUpdate)
+    case presenceUpdate(PresenceUpdate)
+    case guildBanAdd(GuildBanAdd)
+    case guildBanRemove(GuildBanRemove)
+    case webhooksUpdate(WebhooksUpdate)
+    case guildIntegrationsUpdate(GuildIntegrationsUpdate)
+    case inviteCreate(InviteCreate)
+    case inviteDelete(InviteDelete)
     // Catch-all for any gateway dispatch we don't model explicitly
     case raw(String, Data)
     // Threads
@@ -284,11 +293,11 @@ public struct ResumePayload: Codable {
 }
 
 public struct PresenceUpdatePayload: Codable {
-    public struct Activity: Codable {
-        public struct Timestamps: Codable { public let start: Int64?; public let end: Int64? }
-        public struct Assets: Codable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
-        public struct Party: Codable { public let id: String?; public let size: [Int]? }
-        public struct Secrets: Codable { public let join: String?; public let spectate: String?; public let match: String? }
+    public struct Activity: Codable, Hashable {
+        public struct Timestamps: Codable, Hashable { public let start: Int64?; public let end: Int64? }
+        public struct Assets: Codable, Hashable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
+        public struct Party: Codable, Hashable { public let id: String?; public let size: [Int]? }
+        public struct Secrets: Codable, Hashable { public let join: String?; public let spectate: String?; public let match: String? }
         public let name: String
         public let type: Int
         public let state: String?
@@ -327,4 +336,81 @@ public struct PresenceUpdatePayload: Codable {
         public let afk: Bool
     }
     public let d: Data
+}
+
+// MARK: - New Gateway Events (v1.1.0)
+
+public struct TypingStart: Codable, Hashable {
+    public let channel_id: ChannelID
+    public let guild_id: GuildID?
+    public let user_id: UserID
+    public let timestamp: Int
+    public let member: GuildMember?
+}
+
+public struct ChannelPinsUpdate: Codable, Hashable {
+    public let guild_id: GuildID?
+    public let channel_id: ChannelID
+    public let last_pin_timestamp: String?
+}
+
+public struct PresenceUpdate: Codable, Hashable {
+    public let user: User
+    public let guild_id: GuildID
+    public let status: String
+    public let activities: [PresenceUpdatePayload.Activity]
+    public let client_status: ClientStatus
+    
+    public struct ClientStatus: Codable, Hashable {
+        public let desktop: String?
+        public let mobile: String?
+        public let web: String?
+    }
+}
+
+public struct GuildBanAdd: Codable, Hashable {
+    public let guild_id: GuildID
+    public let user: User
+}
+
+public struct GuildBanRemove: Codable, Hashable {
+    public let guild_id: GuildID
+    public let user: User
+}
+
+public struct WebhooksUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let channel_id: ChannelID
+}
+
+public struct GuildIntegrationsUpdate: Codable, Hashable {
+    public let guild_id: GuildID
+}
+
+public struct InviteCreate: Codable, Hashable {
+    public let channel_id: ChannelID
+    public let code: String
+    public let created_at: String
+    public let guild_id: GuildID?
+    public let inviter: User?
+    public let max_age: Int
+    public let max_uses: Int
+    public let target_type: Int?
+    public let target_user: User?
+    public let target_application: PartialApplication?
+    public let temporary: Bool
+    public let uses: Int
+    
+    public struct PartialApplication: Codable, Hashable {
+        public let id: ApplicationID
+        public let name: String
+        public let icon: String?
+        public let description: String
+    }
+}
+
+public struct InviteDelete: Codable, Hashable {
+    public let channel_id: ChannelID
+    public let guild_id: GuildID?
+    public let code: String
 }

@@ -94,6 +94,24 @@ actor EventDispatcher {
             break
         case .guildScheduledEventUserRemove(_):
             break
+        case .typingStart(_):
+            break
+        case .channelPinsUpdate(_):
+            break
+        case .presenceUpdate(_):
+            break
+        case .guildBanAdd(_):
+            break
+        case .guildBanRemove(_):
+            break
+        case .webhooksUpdate(_):
+            break
+        case .guildIntegrationsUpdate(_):
+            break
+        case .inviteCreate(_):
+            break
+        case .inviteDelete(_):
+            break
         }
         client._internalEmitEvent(event)
     }

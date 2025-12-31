@@ -1,3 +1,134 @@
+## [1.1.0] - 2025-12-30
+
+### Overview
+Major feature release expanding SwiftDisc's Discord API coverage! This version adds 9 critical gateway events, comprehensive REST endpoint coverage for webhooks, bans, invites, and guild management, plus critical builder pattern fixes. SwiftDisc provides extensive coverage of Discord's core features with intuitive APIs and strong performance.
+
+### Added - Gateway Events 🎉
+- **Complete Gateway Event Coverage**: Added 9 critical missing gateway events for full Discord API parity
+  - `TYPING_START` - Fired when a user starts typing in a channel
+  - `CHANNEL_PINS_UPDATE` - Fired when channel pins are updated
+  - `PRESENCE_UPDATE` - Fired when a user's presence (online/offline/dnd/idle) changes
+  - `GUILD_BAN_ADD` - Fired when a user is banned from a guild
+  - `GUILD_BAN_REMOVE` - Fired when a user is unbanned from a guild
+  - `WEBHOOKS_UPDATE` - Fired when webhooks in a channel are updated
+  - `GUILD_INTEGRATIONS_UPDATE` - Fired when guild integrations are updated
+  - `INVITE_CREATE` - Fired when an invite is created
+  - `INVITE_DELETE` - Fired when an invite is deleted or expires
+- All events include comprehensive typed models with proper Codable conformance
+- Events are seamlessly integrated into the existing `DiscordEvent` enum and event stream
+
+### Added - REST Endpoints 🚀
+- **Ban Management** (Complete CRUD)
+  - `getBan(guildId:userId:)` - Get a specific ban
+  - `getBans(guildId:limit:before:after:)` - List all bans with pagination
+  - `banMember(guildId:userId:deleteMessageDays:reason:)` - Ban a member with message history cleanup
+  - `unbanMember(guildId:userId:)` - Unban a member
+
+- **Webhooks** (Complete CRUD + Execution)
+  - `createWebhook(channelId:name:avatar:)` - Create a webhook in a channel
+  - `getChannelWebhooks(channelId:)` - Get all webhooks for a channel
+  - `getGuildWebhooks(guildId:)` - Get all webhooks for a guild  
+  - `getWebhook(webhookId:)` - Get a specific webhook
+  - `modifyWebhook(webhookId:name:avatar:channelId:)` - Update webhook properties
+  - `deleteWebhook(webhookId:)` - Delete a webhook
+  - `executeWebhook(webhookId:token:content:username:avatarUrl:embeds:wait:)` - Execute webhook with rich options
+
+- **Guild Management**
+  - `deleteGuild(guildId:)` - Delete a guild (owner only)
+  - `getGuildVanityURL(guildId:)` - Get guild's vanity URL code and usage count
+  - `getGuildPreview(guildId:)` - Get public guild preview (for discovery)
+
+- **Audit Logs**
+  - `getGuildAuditLog(guildId:userId:actionType:before:limit:)` - Fetch guild audit log entries with comprehensive filtering
+
+- **Invites**
+  - `getInvite(code:withCounts:withExpiration:)` - Get invite details with member counts
+  - `deleteInvite(code:)` - Delete/revoke an invite
+
+### Added - Models
+- **New Model Types** for complete API coverage:
+  - `GuildPreview` - Public guild information for guild discovery
+  - `VanityURL` - Guild vanity URL with usage statistics
+  - `TypingStart` - Typing indicator event data
+  - `ChannelPinsUpdate` - Channel pin update event data
+  - `PresenceUpdate` - User presence change event with rich client status
+  - `GuildBanAdd/GuildBanRemove` - Ban event data with user information
+  - `WebhooksUpdate` - Webhook update event for a channel
+  - `GuildIntegrationsUpdate` - Guild integration update event
+  - `InviteCreate/InviteDelete` - Full invite lifecycle event data with metadata
+
+### Fixed
+- **Builder Pattern API**: Removed incorrect `mutating` keyword from builder methods in `ComponentsBuilder`, `EmbedBuilder`, `ButtonBuilder`, `SelectMenuBuilder`, `TextInputBuilder`, and `ActionRowBuilder` to properly support fluent method chaining on all platforms
+  - Builders now correctly return new instances without requiring variable mutation
+  - Fixes issue where chained builder methods would fail to compile on macOS
+- **ViewManager**: Refactored to resolve actor isolation issues and ensure thread-safe operation
+  - Fixed `start(client:)` method to properly handle actor isolation with `nonisolated` keyword
+  - Removed duplicate method definitions that caused build conflicts
+  - Added proper task management with `setListeningTask(_:)` helper
+- **Platform Compatibility**: Enhanced cross-platform build support
+  - Added proper platform guards for URLSessionConfiguration properties
+  - Fixed AsyncStream usage patterns for Swift 5.9+ compatibility
+  - Improved Windows build compatibility
+
+### Removed
+- **Duplicate Source Files**: Cleaned up codebase by removing duplicate and conflicting files
+  - Removed `Sources/SwiftDisc/HighLevel/CommandFramework.swift` (duplicate of `CommandRouter.swift`)
+  - Removed `Sources/SwiftDisc/HighLevel/Cog.swift` (functionality consolidated)
+  - Retained canonical implementations in `CommandRouter.swift` with proper organization
+
+### Changed
+- **Test Suite**: Updated tests to reflect builder pattern changes and new API signatures
+  - Updated `ComponentsV2Tests` to use non-mutating builder pattern
+  - Updated `SlashCommandRouterTests` with required parameters
+  - Adjusted `ViewManagerTests` for actor isolation changes
+
+### Performance & Developer Experience
+- **Fully Typed APIs**: All new endpoints use strongly-typed IDs (`UserID`, `GuildID`, `ChannelID`, `WebhookID`, etc.) for compile-time safety
+- **Async/Await Throughout**: All new endpoints are fully async/await compatible for modern Swift concurrency
+- **Zero Dependencies**: All features implemented using pure Swift with no external dependencies
+- **Production Ready**: SwiftDisc now covers the essential Discord API features needed for most bot use cases
+
+### API Coverage Highlights
+- ✅ **Gateway Events**: 47 event types covering core Discord actions (messages, guilds, channels, members, roles, reactions, threads, scheduled events, interactions, voice, typing, presence, bans, webhooks, invites)
+- ✅ **REST Endpoints**: 100+ typed methods for common bot operations
+- ✅ **Core Features**: Messages, embeds, components, slash commands, webhooks, channels, guilds, members, roles
+- ✅ **Advanced Features**: Audit logs, bans, invites, polls, threads, scheduled events, stage instances, auto-moderation, voice
+- ℹ️ **Note**: Some Discord API endpoints are not yet wrapped (e.g., guild sticker CRUD, soundboard). Use `rawGET`, `rawPOST`, etc. for unwrapped endpoints.
+
+### Migration Notes
+- **Builder Pattern**: If you were previously using `var` declarations with builder methods, you can now use `let` declarations since builders are no longer mutating
+  ```swift
+  // Before (v1.0.0):
+  var builder = ButtonBuilder()
+  builder = builder.style(.primary)
+  builder = builder.label("Click me")
+  
+  // After (v1.1.0) - Both patterns work, but immutable is preferred:
+  let button = ButtonBuilder()
+    .style(.primary)
+    .label("Click me")
+    .build()
+  ```
+
+- **New Gateway Events**: To handle new events, add handlers to your event loop:
+  ```swift
+  for await event in client.events {
+      switch event {
+      case .typingStart(let typing):
+          print("\(typing.user_id) is typing in \(typing.channel_id)")
+      case .presenceUpdate(let presence):
+          print("\(presence.user.id) is now \(presence.status)")
+      case .guildBanAdd(let ban):
+          print("\(ban.user.username) was banned from \(ban.guild_id)")
+      // ... handle other events
+      default: break
+      }
+  }
+  ```
+
+### Breaking Changes
+None - all changes are additive and backward compatible!
+
 ## [1.0.0] - 2025-12-27
 
 ### Overview
