@@ -308,6 +308,42 @@ actor GatewayClient {
                             if let payload = try? dec.decode(GatewayPayload<GuildScheduledEventUser>.self, from: data), let ev = payload.d {
                                 eventSink(.guildScheduledEventUserRemove(ev))
                             }
+                        } else if t == "TYPING_START" {
+                            if let payload = try? dec.decode(GatewayPayload<TypingStart>.self, from: data), let ev = payload.d {
+                                eventSink(.typingStart(ev))
+                            }
+                        } else if t == "CHANNEL_PINS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<ChannelPinsUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.channelPinsUpdate(ev))
+                            }
+                        } else if t == "PRESENCE_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<PresenceUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.presenceUpdate(ev))
+                            }
+                        } else if t == "GUILD_BAN_ADD" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildBanAdd>.self, from: data), let ev = payload.d {
+                                eventSink(.guildBanAdd(ev))
+                            }
+                        } else if t == "GUILD_BAN_REMOVE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildBanRemove>.self, from: data), let ev = payload.d {
+                                eventSink(.guildBanRemove(ev))
+                            }
+                        } else if t == "WEBHOOKS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<WebhooksUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.webhooksUpdate(ev))
+                            }
+                        } else if t == "GUILD_INTEGRATIONS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<GuildIntegrationsUpdate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildIntegrationsUpdate(ev))
+                            }
+                        } else if t == "INVITE_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<InviteCreate>.self, from: data), let ev = payload.d {
+                                eventSink(.inviteCreate(ev))
+                            }
+                        } else if t == "INVITE_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<InviteDelete>.self, from: data), let ev = payload.d {
+                                eventSink(.inviteDelete(ev))
+                            }
                         } else {
                             // Fallback: emit raw event for anything not modeled yet
                             eventSink(.raw(t, data))

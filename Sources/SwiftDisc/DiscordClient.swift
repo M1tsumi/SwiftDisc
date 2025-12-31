@@ -757,6 +757,33 @@ public final class DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/bans")
     }
 
+    public func getBan(guildId: GuildID, userId: UserID) async throws -> GuildBan {
+        try await http.get(path: "/guilds/\(guildId)/bans/\(userId)")
+    }
+
+    public func getBans(guildId: GuildID, limit: Int? = nil, before: UserID? = nil, after: UserID? = nil) async throws -> [GuildBan] {
+        var parts: [String] = []
+        if let limit { parts.append("limit=\(limit)") }
+        if let before { parts.append("before=\(before)") }
+        if let after { parts.append("after=\(after)") }
+        let q = parts.isEmpty ? "" : "?" + parts.joined(separator: "&")
+        return try await http.get(path: "/guilds/\(guildId)/bans\(q)")
+    }
+
+    public func banMember(guildId: GuildID, userId: UserID, deleteMessageDays: Int? = nil, reason: String? = nil) async throws {
+        struct Body: Encodable { let delete_message_days: Int? }
+        var path = "/guilds/\(guildId)/bans/\(userId)"
+        if let reason, let encoded = reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            path += "?reason=\(encoded)"
+        }
+        struct EmptyResponse: Decodable {}
+        let _: EmptyResponse = try await http.put(path: path, body: Body(delete_message_days: deleteMessageDays))
+    }
+
+    public func unbanMember(guildId: GuildID, userId: UserID) async throws {
+        try await http.delete(path: "/guilds/\(guildId)/bans/\(userId)")
+    }
+
     public func createGuildBan(guildId: GuildID, userId: UserID, deleteMessageSeconds: Int? = nil) async throws {
         struct Empty: Encodable {}
         var path = "/guilds/\(guildId)/bans/\(userId)"
@@ -801,6 +828,18 @@ public final class DiscordClient {
         }
         let body = Body(name: name, verification_level: verificationLevel, default_message_notifications: defaultMessageNotifications, system_channel_id: systemChannelId, explicit_content_filter: explicitContentFilter)
         return try await http.patch(path: "/guilds/\(guildId)", body: body)
+    }
+
+    public func deleteGuild(guildId: GuildID) async throws {
+        try await http.delete(path: "/guilds/\(guildId)")
+    }
+
+    public func getGuildVanityURL(guildId: GuildID) async throws -> VanityURL {
+        try await http.get(path: "/guilds/\(guildId)/vanity-url")
+    }
+
+    public func getGuildPreview(guildId: GuildID) async throws -> GuildPreview {
+        try await http.get(path: "/guilds/\(guildId)/preview")
     }
 
     // MARK: - REST: Threads
@@ -1094,9 +1133,53 @@ public final class DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/webhooks", body: Body(name: name))
     }
 
+    public func createWebhook(channelId: ChannelID, name: String, avatar: String?) async throws -> Webhook {
+        struct Body: Encodable { let name: String; let avatar: String? }
+        return try await http.post(path: "/channels/\(channelId)/webhooks", body: Body(name: name, avatar: avatar))
+    }
+
+    public func getChannelWebhooks(channelId: ChannelID) async throws -> [Webhook] {
+        try await http.get(path: "/channels/\(channelId)/webhooks")
+    }
+
+    public func getGuildWebhooks(guildId: GuildID) async throws -> [Webhook] {
+        try await http.get(path: "/guilds/\(guildId)/webhooks")
+    }
+
+    public func getWebhook(webhookId: WebhookID) async throws -> Webhook {
+        try await http.get(path: "/webhooks/\(webhookId)")
+    }
+
+    public func modifyWebhook(webhookId: WebhookID, name: String? = nil, avatar: String? = nil, channelId: ChannelID? = nil) async throws -> Webhook {
+        struct Body: Encodable { let name: String?; let avatar: String?; let channel_id: ChannelID? }
+        return try await http.patch(path: "/webhooks/\(webhookId)", body: Body(name: name, avatar: avatar, channel_id: channelId))
+    }
+
+    public func deleteWebhook(webhookId: WebhookID) async throws {
+        try await http.delete(path: "/webhooks/\(webhookId)")
+    }
+
     public func executeWebhook(webhookId: WebhookID, token: String, content: String) async throws -> Message {
         struct Body: Encodable { let content: String }
         return try await http.post(path: "/webhooks/\(webhookId)/\(token)", body: Body(content: content))
+    }
+
+    public func executeWebhook(webhookId: WebhookID, token: String, content: String? = nil, username: String? = nil, avatarUrl: String? = nil, embeds: [Embed]? = nil, wait: Bool = false) async throws -> Message? {
+        struct Body: Encodable {
+            let content: String?
+            let username: String?
+            let avatar_url: String?
+            let embeds: [Embed]?
+        }
+        let body = Body(content: content, username: username, avatar_url: avatarUrl, embeds: embeds)
+        let waitParam = wait ? "?wait=true" : ""
+        if wait {
+            return try await http.post(path: "/webhooks/\(webhookId)/\(token)\(waitParam)", body: body)
+        } else {
+            struct EmptyResponse: Decodable {}
+            let _: EmptyResponse = try await http.post(path: "/webhooks/\(webhookId)/\(token)", body: body)
+            return nil
+        }
     }
 
     public func createChannelInvite(channelId: ChannelID, maxAge: Int? = nil, maxUses: Int? = nil, temporary: Bool? = nil, unique: Bool? = nil) async throws -> Invite {

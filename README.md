@@ -204,20 +204,25 @@ struct MyBot {
 
 ### REST API
 
-Covers most of the Discord API:
+Covers the essential Discord API features for bot development:
 
-- Channels and threads
-- Messages (with embeds, components, attachments)
-- Guilds, members, roles
-- Slash commands
-- Webhooks
-- Auto moderation
-- Scheduled events
-- Forum channels
-- Role Connections: Fully supported now, with intuitive tools to manage linked roles and user metadata, helping you create bots that adapt dynamically to user data for better community interactions.
-- Permissions: Upgraded to a typed bitset with cache integration, offering efficient and safe permission handling that scales well and reduces the risk of bugs in complex applications.
+- ✅ **Messages**: Send, edit, delete, reactions, pins, embeds, components, attachments, polls
+- ✅ **Channels**: Create, modify, delete, permissions, invites, webhooks, typing indicators
+- ✅ **Guilds**: Create, modify, delete, channels, bans, audit logs, emojis, roles, members, prune, widget, preview, vanity URL
+- ✅ **Members & Roles**: Add, remove, modify, timeouts, nicknames, role management
+- ✅ **Interactions**: Slash commands, autocomplete, modals, components (buttons, selects, text inputs)
+- ✅ **Webhooks**: Full CRUD + execute with rich options
+- ✅ **Threads**: Create, modify, archive, members
+- ✅ **Scheduled Events**: Create, modify, delete, user add/remove
+- ✅ **Stage Instances**: Create, modify, delete
+- ✅ **Auto-Moderation**: Rules CRUD and management
+- ✅ **Invites**: Create, get, delete with metadata
+- ✅ **Templates**: Get, create, modify, delete guild templates
+- ✅ **Stickers**: Get sticker info, list guild stickers (read-only)
+- ✅ **Role Connections**: Full linked roles and user metadata management
+- ✅ **Permissions**: Typed bitset with cache integration
 
-For endpoints we haven't wrapped yet, use `rawGET`, `rawPOST`, etc.
+**Not Yet Implemented**: Guild sticker creation/modification/deletion, soundboard endpoints, some advanced guild settings. For unwrapped endpoints, use `rawGET`, `rawPOST`, `rawPATCH`, `rawDELETE`.
 
 ### Rate Limiting
 
