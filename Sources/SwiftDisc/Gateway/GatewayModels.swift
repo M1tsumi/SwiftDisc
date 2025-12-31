@@ -293,11 +293,11 @@ public struct ResumePayload: Codable {
 }
 
 public struct PresenceUpdatePayload: Codable {
-    public struct Activity: Codable {
-        public struct Timestamps: Codable { public let start: Int64?; public let end: Int64? }
-        public struct Assets: Codable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
-        public struct Party: Codable { public let id: String?; public let size: [Int]? }
-        public struct Secrets: Codable { public let join: String?; public let spectate: String?; public let match: String? }
+    public struct Activity: Codable, Hashable {
+        public struct Timestamps: Codable, Hashable { public let start: Int64?; public let end: Int64? }
+        public struct Assets: Codable, Hashable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
+        public struct Party: Codable, Hashable { public let id: String?; public let size: [Int]? }
+        public struct Secrets: Codable, Hashable { public let join: String?; public let spectate: String?; public let match: String? }
         public let name: String
         public let type: Int
         public let state: String?
