@@ -93,8 +93,6 @@ struct MyBot {
 
 ## Features
 
-## Features
-
 ### Core Capabilities
 
 - **Gateway Connection**: WebSocket with automatic heartbeat, session resume, and event streaming
