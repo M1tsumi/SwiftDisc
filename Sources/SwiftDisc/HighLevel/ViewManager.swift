@@ -1,3 +1,10 @@
+//
+//  ViewManager.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 public typealias ViewHandler = (Interaction, DiscordClient) async -> Void

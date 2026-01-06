@@ -1,3 +1,10 @@
+//
+//  SwiftDiscTests.swift
+//  SwiftDiscTests
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import XCTest
 @testable import SwiftDisc
 

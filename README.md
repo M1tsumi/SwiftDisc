@@ -4,6 +4,7 @@
 
 # SwiftDisc
 
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg)](CHANGELOG.md)
 [![Discord](https://img.shields.io/discord/1439300942167146508?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
 [![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
@@ -31,7 +32,7 @@ Add SwiftDisc to your Swift package dependencies in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.1.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.2.0")
 ]
 ```
 

@@ -1,3 +1,10 @@
+//
+//  Embed.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 public struct Embed: Codable, Hashable {

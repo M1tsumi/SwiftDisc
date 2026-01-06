@@ -1,3 +1,10 @@
+//
+//  Secretbox.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 // Minimal pure-Swift XSalsa20-Poly1305 (NaCl secretbox) implementation

@@ -1,3 +1,10 @@
+//
+//  CooldownManager.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 /// Simple cooldown manager keyed by command name + key (user/guild/global).

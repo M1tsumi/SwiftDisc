@@ -1,3 +1,10 @@
+//
+//  Snowflake.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 public struct Snowflake<T>: Hashable, Codable, CustomStringConvertible, ExpressibleByStringLiteral {

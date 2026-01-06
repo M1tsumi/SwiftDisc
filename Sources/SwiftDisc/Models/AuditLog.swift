@@ -1,3 +1,10 @@
+//
+//  AuditLog.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 public struct AuditLog: Codable, Hashable {

@@ -1,3 +1,10 @@
+//
+//  GatewayModels.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 public struct GatewayHello: Codable {
@@ -19,10 +26,26 @@ public struct VoiceState: Codable, Hashable {
     public let session_id: String
 }
 
-public struct VoiceServerUpdate: Codable, Hashable {
-    public let token: String
+public struct PollVote: Codable, Hashable {
+    /// ID of the user
+    public let user_id: UserID
+    /// ID of the channel
+    public let channel_id: ChannelID
+    /// ID of the message
+    public let message_id: MessageID
+    /// ID of the guild
+    public let guild_id: GuildID?
+    /// ID of the answer
+    public let answer_id: Int
+}
+
+public struct GuildMemberProfileUpdate: Codable, Hashable {
+    /// ID of the guild
     public let guild_id: GuildID
-    public let endpoint: String?
+    /// User whose profile was updated
+    public let user: User
+    /// Member data
+    public let member: GuildMember
 }
 
 public enum GatewayOpcode: Int, Codable {
@@ -97,6 +120,18 @@ public enum DiscordEvent: Hashable {
     case guildScheduledEventDelete(GuildScheduledEvent)
     case guildScheduledEventUserAdd(GuildScheduledEventUser)
     case guildScheduledEventUserRemove(GuildScheduledEventUser)
+    // v1.2.0 New Events
+    case guildAuditLogEntryCreate(GuildAuditLogEntry)
+    case soundboardSoundCreate(SoundboardSound)
+    case soundboardSoundUpdate(SoundboardSound)
+    case soundboardSoundDelete(SoundboardSound)
+    case pollVoteAdd(PollVote)
+    case pollVoteRemove(PollVote)
+    case guildMemberProfileUpdate(GuildMemberProfileUpdate)
+    case entitlementCreate(Entitlement)
+    case entitlementUpdate(Entitlement)
+    case entitlementDelete(Entitlement)
+    case skuUpdate(SKU)
 }
 
 public struct MessageDelete: Codable, Hashable {
