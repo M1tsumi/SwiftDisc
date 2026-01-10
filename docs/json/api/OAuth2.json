@@ -1,0 +1,14 @@
+{
+  "name": "OAuth2",
+  "path": "Sources/SwiftDisc/OAuth2/",
+  "description": "Implementations and helpers for OAuth2 flows to authorize users and bots with Discord.",
+  "flows": [
+    "Authorization Code Flow (AuthorizationCodeFlow.swift)",
+    "Implicit Flow (ImplicitFlow.swift)",
+    "Client Credentials (ClientCredentialsFlow.swift)",
+    "Bot Authorization helper (BotAuthorizationFlow.swift)"
+  ],
+  "key_types": ["OAuth2Manager", "OAuth2Client", "OAuth2HTTPClient"],
+  "usage": "Use `OAuth2Manager` to create and manage flows, exchange codes for tokens, and refresh tokens.",
+  "notes": "Follow OAuth2 best practices; keep client secrets secure and perform token refreshes server-side."
+}

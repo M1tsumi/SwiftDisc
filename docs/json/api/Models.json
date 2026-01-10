@@ -1,0 +1,14 @@
+{
+  "name": "Models",
+  "path": "Sources/SwiftDisc/Models/",
+  "description": "Codable representations of Discord objects. Use these types when handling events or interacting with REST endpoints.",
+  "notable_models": [
+    "Message",
+    "User",
+    "Channel",
+    "Guild",
+    "Role",
+    "Embed"
+  ],
+  "note": "Models are designed to be decoded from Discord JSON. For custom serialization, extend or map them as needed."
+}

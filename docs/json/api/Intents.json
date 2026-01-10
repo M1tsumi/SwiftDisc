@@ -1,0 +1,28 @@
+{
+  "name": "GatewayIntents",
+  "path": "Sources/SwiftDisc/Gateway/Intents.swift",
+  "description": "OptionSet that represents Discord Gateway intents to opt into specific event deliveries.",
+  "flags": [
+    "guilds",
+    "guildMembers",
+    "guildModeration",
+    "guildEmojisAndStickers",
+    "guildIntegrations",
+    "guildWebhooks",
+    "guildInvites",
+    "guildVoiceStates",
+    "guildPresences",
+    "guildMessages",
+    "guildMessageReactions",
+    "guildMessageTyping",
+    "directMessages",
+    "directMessageReactions",
+    "directMessageTyping",
+    "messageContent",
+    "guildScheduledEvents",
+    "autoModerationConfiguration",
+    "autoModerationExecution"
+  ],
+  "usage": "Use GatewayIntents when identifying with the gateway. Example: `let intents: GatewayIntents = [.guilds, .guildMessages, .messageContent]`",
+  "notes": "Only request `messageContent` when necessary; some intents require privileged access from Discord (e.g., `guildMembers`)."
+}

@@ -1,0 +1,11 @@
+{
+  "name": "CommandRouter",
+  "path": "Sources/SwiftDisc/HighLevel/CommandRouter.swift",
+  "description": "Simple router for prefix-based text commands (e.g., `!help`). Register handlers by command name; receives typed message/context objects.",
+  "important_methods": [
+    {"name":"register(command:handler)","description":"Register a handler for a command string."},
+    {"name":"handle(message)","async":true,"description":"Dispatch an incoming message to the appropriate handler based on prefix parsing."}
+  ],
+  "example": "let router = CommandRouter(prefix: \"!\")\nrouter.register(\"ping\") { ctx in\n    try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: \"Pong!\")\n}\nclient.useCommandRouter(router)",
+  "notes": "Provides argument parsing and simple rate-limit/cooldown integration via `CooldownManager`."
+}

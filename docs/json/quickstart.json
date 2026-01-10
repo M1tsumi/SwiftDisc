@@ -1,0 +1,22 @@
+{
+  "title": "Quickstart",
+  "summary": "Minimal steps to connect a bot and respond to events.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Create client",
+      "code": "let client = DiscordClient(token: \"<BOT_TOKEN>\")"
+    },
+    {
+      "step": 2,
+      "title": "Register event handler",
+      "code": "client.on(.ready) { event in print(\"Ready!\") }"
+    },
+    {
+      "step": 3,
+      "title": "Connect",
+      "code": "try await client.connect()"
+    }
+  ],
+  "note": "Refer to API docs for `DiscordClient` and Gateway events for advanced usage. Examples are in the Examples/ folder."
+}

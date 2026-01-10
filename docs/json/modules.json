@@ -1,0 +1,41 @@
+{
+  "title": "Modules",
+  "summary": "Overview of high-level modules and responsibilities.",
+  "modules": [
+    {
+      "name": "Core",
+      "files": ["DiscordClient.swift", "Internal/*"],
+      "description": "Primary entrypoint, configuration, and utilities. Use `DiscordClient` to manage lifecycle."
+    },
+    {
+      "name": "Gateway",
+      "files": ["Gateway/*"],
+      "description": "WebSocket connection handling, intents, and event dispatch. Key types: `GatewayClient`, `GatewayModels`, `Intents`."
+    },
+    {
+      "name": "REST",
+      "files": ["REST/*"],
+      "description": "HTTP clients, rate limiting and wrappers around Discord REST endpoints. Key types: `RESTClient`, `HTTPClient`, `RateLimiter`."
+    },
+    {
+      "name": "OAuth2",
+      "files": ["OAuth2/*"],
+      "description": "Helpers for OAuth2 flows: authorization code, implicit, and client credentials. Use `OAuth2Manager`/`OAuth2Client`."
+    },
+    {
+      "name": "HighLevel",
+      "files": ["HighLevel/*"],
+      "description": "Builders, routers, collectors, and convenience utilities for commands, components, slash commands and interaction handling."
+    },
+    {
+      "name": "Models",
+      "files": ["Models/*"],
+      "description": "Codable models representing Discord objects: `Message`, `User`, `Channel`, `Guild`, etc."
+    },
+    {
+      "name": "Voice",
+      "files": ["Voice/*"],
+      "description": "Voice gateway and audio support. Types: `VoiceClient`, `VoiceGateway`, `AudioSource`."
+    }
+  ]
+}

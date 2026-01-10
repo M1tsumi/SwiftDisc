@@ -1,0 +1,11 @@
+{
+  "name": "ViewManager",
+  "path": "Sources/SwiftDisc/HighLevel/ViewManager.swift",
+  "description": "Manages UI-like views for Component interactions (buttons, selects). Register view handlers tied to custom IDs and lifecycle behavior.",
+  "important_methods": [
+    {"name":"register(viewId:handler)","description":"Register a view handler for a custom ID."},
+    {"name":"deregister(viewId)","description":"Remove a registered view."}
+  ],
+  "example": "let vm = ViewManager()\nvm.register(\"confirm-123\") { ctx in\n    try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: \"Confirmed\")\n}\nclient.useViewManager(vm)",
+  "notes": "Views map component custom IDs to handlers; keep IDs predictable and single-responsibility for maintainability."
+}

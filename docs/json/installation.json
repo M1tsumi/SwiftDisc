@@ -1,0 +1,17 @@
+{
+  "title": "Installation",
+  "summary": "How to add SwiftDisc to your Swift project and basic setup.",
+  "requirements": [
+    "Swift 5.7+ (or the version listed in Package.swift)",
+    "Vapor/async runtime not required but compatible",
+    "A Discord bot token for bot operations"
+  ],
+  "package_swift": {
+    "add_dependency": ".package(url: \"https://github.com/quefep/SwiftDisc.git\", from: \"1.0.0\")",
+    "example_target": "dependencies: [ .product(name: \"SwiftDisc\", package: \"SwiftDisc\") ]"
+  },
+  "environment": {
+    "linux_notes": "When running on Linux ensure NSS/openssl libs are available for TLS and WebSocket.",
+    "macos_notes": "Use system toolchain or installed Swift toolchain matching Package.swift"
+  }
+}

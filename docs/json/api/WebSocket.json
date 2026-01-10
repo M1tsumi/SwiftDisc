@@ -1,0 +1,13 @@
+{
+  "name": "WebSocket",
+  "path": "Sources/SwiftDisc/Gateway/WebSocket.swift",
+  "description": "Lightweight WebSocket wrapper used by the gateway client to send and receive raw frames, handle compression, and manage connection lifecycle.",
+  "important_methods": [
+    {"name": "connect(url:)", "async": true, "description": "Open a WebSocket connection to the provided URL."},
+    {"name": "send(data:)", "description": "Send a binary or text frame over the socket."},
+    {"name": "receive() -> Data", "async": true, "description": "Suspend until a frame is received; returns raw data."},
+    {"name": "close(code:reason:)", "description": "Close the connection with code and reason."}
+  ],
+  "example": "let ws = WebSocket(url: gatewayURL)\ntry await ws.connect()\nlet frame = try await ws.receive()",
+  "notes": "This is a low-level primitive; prefer `GatewayClient` for handling identify/heartbeat/resume logic. Handles zlib compression when configured by Discord."
+}

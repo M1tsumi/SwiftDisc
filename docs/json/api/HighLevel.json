@@ -1,0 +1,12 @@
+{
+  "name": "HighLevel",
+  "path": "Sources/SwiftDisc/HighLevel/",
+  "description": "Convenience builders, routers, collectors and managers that simplify common tasks like command routing, components, views, and sharding.",
+  "notable_components": [
+    {"name":"SlashCommandBuilder","purpose":"Construct slash command definitions."},
+    {"name":"SlashCommandRouter","purpose":"Register and dispatch slash command handlers."},
+    {"name":"ComponentCollector","purpose":"Collect component interactions for a message or view."},
+    {"name":"ShardManager","purpose":"Manage multiple gateway shards."}
+  ],
+  "usage_example": "Use `SlashCommandBuilder` to register commands and `SlashCommandRouter` to handle incoming interactions. See Examples/SlashBot.swift."
+}

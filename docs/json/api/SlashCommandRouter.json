@@ -1,0 +1,12 @@
+{
+  "name": "SlashCommandRouter",
+  "path": "Sources/SwiftDisc/HighLevel/SlashCommandRouter.swift",
+  "description": "Router for registering and dispatching slash command handlers. Handlers receive a context with the interaction and helper methods.",
+  "important_methods": [
+    {"name":"register(name:handler)","description":"Register a handler for a slash command name."},
+    {"name":"unregister(name)","description":"Remove a registered handler."},
+    {"name":"handle(interaction)","async":true,"description":"Internal: dispatch an incoming interaction to the registered handler."}
+  ],
+  "example": "let router = SlashCommandRouter()\nrouter.register(\"ping\") { ctx in\n    try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: \"Pong!\")\n}\nclient.useSlashCommands(router)",
+  "notes": "Call `useSlashCommands(_:)` on `DiscordClient` to wire router into event dispatch. Handlers are run in async context and may `throw`."
+}
