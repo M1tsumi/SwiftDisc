@@ -1,0 +1,12 @@
+{
+  "title": "SwiftDisc JSON Documentation Index",
+  "version": "1.0.0",
+  "summary": "Concise, developer-focused JSON docs for SwiftDisc — a Swift Discord API wrapper.",
+  "files": {
+    "quickstart": "quickstart.json",
+    "installation": "installation.json",
+    "modules": "modules.json",
+    "examples": "examples.json",
+    "api_folder": "api/"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Gateway Models",
+  "path": "Sources/SwiftDisc/Gateway/GatewayModels.swift",
+  "description": "Data structures used for Gateway payloads and events (Identify, Hello, Ready, VoiceState, reaction events, member chunks, etc.).",
+  "key_types": [
+    "GatewayHello",
+    "IdentifyPayload",
+    "ReadyEvent",
+    "VoiceState",
+    "GatewayPayload",
+    "MessageReactionAdd",
+    "GuildMemberAdd",
+    "GuildMemberUpdate",
+    "GuildMembersChunk",
+    "RequestGuildMembers"
+  ],
+  "example": "// Parse a gateway hello payload when received\nlet hello: GatewayHello = try decoder.decode(GatewayHello.self, from: data)",
+  "notes": "These types are Codable and map closely to Discord's Gateway JSON. Use `GatewayPayload<T>` for typed event envelopes. Some payloads include optional fields depending on event context."
+}

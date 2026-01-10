@@ -1,3 +1,10 @@
+//
+//  EventDispatcher.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 actor EventDispatcher {
@@ -111,6 +118,29 @@ actor EventDispatcher {
         case .inviteCreate(_):
             break
         case .inviteDelete(_):
+            break
+        // v1.2.0 New Events
+        case .guildAuditLogEntryCreate(_):
+            break
+        case .soundboardSoundCreate(_):
+            break
+        case .soundboardSoundUpdate(_):
+            break
+        case .soundboardSoundDelete(_):
+            break
+        case .pollVoteAdd(_):
+            break
+        case .pollVoteRemove(_):
+            break
+        case .guildMemberProfileUpdate(_):
+            break
+        case .entitlementCreate(_):
+            break
+        case .entitlementUpdate(_):
+            break
+        case .entitlementDelete(_):
+            break
+        case .skuUpdate(_):
             break
         }
         client._internalEmitEvent(event)

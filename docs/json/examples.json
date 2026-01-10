@@ -1,0 +1,26 @@
+{
+  "title": "Examples",
+  "summary": "Curated examples pulled from the Examples/ folder with short descriptions and references.",
+  "examples": [
+    {
+      "file": "Examples/PingBot.swift",
+      "description": "Minimal ping/pong bot showing message handling via gateway events.",
+      "usage": "Run to reply \"Pong!\" when a message contains \"ping\".",
+      "snippet": "let client = DiscordClient(token: token)\n\nclient.onMessage = { msg in\n    if msg.content.lowercased() == \"ping\" {\n        _ = try? await client.sendMessage(channelId: msg.channel_id, content: \"Pong!\")\n    }\n}\n\ntry await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])"
+    },
+    {
+      "file": "Examples/SlashBot.swift",
+      "description": "Shows slash command registration and handling with `SlashCommandBuilder` and `SlashCommandRouter`."
+      ,
+      "snippet": "let client = DiscordClient(token: token)\nlet slash = SlashCommandRouter()\nslash.register(\"ping\") { ctx in\n    try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: \"Pong!\")\n}\nclient.useSlashCommands(slash)\ntry await client.loginAndConnect(intents: [.guilds])"
+    },
+    {
+      "file": "Examples/FileUploadBot.swift",
+      "description": "Demonstrates sending files via `RESTClient` payload helpers."
+    },
+    {
+      "file": "Examples/AutocompleteBot.swift",
+      "description": "Example implementing interaction autocomplete and advanced command handling."
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "DiscordClient",
+  "path": "Sources/SwiftDisc/DiscordClient.swift",
+  "description": "Primary client to configure, connect, and interact with Discord. Manages Gateway + REST lifecycles and event dispatch.",
+  "constructed_with": [
+    "token: String",
+    "configuration: DiscordConfiguration? (optional)"
+  ],
+  "important_methods": [
+    {
+      "name": "connect()",
+      "async": true,
+      "description": "Establish gateway connection, start event processing. Use `try await client.connect()` in async context."
+    },
+    {
+      "name": "disconnect()",
+      "async": true,
+      "description": "Cleanly close gateway and background tasks."
+    },
+    {
+      "name": "on(event, handler)",
+      "description": "Register event handlers for gateway events (ready, messageCreate, interactionCreate, etc.). Handlers receive strongly-typed models."
+    }
+  ],
+  "usage_example": "let client = DiscordClient(token: \"TOKEN\")\nclient.on(.messageCreate) { event in ... }\ntry await client.connect()",
+  "notes": "Prefer `on` registration before `connect()`. For REST-only tasks, construct `RESTClient` directly."
+}

@@ -1,3 +1,10 @@
+//
+//  PipeOpusSource.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 // Reads length-prefixed Opus frames from a FileHandle.

@@ -1,0 +1,11 @@
+{
+  "name": "SlashCommandBuilder",
+  "path": "Sources/SwiftDisc/HighLevel/SlashCommandBuilder.swift",
+  "description": "Utility to construct application (slash) command payloads programmatically. Use to build commands before registering via `RESTClient` or `DiscordClient` helpers.",
+  "important_methods": [
+    {"name":"init(name:description:options:)","description":"Create a command with name, description and optional option definitions."},
+    {"name":"addOption(_:)","description":"Append an `ApplicationCommandOption` to the command definition."}
+  ],
+  "example": "let cmd = SlashCommandBuilder(name: \"echo\", description: \"Echo text\")\ncmd.addOption(.init(type: .string, name: \"text\", description: \"Text to echo\", required: false))\ntry await rest.createGlobalCommand(command: cmd)",
+  "notes": "Matches Discord's application command JSON schema. Builders are convenience helpers; the final payload is compatible with `createGlobalCommand` and `createGuildCommand` endpoints."
+}

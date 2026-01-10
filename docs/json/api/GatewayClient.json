@@ -1,0 +1,17 @@
+{
+  "name": "GatewayClient",
+  "path": "Sources/SwiftDisc/Gateway/GatewayClient.swift",
+  "description": "Handles WebSocket connections to Discord's Gateway API, identifies with intents, manages heartbeats and reconnections.",
+  "key_concepts": [
+    "Intents: control which events are delivered",
+    "Heartbeating: keepalive and latency monitoring",
+    "Sharding: gateway connection partitioning (see ShardManager)"
+  ],
+  "important_methods": [
+    {"name":"connect()","async":true,"description":"Open the gateway WebSocket and begin receiving events."},
+    {"name":"identify()","description":"Send identify payload with token and intents."},
+    {"name":"disconnect()","async":true,"description":"Close socket and stop listeners."}
+  ],
+  "example": "let gateway = GatewayClient(configuration: config)\ntry await gateway.connect()",
+  "notes": "Use high-level `DiscordClient` unless you need low-level gateway control. Ensure correct intents to receive events you consume."
+}

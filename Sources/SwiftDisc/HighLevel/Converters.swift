@@ -1,3 +1,10 @@
+//
+//  Converters.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 /// Converter utilities for common command argument types.

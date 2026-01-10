@@ -1,3 +1,10 @@
+//
+//  Collectors.swift
+//  SwiftDisc
+//
+//  Copyright © 2025 quefep. All rights reserved.
+//
+
 import Foundation
 
 // AsyncStream-based collectors and paginators for common patterns.

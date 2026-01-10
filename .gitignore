@@ -1,5 +1,39 @@
 # Swift / SwiftPM
 .build/
+Packages/
+.swiftpm/
+/.vscode/
+/.DS_Store
+/.buildcheck
+
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+*.xcodeproj/
+
+# Swift toolchain (local distribution) — ignore unless intentionally committed
+swift-*/
+
+# Temporary files
+*.swp
+*.tmp
+*.log
+
+# macOS
+.DS_Store
+
+# Editor dirs
+/.idea/
+
+# Environment files
+.env
+.env.*
+
+# Generated docs (keep if you want to version docs, remove if you want them tracked)
+# docs/json/
+# Swift / SwiftPM
+.build/
 .swiftpm/
 Packages/
 Package.resolved
@@ -50,14 +84,22 @@ Pods/
 .artifacts/
 
 # Local documentation/design artifacts (hygiene freeze - do not commit)
-/RFCs/
-/design/
-/docs/
+# Local documentation/design artifacts (hygiene freeze - do not commit)
+# Keep most design docs ignored but track `docs/json/` for generated documentation
+RFCs/
+design/
 .github/PULL_REQUEST_TEMPLATE.md
 
 # Standard Swift and IDE ignores
 .build/
 .swiftpm/
 Packages/
+
+# Local developer TXT files that should not be committed
+cifailedbitch/*.txt
 Package.resolved
 roadmap.txt
+ cifailedbitch/windows.txt
+.gitignore
+swift-6.0.3-RELEASE-ubuntu24.04.tar.gz
+ cifailedbitch/macos.txt

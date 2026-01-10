@@ -1,0 +1,12 @@
+{
+  "name": "RESTClient",
+  "path": "Sources/SwiftDisc/REST/RESTClient.swift",
+  "description": "Provides typed REST helpers and rate-limit handling for Discord endpoints.",
+  "behaviour": "Automatically respects Discord rate limits via `RateLimiter`/`EnhancedRateLimiter`.",
+  "important_methods": [
+    {"name":"request(method:path:body:)","description":"Perform an HTTP request against Discord with JSON encoding and decode response if requested."},
+    {"name":"sendFile(channelId:file:)","description":"Helper to upload files to channels."}
+  ],
+  "example": "let rest = RESTClient(token: \"TOKEN\")\nlet message = try await rest.createMessage(channelId: channel, payload: payload)",
+  "notes": "For bulk uploads or advanced rate-limits, inspect `EnhancedRateLimiter`."
+}
