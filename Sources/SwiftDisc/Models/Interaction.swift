@@ -15,7 +15,7 @@ public struct Interaction: Codable, Hashable {
     public let user: User?
     public let token: String
     public let version: Int?
-    public let message: Message?
+    public let message: Box<Message>?
     public let app_permissions: String?
     public let locale: String?
     public let guild_locale: String?
@@ -78,7 +78,7 @@ public struct Interaction: Codable, Hashable {
         public let members: [UserID: ResolvedMember]?
         public let roles: [RoleID: ResolvedRole]?
         public let channels: [ChannelID: ResolvedChannel]?
-        public let messages: [MessageID: Message]?
+        public let messages: [MessageID: Box<Message>]?
         public let attachments: [AttachmentID: ResolvedAttachment]?
     }
 

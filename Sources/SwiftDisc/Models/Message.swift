@@ -1,5 +1,13 @@
 import Foundation
 
+// Box class to break infinite recursion for value types
+public final class Box<T: Codable & Hashable>: Codable, Hashable {
+    public let value: T
+    public init(_ value: T) { self.value = value }
+    public static func == (lhs: Box<T>, rhs: Box<T>) -> Bool { lhs.value == rhs.value }
+    public func hash(into hasher: inout Hasher) { hasher.combine(value) }
+}
+
 /// Discord message model with broad field coverage, including polls, interaction metadata,
 /// replies, voice messages, and components.
 public struct Message: Codable, Hashable {
@@ -26,7 +34,7 @@ public struct Message: Codable, Hashable {
     public let application: MessageApplication?
     public let application_id: ApplicationID?
     public let message_reference: MessageReference?
-    public indirect let referenced_message: Message?
+    public let referenced_message: Box<Message>?
     public let flags: Int?
     public let interaction_metadata: MessageInteractionMetadata?
     public let thread: Channel?
@@ -73,7 +81,7 @@ public struct MessageInteractionMetadata: Codable, Hashable {
     public let authorizing_integration_owners: [String: String]?
     public let original_response_message_id: MessageID?
     public let interacted_message_id: MessageID?
-    public indirect let triggering_interaction_metadata: MessageInteractionMetadata?
+    public let triggering_interaction_metadata: Box<MessageInteractionMetadata>?
 }
 
 public struct RoleSubscriptionData: Codable, Hashable {
@@ -89,7 +97,7 @@ public struct ResolvedData: Codable, Hashable {
     public let members: [UserID: GuildMember]?
     public let roles: [RoleID: Role]?
     public let channels: [ChannelID: Channel]?
-    public let messages: [MessageID: Message]?
+    public let messages: [MessageID: Box<Message>]?
 }
 
 public struct Poll: Codable, Hashable {
