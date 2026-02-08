@@ -42,6 +42,14 @@ public enum SKUTag {}
 public typealias SKUID = Snowflake<SKUTag>
 public enum BannerAssetTag {}
 public typealias BannerAssetID = Snowflake<BannerAssetTag>
+public enum SoundboardSoundTag {}
+public typealias SoundboardSoundID = Snowflake<SoundboardSoundTag>
+public enum EntitlementTag {}
+public typealias EntitlementID = Snowflake<EntitlementTag>
+public enum AppInstallationTag {}
+public typealias AppInstallationID = Snowflake<AppInstallationTag>
+public enum AppSubscriptionTag {}
+public typealias AppSubscriptionID = Snowflake<AppSubscriptionTag>
 
 public enum AuditLogEntryTag {}
 public typealias AuditLogEntryID = Snowflake<AuditLogEntryTag>

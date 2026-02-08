@@ -97,6 +97,24 @@ public enum DiscordEvent: Hashable {
     case guildScheduledEventDelete(GuildScheduledEvent)
     case guildScheduledEventUserAdd(GuildScheduledEventUser)
     case guildScheduledEventUserRemove(GuildScheduledEventUser)
+    // AutoMod
+    case autoModerationRuleCreate(AutoModerationRule)
+    case autoModerationRuleUpdate(AutoModerationRule)
+    case autoModerationRuleDelete(AutoModerationRule)
+    case autoModerationActionExecution(AutoModerationActionExecution)
+    // Audit log
+    case guildAuditLogEntryCreate(AuditLogEntry)
+    // Poll votes
+    case pollVoteAdd(PollVote)
+    case pollVoteRemove(PollVote)
+    // Soundboard
+    case soundboardSoundCreate(SoundboardSound)
+    case soundboardSoundUpdate(SoundboardSound)
+    case soundboardSoundDelete(SoundboardSound)
+    // Entitlements
+    case entitlementCreate(Entitlement)
+    case entitlementUpdate(Entitlement)
+    case entitlementDelete(Entitlement)
 }
 
 public struct MessageDelete: Codable, Hashable {
@@ -414,3 +432,53 @@ public struct InviteDelete: Codable, Hashable {
     public let guild_id: GuildID?
     public let code: String
 }
+
+// MARK: - Auto Moderation
+
+public struct AutoModerationActionExecution: Codable, Hashable {
+    public let guild_id: GuildID
+    public let action: AutoModerationRule.Action
+    public let rule_id: AutoModerationRuleID
+    public let rule_trigger_type: Int
+    public let user_id: UserID
+    public let channel_id: ChannelID?
+    public let message_id: MessageID?
+    public let alert_system_message_id: MessageID?
+    public let content: String?
+    public let matched_keyword: String?
+    public let matched_content: String?
+}
+
+// MARK: - Audit Log
+
+public struct GuildAuditLogEntryCreate: Codable, Hashable {
+    public let guild_id: GuildID
+    public let entry: AuditLogEntry
+}
+
+// MARK: - Poll Votes
+
+public struct PollVote: Codable, Hashable {
+    public let user_id: UserID
+    public let channel_id: ChannelID
+    public let guild_id: GuildID?
+    public let message_id: MessageID
+    public let answer_id: Int
+}
+
+// MARK: - Soundboard
+
+public struct SoundboardSound: Codable, Hashable {
+    public let id: SoundboardSoundID
+    public let guild_id: GuildID?
+    public let name: String
+    public let volume: Double?
+    public let user_id: UserID?
+    public let emoji_id: EmojiID?
+    public let emoji_name: String?
+    public let available: Bool?
+}
+
+// MARK: - Entitlements
+
+// Entitlement model in Models/Monetization.swift

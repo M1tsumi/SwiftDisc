@@ -148,10 +148,39 @@ public final class DiscordClient {
         content: String? = nil,
         embeds: [Embed]? = nil,
         components: [MessageComponent]? = nil,
+        allowedMentions: AllowedMentions? = nil,
+        messageReference: MessageReference? = nil,
+        tts: Bool? = nil,
+        flags: Int? = nil,
+        stickerIds: [StickerID]? = nil,
+        attachments: [PartialAttachment]? = nil,
+        poll: Poll? = nil,
         files: [FileAttachment]
     ) async throws -> Message {
-        struct Payload: Encodable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]? }
-        let body = Payload(content: content, embeds: embeds, components: components)
+        struct Payload: Encodable {
+            let content: String?
+            let embeds: [Embed]?
+            let components: [MessageComponent]?
+            let allowed_mentions: AllowedMentions?
+            let message_reference: MessageReference?
+            let tts: Bool?
+            let flags: Int?
+            let sticker_ids: [StickerID]?
+            let attachments: [PartialAttachment]?
+            let poll: Poll?
+        }
+        let body = Payload(
+            content: content,
+            embeds: embeds,
+            components: components,
+            allowed_mentions: allowedMentions,
+            message_reference: messageReference,
+            tts: tts,
+            flags: flags,
+            sticker_ids: stickerIds,
+            attachments: attachments,
+            poll: poll
+        )
         return try await http.postMultipart(path: "/channels/\(channelId)/messages", jsonBody: body, files: files)
     }
 
@@ -463,10 +492,51 @@ public final class DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: Body(content: content, embeds: embeds))
     }
 
-    // Overload: send message with embeds and components
-    public func sendMessage(channelId: ChannelID, content: String? = nil, embeds: [Embed]? = nil, components: [MessageComponent]? = nil) async throws -> Message {
-        struct Body: Encodable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]? }
-        return try await http.post(path: "/channels/\(channelId)/messages", body: Body(content: content, embeds: embeds, components: components))
+    // Overload: send message with embeds, components, and extended options
+    public func sendMessage(
+        channelId: ChannelID,
+        content: String? = nil,
+        embeds: [Embed]? = nil,
+        components: [MessageComponent]? = nil,
+        allowedMentions: AllowedMentions? = nil,
+        messageReference: MessageReference? = nil,
+        tts: Bool? = nil,
+        flags: Int? = nil,
+        stickerIds: [StickerID]? = nil,
+        attachments: [PartialAttachment]? = nil,
+        poll: Poll? = nil
+    ) async throws -> Message {
+        struct Body: Encodable {
+            let content: String?
+            let embeds: [Embed]?
+            let components: [MessageComponent]?
+            let allowed_mentions: AllowedMentions?
+            let message_reference: MessageReference?
+            let tts: Bool?
+            let flags: Int?
+            let sticker_ids: [StickerID]?
+            let attachments: [PartialAttachment]?
+            let poll: Poll?
+        }
+        let body = Body(
+            content: content,
+            embeds: embeds,
+            components: components,
+            allowed_mentions: allowedMentions,
+            message_reference: messageReference,
+            tts: tts,
+            flags: flags,
+            sticker_ids: stickerIds,
+            attachments: attachments,
+            poll: poll
+        )
+        return try await http.post(path: "/channels/\(channelId)/messages", body: body)
+    }
+
+    /// End a poll attached to a message (closes voting).
+    public func endPoll(channelId: ChannelID, messageId: MessageID, pollId: String) async throws -> Poll {
+        struct Empty: Encodable {}
+        return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/polls/\(pollId)/expire", body: Empty())
     }
 
     // Phase 3: Presence helpers
@@ -1256,6 +1326,21 @@ public final class DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/stickers/\(stickerId)")
     }
 
+    public func createGuildSticker(guildId: GuildID, name: String, description: String? = nil, tags: String, file: FileAttachment) async throws -> Sticker {
+        struct Payload: Encodable { let name: String; let description: String?; let tags: String }
+        let payload = Payload(name: name, description: description, tags: tags)
+        return try await http.postMultipart(path: "/guilds/\(guildId)/stickers", jsonBody: payload, files: [file])
+    }
+
+    public func modifyGuildSticker(guildId: GuildID, stickerId: StickerID, name: String? = nil, description: String? = nil, tags: String? = nil) async throws -> Sticker {
+        struct Payload: Encodable { let name: String?; let description: String?; let tags: String? }
+        return try await http.patch(path: "/guilds/\(guildId)/stickers/\(stickerId)", body: Payload(name: name, description: description, tags: tags))
+    }
+
+    public func deleteGuildSticker(guildId: GuildID, stickerId: StickerID) async throws {
+        try await http.delete(path: "/guilds/\(guildId)/stickers/\(stickerId)")
+    }
+
     // MARK: - REST: Forum helpers
     public func createForumThread(
         channelId: ChannelID,
@@ -1541,5 +1626,134 @@ public final class DiscordClient {
         
         let body = Body(platformName: platformName, platformUsername: platformUsername, metadata: metadata)
         return try await http.put(path: "/users/@me/applications/\(applicationId)/role-connection", body: body)
+    }
+
+    // MARK: - REST: Soundboard
+    public func listSoundboardSounds(guildId: GuildID) async throws -> [SoundboardSound] {
+        try await http.get(path: "/guilds/\(guildId)/soundboard-sounds")
+    }
+
+    public func createSoundboardSound(guildId: GuildID, name: String, emojiId: EmojiID? = nil, emojiName: String? = nil, volume: Double? = nil, sound: FileAttachment) async throws -> SoundboardSound {
+        struct Payload: Encodable {
+            let name: String
+            let emoji_id: EmojiID?
+            let emoji_name: String?
+            let volume: Double?
+        }
+        let payload = Payload(name: name, emoji_id: emojiId, emoji_name: emojiName, volume: volume)
+        return try await http.postMultipart(path: "/guilds/\(guildId)/soundboard-sounds", jsonBody: payload, files: [sound])
+    }
+
+    public func modifySoundboardSound(guildId: GuildID, soundId: SoundboardSoundID, name: String? = nil, emojiId: EmojiID? = nil, emojiName: String? = nil, volume: Double? = nil) async throws -> SoundboardSound {
+        struct Payload: Encodable { let name: String?; let emoji_id: EmojiID?; let emoji_name: String?; let volume: Double? }
+        return try await http.patch(path: "/guilds/\(guildId)/soundboard-sounds/\(soundId)", body: Payload(name: name, emoji_id: emojiId, emoji_name: emojiName, volume: volume))
+    }
+
+    public func deleteSoundboardSound(guildId: GuildID, soundId: SoundboardSoundID) async throws {
+        try await http.delete(path: "/guilds/\(guildId)/soundboard-sounds/\(soundId)")
+    }
+
+    // MARK: - REST: Entitlements & SKUs (Monetization)
+
+    public func listEntitlements(
+        applicationId: ApplicationID,
+        userId: UserID? = nil,
+        guildId: GuildID? = nil,
+        before: EntitlementID? = nil,
+        after: EntitlementID? = nil,
+        limit: Int? = nil,
+        skuIds: [SKUID]? = nil
+    ) async throws -> [Entitlement] {
+        var qs: [String] = []
+        if let userId { qs.append("user_id=\(userId)") }
+        if let guildId { qs.append("guild_id=\(guildId)") }
+        if let before { qs.append("before=\(before)") }
+        if let after { qs.append("after=\(after)") }
+        if let limit { qs.append("limit=\(limit)") }
+        if let skuIds, !skuIds.isEmpty {
+            let joined = skuIds.map { "\($0)" }.joined(separator: ",")
+            qs.append("sku_ids=\(joined)")
+        }
+        let path = "/applications/\(applicationId)/entitlements" + (qs.isEmpty ? "" : "?" + qs.joined(separator: "&"))
+        return try await http.get(path: path)
+    }
+
+    /// Create a test entitlement for validation in non-production contexts.
+    public func createTestEntitlement(applicationId: ApplicationID, skuId: SKUID, ownerId: String, ownerType: Int = 1) async throws -> Entitlement {
+        struct Body: Encodable { let sku_id: SKUID; let owner_id: String; let owner_type: Int }
+        return try await http.post(path: "/applications/\(applicationId)/entitlements", body: Body(sku_id: skuId, owner_id: ownerId, owner_type: ownerType))
+    }
+
+    /// Consume an entitlement (used for one-time items).
+    public func consumeEntitlement(applicationId: ApplicationID, entitlementId: EntitlementID) async throws {
+        struct Empty: Encodable {}
+        let _: Empty = try await http.post(path: "/applications/\(applicationId)/entitlements/\(entitlementId)/consume", body: Empty())
+    }
+
+    public func listSKUs(applicationId: ApplicationID) async throws -> [SKU] {
+        try await http.get(path: "/applications/\(applicationId)/skus")
+    }
+
+    // MARK: - REST: Onboarding / Server Guide
+    public func getGuildOnboarding(guildId: GuildID) async throws -> Onboarding {
+        try await http.get(path: "/guilds/\(guildId)/onboarding")
+    }
+
+    public func updateGuildOnboarding(
+        guildId: GuildID,
+        prompts: [OnboardingPrompt],
+        defaultChannelIds: [ChannelID],
+        enabled: Bool,
+        mode: Int,
+        defaultRecommendationChannelIds: [ChannelID]? = nil
+    ) async throws -> Onboarding {
+        struct Body: Encodable {
+            let prompts: [OnboardingPrompt]
+            let default_channel_ids: [ChannelID]
+            let enabled: Bool
+            let mode: Int
+            let default_recommendation_channel_ids: [ChannelID]?
+        }
+        let body = Body(
+            prompts: prompts,
+            default_channel_ids: defaultChannelIds,
+            enabled: enabled,
+            mode: mode,
+            default_recommendation_channel_ids: defaultRecommendationChannelIds
+        )
+        return try await http.put(path: "/guilds/\(guildId)/onboarding", body: body)
+    }
+
+    // MARK: - REST: App Installs & Subscriptions (Monetization)
+
+    /// List installs of this application (server-side view).
+    public func listApplicationInstalls(applicationId: ApplicationID, after: AppInstallationID? = nil, limit: Int? = nil) async throws -> [AppInstallation] {
+        var qs: [String] = []
+        if let after { qs.append("after=\(after)") }
+        if let limit { qs.append("limit=\(limit)") }
+        let path = "/applications/\(applicationId)/installations" + (qs.isEmpty ? "" : "?" + qs.joined(separator: "&"))
+        return try await http.get(path: path)
+    }
+
+    /// List installs for the current user of this application (user token scope).
+    public func listCurrentUserInstalls(applicationId: ApplicationID, withAppToken: Bool = false) async throws -> [AppInstallation] {
+        // If using a bot token this may return 403; this helper is provided for completeness.
+        try await http.get(path: "/users/@me/applications/\(applicationId)/installations")
+    }
+
+    /// List subscriptions for this application.
+    public func listApplicationSubscriptions(applicationId: ApplicationID, status: String? = nil, limit: Int? = nil, before: AppSubscriptionID? = nil, after: AppSubscriptionID? = nil) async throws -> [AppSubscription] {
+        var qs: [String] = []
+        if let status { qs.append("status=\(status)") }
+        if let limit { qs.append("limit=\(limit)") }
+        if let before { qs.append("before=\(before)") }
+        if let after { qs.append("after=\(after)") }
+        let path = "/applications/\(applicationId)/subscriptions" + (qs.isEmpty ? "" : "?" + qs.joined(separator: "&"))
+        return try await http.get(path: path)
+    }
+
+    /// Get a single subscription.
+    public func getApplicationSubscription(applicationId: ApplicationID, subscriptionId: AppSubscriptionID) async throws -> AppSubscription {
+        try await http.get(path: "/applications/\(applicationId)/subscriptions/\(subscriptionId)")
     }
 }
