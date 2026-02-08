@@ -26,7 +26,7 @@ public struct Message: Codable, Hashable {
     public let application: MessageApplication?
     public let application_id: ApplicationID?
     public let message_reference: MessageReference?
-    public let referenced_message: Message?
+    public indirect let referenced_message: Message?
     public let flags: Int?
     public let interaction_metadata: MessageInteractionMetadata?
     public let thread: Channel?
@@ -73,13 +73,7 @@ public struct MessageInteractionMetadata: Codable, Hashable {
     public let authorizing_integration_owners: [String: String]?
     public let original_response_message_id: MessageID?
     public let interacted_message_id: MessageID?
-    public let triggering_interaction_metadata: MessageInteractionMetadata?
-}
-
-public struct StickerItem: Codable, Hashable {
-    public let id: StickerID
-    public let name: String
-    public let format_type: Int
+    public indirect let triggering_interaction_metadata: MessageInteractionMetadata?
 }
 
 public struct RoleSubscriptionData: Codable, Hashable {

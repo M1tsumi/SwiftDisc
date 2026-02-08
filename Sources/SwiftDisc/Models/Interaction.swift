@@ -93,7 +93,7 @@ public struct Interaction: Codable, Hashable {
         public let component_type: Int?
         public let values: [String]?
         // Command + context menu targeting
-        public let target_id: Snowflake?
+        public let target_id: String?
         // Modal submit specific
         public let components: [MessageComponent]?
         // Attachment command input

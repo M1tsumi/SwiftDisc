@@ -1686,7 +1686,7 @@ public final class DiscordClient {
 
     /// Consume an entitlement (used for one-time items).
     public func consumeEntitlement(applicationId: ApplicationID, entitlementId: EntitlementID) async throws {
-        struct Empty: Encodable {}
+        struct Empty: Codable {}
         let _: Empty = try await http.post(path: "/applications/\(applicationId)/entitlements/\(entitlementId)/consume", body: Empty())
     }
 
