@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-02-22
+
+### Fixed
+- `EventDispatcher`: corrected named argument order in `Channel()` calls — `rate_limit_per_user` now correctly precedes `available_tags` (Swift 6 strict ordering enforcement)
+- `JSONValue`: added `stringValue: String?` computed property to convert scalar JSON values to `String`
+- `SlashCommandRouter`: fixed `[String: String]` option map population — now uses `value?.stringValue` instead of assigning `JSONValue` directly
+- `AutocompleteRouter`: fixed `focusedValue` assignment — now uses `o.value?.stringValue` instead of assigning `JSONValue?` to `String?`
+- `CommandRouter`: fixed `handleIfCommand` — safely unwraps optional `message.content` before calling `.isEmpty`, `.hasPrefix`, `.dropFirst`
+- `ViewManager`: added missing cases (`.label`, `.radioGroup`, `.checkboxGroup`, `.checkbox`) to `disableComponents` switch, making it exhaustive
+- `SlashCommandRouterTests`: updated test to match updated `Interaction`, `ApplicationCommandData`, and `Option` types — `value` now uses `.string(...)` enum case, initializers include all new fields
+
 ## [1.3.0] - 2026-02-22
 
 ### Overview

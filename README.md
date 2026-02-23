@@ -479,7 +479,7 @@ Before contributing, please:
 
 ## Roadmap
 
-### Current Version: v1.3.0
+### Current Version: v1.3.1
 
 Adds new modal interaction components (Radio Groups, Checkbox Groups, Checkboxes, Labels), community invite management endpoints, gradient role colors, guild tags, voice state REST endpoints, and subscription renewal SKUs. See [CHANGELOG.md](CHANGELOG.md) for the full breakdown.
 
