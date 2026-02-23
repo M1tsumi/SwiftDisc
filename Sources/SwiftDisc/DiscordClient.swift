@@ -371,9 +371,18 @@ public final class DiscordClient {
     }
 
     // Modify current member (bot user)
-    public func modifyCurrentMember(guildId: GuildID, nick: String? = nil) async throws -> GuildMember {
-        struct Body: Encodable { let nick: String? }
-        return try await http.patch(path: "/guilds/\(guildId)/members/@me", body: Body(nick: nick))
+    /// Supports `nick`, `avatar`, `banner`, and `bio` fields.
+    /// `avatar` and `banner` should be base64 data URIs (e.g. `data:image/png;base64,...`).
+    /// Availability of `avatar`, `banner`, and `bio` added 2025-09-10.
+    public func modifyCurrentMember(
+        guildId: GuildID,
+        nick: String? = nil,
+        avatar: String? = nil,
+        banner: String? = nil,
+        bio: String? = nil
+    ) async throws -> GuildMember {
+        struct Body: Encodable { let nick: String?; let avatar: String?; let banner: String?; let bio: String? }
+        return try await http.patch(path: "/guilds/\(guildId)/members/@me", body: Body(nick: nick, avatar: avatar, banner: banner, bio: bio))
     }
 
     // Modify current user nickname (deprecated but still available)
@@ -561,6 +570,20 @@ public final class DiscordClient {
             secrets: nil
         )
         await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
+    }
+
+    // MARK: - REST: Voice State (HTTP, no Gateway needed)
+
+    /// Fetch the current bot user's voice state in a guild.
+    /// `GET /guilds/{guild.id}/voice-states/@me` — Added 2025-08-05.
+    public func getCurrentUserVoiceState(guildId: GuildID) async throws -> VoiceState {
+        try await http.get(path: "/guilds/\(guildId)/voice-states/@me")
+    }
+
+    /// Fetch another user's voice state in a guild.
+    /// `GET /guilds/{guild.id}/voice-states/{user.id}` — Added 2025-08-05.
+    public func getUserVoiceState(guildId: GuildID, userId: UserID) async throws -> VoiceState {
+        try await http.get(path: "/guilds/\(guildId)/voice-states/\(userId)")
     }
 
     public func joinVoice(guildId: GuildID, channelId: ChannelID, selfMute: Bool = false, selfDeaf: Bool = false) async throws {
@@ -801,6 +824,12 @@ public final class DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/roles")
     }
 
+    /// Fetch a single role by ID.
+    /// `GET /guilds/{guild.id}/roles/{role.id}` - Added 2025-08-12.
+    public func getGuildRole(guildId: GuildID, roleId: RoleID) async throws -> Role {
+        try await http.get(path: "/guilds/\(guildId)/roles/\(roleId)")
+    }
+
     public struct RoleCreate: Codable { public let name: String; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
     public struct RoleUpdate: Codable { public let name: String?; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
 
@@ -1035,6 +1064,8 @@ public final class DiscordClient {
         case updateMessage = 7
         case autocompleteResult = 8
         case modal = 9
+        /// Launch a linked Activity. Added 2024-08-26.
+        case launchActivity = 12
     }
 
     public func createInteractionResponse(interactionId: InteractionID, token: String, type: InteractionResponseType, content: String? = nil, embeds: [Embed]? = nil) async throws {
@@ -1252,14 +1283,29 @@ public final class DiscordClient {
         }
     }
 
-    public func createChannelInvite(channelId: ChannelID, maxAge: Int? = nil, maxUses: Int? = nil, temporary: Bool? = nil, unique: Bool? = nil) async throws -> Invite {
+    /// Create an invite for a channel.
+    /// `role_ids` assigns roles when accepted. `targetUsersFile` is a CSV `FileAttachment`
+    /// (`user_id` column) restricting who can accept. Both added 2026-01-13.
+    public func createChannelInvite(
+        channelId: ChannelID,
+        maxAge: Int? = nil,
+        maxUses: Int? = nil,
+        temporary: Bool? = nil,
+        unique: Bool? = nil,
+        roleIds: [RoleID]? = nil,
+        targetUsersFile: FileAttachment? = nil
+    ) async throws -> Invite {
         struct Body: Encodable {
             let max_age: Int?
             let max_uses: Int?
             let temporary: Bool?
             let unique: Bool?
+            let role_ids: [RoleID]?
         }
-        let body = Body(max_age: maxAge, max_uses: maxUses, temporary: temporary, unique: unique)
+        let body = Body(max_age: maxAge, max_uses: maxUses, temporary: temporary, unique: unique, role_ids: roleIds)
+        if let file = targetUsersFile {
+            return try await http.postMultipart(path: "/channels/\(channelId)/invites", jsonBody: body, files: [file])
+        }
         return try await http.post(path: "/channels/\(channelId)/invites", body: body)
     }
 
@@ -1278,6 +1324,37 @@ public final class DiscordClient {
 
     public func deleteInvite(code: String) async throws {
         try await http.delete(path: "/invites/\(code)")
+    }
+
+    // MARK: - REST: Community Invite Target Users (Added 2026-01-13)
+
+    /// Response from the Get Target Users Job Status endpoint.
+    public struct InviteTargetUsersJobStatus: Codable {
+        public let job_id: String
+        public let status: String  // e.g. "pending", "complete", "failed"
+        public let invite_code: String
+    }
+
+    /// Get the raw CSV of user IDs allowed to accept a restricted invite.
+    /// The response is CSV bytes with a `user_id` header column (not JSON).
+    /// Decode with `String(data: result, encoding: .utf8)` to get the CSV text.
+    /// `GET /invites/{code}/users` — Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
+    public func getInviteTargetUsers(code: String) async throws -> Data {
+        try await http.getRaw(path: "/invites/\(code)/users")
+    }
+
+    /// Replace the list of users allowed to accept a restricted invite by uploading a CSV file.
+    /// The CSV must have a `user_id` column. Returns the async job status.
+    /// `PATCH /invites/{code}/users` — Added 2026-01-13.
+    public func updateInviteTargetUsers(code: String, file: FileAttachment) async throws -> InviteTargetUsersJobStatus {
+        struct Empty: Encodable {}
+        return try await http.patchMultipart(path: "/invites/\(code)/users", jsonBody: Empty(), files: [file])
+    }
+
+    /// Check the status of the background job that processes a target-users CSV upload.
+    /// `GET /invites/{code}/users/jobs/{job_id}` — Added 2026-01-13.
+    public func getInviteTargetUsersJobStatus(code: String, jobId: String) async throws -> InviteTargetUsersJobStatus {
+        try await http.get(path: "/invites/\(code)/users/jobs/\(jobId)")
     }
 
     public func getTemplate(code: String) async throws -> Template {

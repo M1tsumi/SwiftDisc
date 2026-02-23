@@ -5,29 +5,30 @@ public enum MessageComponent: Codable, Hashable {
     case button(Button)
     case select(SelectMenu)
     case textInput(TextInput)
-
-    private enum Discriminator: String, Codable { case actionRow = "1", button = "2", select = "3", textInput = "4" }
+    /// Label layout component for modals (type 21). Introduced 2026-02-12 alongside new modal components.
+    case label(Label)
+    /// Radio Group for single-selection inside a modal Label (type 22). Introduced 2026-02-12.
+    case radioGroup(RadioGroup)
+    /// Checkbox Group for multi-selection inside a modal Label (type 23). Introduced 2026-02-12.
+    case checkboxGroup(CheckboxGroup)
+    /// Checkbox boolean toggle inside a modal Label (type 24). Introduced 2026-02-12.
+    case checkbox(Checkbox)
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let type = try c.decode(Int.self, forKey: .type)
         switch type {
-        case 1: // action row
-            let row = try ActionRow(from: decoder)
-            self = .actionRow(row)
-        case 2: // button
-            let btn = try Button(from: decoder)
-            self = .button(btn)
-        case 3: // select menu
-            let sel = try SelectMenu(from: decoder)
-            self = .select(sel)
-        case 4: // text input (for modals)
-            let ti = try TextInput(from: decoder)
-            self = .textInput(ti)
+        case 1: self = .actionRow(try ActionRow(from: decoder))
+        case 2: self = .button(try Button(from: decoder))
+        case 3: self = .select(try SelectMenu(from: decoder))
+        case 4: self = .textInput(try TextInput(from: decoder))
+        case 21: self = .label(try Label(from: decoder))
+        case 22: self = .radioGroup(try RadioGroup(from: decoder))
+        case 23: self = .checkboxGroup(try CheckboxGroup(from: decoder))
+        case 24: self = .checkbox(try Checkbox(from: decoder))
         default:
             // Fallback: attempt button
-            let btn = try Button(from: decoder)
-            self = .button(btn)
+            self = .button(try Button(from: decoder))
         }
     }
 
@@ -37,6 +38,10 @@ public enum MessageComponent: Codable, Hashable {
         case .button(let btn): try btn.encode(to: encoder)
         case .select(let sel): try sel.encode(to: encoder)
         case .textInput(let ti): try ti.encode(to: encoder)
+        case .label(let l): try l.encode(to: encoder)
+        case .radioGroup(let rg): try rg.encode(to: encoder)
+        case .checkboxGroup(let cg): try cg.encode(to: encoder)
+        case .checkbox(let cb): try cb.encode(to: encoder)
         }
     }
 
@@ -109,6 +114,88 @@ public enum MessageComponent: Codable, Hashable {
             self.required = required
             self.value = value
             self.placeholder = placeholder
+        }
+    }
+
+    // MARK: - New Modal Components (added 2026-02-12)
+
+    /// Label layout component (type 21). Top-level container for modal components.
+    /// Provides a `label` and optional `description`, and wraps a single interactive component.
+    public struct Label: Codable, Hashable {
+        public let type: Int = 21
+        public let label: String
+        public let description: String?
+        /// The single-child component (TextInput, StringSelect, RadioGroup, CheckboxGroup, or Checkbox).
+        public let components: [MessageComponent]?
+        public init(label: String, description: String? = nil, components: [MessageComponent]? = nil) {
+            self.label = label
+            self.description = description
+            self.components = components
+        }
+    }
+
+    /// Radio Group component (type 22). Single-selection picker for modals; must be inside a Label.
+    public struct RadioGroup: Codable, Hashable {
+        public let type: Int = 22
+        public let custom_id: String
+        public let options: [RadioOption]
+        public let required: Bool?
+        public struct RadioOption: Codable, Hashable {
+            public let label: String
+            public let value: String
+            public let description: String?
+            public let `default`: Bool?
+            public init(label: String, value: String, description: String? = nil, isDefault: Bool? = nil) {
+                self.label = label
+                self.value = value
+                self.description = description
+                self.default = isDefault
+            }
+        }
+        public init(custom_id: String, options: [RadioOption], required: Bool? = nil) {
+            self.custom_id = custom_id
+            self.options = options
+            self.required = required
+        }
+    }
+
+    /// Checkbox Group component (type 23). Multi-selection picker for modals; must be inside a Label.
+    public struct CheckboxGroup: Codable, Hashable {
+        public let type: Int = 23
+        public let custom_id: String
+        public let options: [CheckboxOption]
+        public let min_values: Int?
+        public let max_values: Int?
+        public struct CheckboxOption: Codable, Hashable {
+            public let label: String
+            public let value: String
+            public let description: String?
+            public let `default`: Bool?
+            public init(label: String, value: String, description: String? = nil, isDefault: Bool? = nil) {
+                self.label = label
+                self.value = value
+                self.description = description
+                self.default = isDefault
+            }
+        }
+        public init(custom_id: String, options: [CheckboxOption], minValues: Int? = nil, maxValues: Int? = nil) {
+            self.custom_id = custom_id
+            self.options = options
+            self.min_values = minValues
+            self.max_values = maxValues
+        }
+    }
+
+    /// Checkbox component (type 24). Boolean yes/no toggle for modals; must be inside a Label.
+    public struct Checkbox: Codable, Hashable {
+        public let type: Int = 24
+        public let custom_id: String
+        public let required: Bool?
+        public let `default`: Bool?
+        public init(custom_id: String, required: Bool? = nil, isDefault: Bool? = nil) {
+            self.custom_id = custom_id
+            self.required = required
+            self.default = isDefault
         }
     }
 }

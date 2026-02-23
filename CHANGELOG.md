@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-22
+
+### Overview
+Discord API update adding new interactive modal components (Radio Groups, Checkbox Groups, Checkboxes, and Labels), community invite management endpoints, gradient role colors, guild tags on users, voice state REST access, subscription renewal SKUs, and individual permission enforcement.
+
+### Added — Models & Types
+- **MessageComponent** — four new modal-only component types:
+  - `Label` (type 21): top-level section container for modal components, carries its own label/description text
+  - `RadioGroup` (type 22): single-selection option picker rendered inside a `Label`
+  - `CheckboxGroup` (type 23): multi-selection picker with `min_values`/`max_values`, rendered inside a `Label`
+  - `Checkbox` (type 24): boolean yes/no toggle
+- **Role** — gradient role color support (`ENHANCED_ROLE_COLORS` guild feature):
+  - `RoleColorStop` struct (`color: Int`, `position: Double?`)
+  - `RoleColors` struct (`primary_color: Int?`, `gradient_stops: [RoleColorStop]?`)
+  - `colors: RoleColors?` field on `Role`
+  - `icon: String?` and `unicode_emoji: String?` fields on `Role`
+- **User** — guild tag and profile fields:
+  - `UserPrimaryGuild` struct (`guild_id`, `tag`, `badge`, `identity_enabled`, `identity_guild_id`)
+  - `primary_guild: UserPrimaryGuild?` on `User`
+  - `banner: String?`, `accent_color: Int?`, `flags: Int?`, `public_flags: Int?` on `User`
+- **Invite** — community invite fields:
+  - `PartialInviteRole` struct — partial role object now returned by `Get Channel Invites`
+  - `role_ids: [RoleID]?` — roles automatically granted when the invite is accepted
+  - `roles: [PartialInviteRole]?` — hydrated partial role objects
+  - `target_type: Int?` — restricted invite target type
+- **AppSubscription** — `renewal_sku_ids: [SKUID]?` field for multi-tier subscriptions
+
+### Added — REST Endpoints
+- **Roles**
+  - `getGuildRole(guildId:roleId:)` — `GET /guilds/{guild.id}/roles/{role.id}` (added Discord 2025-08-12)
+- **Voice States** (HTTP, no Gateway connection required)
+  - `getCurrentUserVoiceState(guildId:)` — `GET /guilds/{guild.id}/voice-states/@me` (added Discord 2025-08-05)
+  - `getUserVoiceState(guildId:userId:)` — `GET /guilds/{guild.id}/voice-states/{user.id}` (added Discord 2025-08-05)
+- **Community Invite Target Users** (added Discord 2026-01-13)
+  - `getInviteTargetUsers(code:)` — `GET /invites/{code}/users` — returns raw CSV as `Data` (decode with `String(data:encoding:)`)
+  - `updateInviteTargetUsers(code:file:)` — `PATCH /invites/{code}/users` — upload CSV to replace allowed users list
+  - `getInviteTargetUsersJobStatus(code:jobId:)` — `GET /invites/{code}/users/jobs/{job_id}` — poll upload job status
+- `InviteTargetUsersJobStatus` result type added to `DiscordClient`
+
+### Updated — REST Endpoints
+- `modifyCurrentMember(guildId:nick:avatar:banner:bio:)` — added `avatar`, `banner`, and `bio` parameters (Discord 2025-09-10)
+- `createChannelInvite` — added `roleIds: [RoleID]?` and `targetUsersFile: FileAttachment?` parameters; automatically switches to multipart when a file is provided (Discord 2026-01-13)
+
+### Updated — Interactions
+- `InteractionResponseType.launchActivity` (raw value `12`) — launch a linked Activity from an interaction response (Discord 2024-08-26)
+
+### Breaking Changes
+- `Invite.roles` type changed from `[Role]?` to `[PartialInviteRole]?` — Discord's `Get Channel Invites` now returns partial role objects without all fields (Discord breaking change 2026-02-05)
+
+### Notes
+- **Permission enforcement** (effective 2026-02-23): `PIN_MESSAGES` (bit 51), `BYPASS_SLOWMODE` (bit 52), `CREATE_GUILD_EXPRESSIONS` (bit 43), and `CREATE_EVENTS` (bit 44) are now enforced independently server-side. These bits were already present in `PermissionBitset` since v1.0.0 — no code changes required.
+
 ## [1.2.0] - 2026-02-08
 
 ### Overview

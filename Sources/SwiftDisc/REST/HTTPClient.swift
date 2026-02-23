@@ -37,6 +37,47 @@ final class HTTPClient {
         try await request(method: "GET", path: path, body: Optional<Data>.none)
     }
 
+    /// Fetch raw response bytes without JSON decoding. Useful for non-JSON endpoints (e.g. CSV).
+    func getRaw(path: String) async throws -> Data {
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let routeKey = makeRouteKey(method: "GET", path: trimmed)
+        var attempt = 0; let maxAttempts = 4
+        while true {
+            attempt += 1
+            try await rateLimiter.waitTurn(routeKey: routeKey)
+            var url = configuration.restBase
+            url.appendPathComponent(trimmed)
+            var req = URLRequest(url: url)
+            req.httpMethod = "GET"
+            do {
+                let (data, resp) = try await session.data(for: req)
+                guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
+                if (200..<300).contains(http.statusCode) { return data }
+                if http.statusCode == 429 {
+                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
+                    await rateLimiter.backoff(after: retryAfter)
+                    if attempt < maxAttempts { continue }
+                }
+                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
+                    await rateLimiter.backoff(after: min(2.0 * pow(2.0, Double(attempt - 1)), 8.0))
+                    continue
+                }
+                if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+                    throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+                }
+                throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+            } catch {
+                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
+                if attempt < maxAttempts {
+                    await rateLimiter.backoff(after: min(0.5 * pow(2.0, Double(attempt - 1)), 4.0))
+                    continue
+                }
+                throw DiscordError.network(error)
+            }
+        }
+    }
+
     func post<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
@@ -379,6 +420,10 @@ final class HTTPClient {
     }
 
     func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws -> T {
+        throw HTTPUnavailable()
+    }
+
+    func getRaw(path: String) async throws -> Data {
         throw HTTPUnavailable()
     }
 }

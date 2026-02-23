@@ -31,7 +31,7 @@ Add SwiftDisc to your Swift package dependencies in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.1.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.3.0")
 ]
 ```
 
@@ -119,10 +119,14 @@ The REST API covers all essential Discord features:
 ✅ Channels, permissions, webhooks  
 ✅ Guilds, members, roles, bans  
 ✅ Slash commands, autocomplete, modals  
-✅ Components (buttons, select menus)  
+✅ Components (buttons, select menus, radio groups, checkbox groups)  
+✅ Modal components: Label, RadioGroup, CheckboxGroup, Checkbox  
 ✅ Scheduled events, stage instances  
 ✅ Auto-moderation rules  
 ✅ Application commands and interactions  
+✅ Gradient role colors and guild tags  
+✅ Voice state REST endpoints  
+✅ Community invite target user management  
 
 For a complete API checklist, see the [REST API Coverage](#rest-api-coverage) section below.
 
@@ -380,13 +384,37 @@ MessageFormat.escapeSpecialCharacters(userInput)
 ✅ Widget, preview, vanity URL  
 ✅ Templates  
 
+### Roles
+✅ List, create, modify, delete roles  
+✅ Fetch individual role (`getGuildRole`)  
+✅ Gradient role colors (`RoleColors`, `RoleColorStop`)  
+
 ### Interactions
 ✅ Slash commands (global & guild)  
 ✅ Autocomplete  
 ✅ Modals and components  
-✅ Interaction responses  
+✅ Interaction responses (including `launchActivity` type 12)  
 ✅ Follow-up messages  
 ✅ Command localization  
+✅ Modal components: Label (21), RadioGroup (22), CheckboxGroup (23), Checkbox (24)  
+
+### Users & Members
+✅ Get/modify current user  
+✅ Guild tag (`primary_guild`), banner, accent color, flags  
+✅ Modify current member (nick, avatar, banner, bio)  
+
+### Invites
+✅ Create, list, get, delete invites  
+✅ Community invite role assigning (`role_ids`)  
+✅ Target user list management (`getInviteTargetUsers`, `updateInviteTargetUsers`, `getInviteTargetUsersJobStatus`)  
+
+### Voice
+✅ Join/leave voice channels (Gateway)  
+✅ Get voice states via REST (`getCurrentUserVoiceState`, `getUserVoiceState`)  
+✅ Opus audio playback (experimental)  
+
+### Subscriptions & Monetization
+✅ App subscriptions with `renewal_sku_ids`  
 
 ### Other Features
 ✅ Scheduled events  
@@ -451,16 +479,16 @@ Before contributing, please:
 
 ## Roadmap
 
-### Current Version: v1.1.0
+### Current Version: v1.3.0
 
-Expanded Discord API coverage with new gateway events and REST endpoints. See [CHANGELOG.md](CHANGELOG.md) for details.
+Adds new modal interaction components (Radio Groups, Checkbox Groups, Checkboxes, Labels), community invite management endpoints, gradient role colors, guild tags, voice state REST endpoints, and subscription renewal SKUs. See [CHANGELOG.md](CHANGELOG.md) for the full breakdown.
 
 ### Future Plans
 
-- Enhanced autocomplete and modal builders
-- Additional component types as Discord adds them
+- Soundboard endpoints
+- Guild sticker creation/modification
+- Enhanced voice support
 - Performance optimizations and caching improvements
-- Expanded voice support
 
 Have ideas? Open an issue or join the discussion on Discord!
 

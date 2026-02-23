@@ -21,4 +21,7 @@ public struct AppSubscription: Codable, Hashable {
     public let current_period_end: String?
     public let canceled_at: String?
     public let trial_ends_at: String?
+    /// SKU IDs that the user will be subscribed to at renewal.
+    /// Added 2024-12-12 (Premium Apps: Multiple Subscription Tiers).
+    public let renewal_sku_ids: [SKUID]?
 }
