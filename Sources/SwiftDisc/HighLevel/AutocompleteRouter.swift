@@ -21,7 +21,7 @@ public final class AutocompleteRouter {
                             walk(o.options ?? [])
                         } else if o.focused == true {
                             fName = o.name
-                            fValue = o.value
+                            fValue = o.value?.stringValue
                         }
                     }
                 }

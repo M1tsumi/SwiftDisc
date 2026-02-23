@@ -39,9 +39,9 @@ public final class CommandRouter {
     }
 
     public func handleIfCommand(message: Message, client: DiscordClient) async {
-        guard !message.content.isEmpty else { return }
-        guard message.content.hasPrefix(prefix) else { return }
-        let noPrefix = String(message.content.dropFirst(prefix.count))
+        guard let content = message.content, !content.isEmpty else { return }
+        guard content.hasPrefix(prefix) else { return }
+        let noPrefix = String(content.dropFirst(prefix.count))
         let parts = noPrefix.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
         guard let cmd = parts.first?.lowercased() else { return }
         let args = Array(parts.dropFirst())
