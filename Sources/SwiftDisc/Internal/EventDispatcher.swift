@@ -9,7 +9,7 @@ actor EventDispatcher {
             if let onReady = client.onReady { await onReady(info) }
         case .messageCreate(let msg):
             await client.cache.upsert(user: msg.author)
-            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, default_auto_archive_duration: nil, rate_limit_per_user: nil, permission_overwrites: nil))
+            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, rate_limit_per_user: nil, default_auto_archive_duration: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, permission_overwrites: nil))
             await client.cache.add(message: msg)
             if let onMessage = client.onMessage { await onMessage(msg) }
             if let router = client.commands { await router.handleIfCommand(message: msg, client: client) }
@@ -61,7 +61,7 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: channel.id)
         case .interactionCreate(let interaction):
             if let cid = interaction.channel_id {
-                await client.cache.upsert(channel: Channel(id: cid, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, default_auto_archive_duration: nil, rate_limit_per_user: nil, permission_overwrites: nil))
+                await client.cache.upsert(channel: Channel(id: cid, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, rate_limit_per_user: nil, default_auto_archive_duration: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, permission_overwrites: nil))
             }
             if interaction.type == 4, let ac = client.autocomplete {
                 await ac.handle(interaction: interaction, client: client)

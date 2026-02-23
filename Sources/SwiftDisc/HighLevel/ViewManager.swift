@@ -145,6 +145,14 @@ public actor ViewManager {
                 return .select(.init(custom_id: sel.custom_id, options: sel.options, placeholder: sel.placeholder, min_values: sel.min_values, max_values: sel.max_values, disabled: true))
             case .textInput(let ti):
                 return .textInput(ti)
+            case .label(let l):
+                return .label(l)
+            case .radioGroup(let rg):
+                return .radioGroup(rg)
+            case .checkboxGroup(let cg):
+                return .checkboxGroup(cg)
+            case .checkbox(let cb):
+                return .checkbox(cb)
             }
         }
     }

@@ -60,7 +60,7 @@ public final class SlashCommandRouter {
         leafOptions = cursorOptions
         var map: [String: String] = [:]
         for opt in leafOptions {
-            if let v = opt.value { map[opt.name] = v }
+            if let v = opt.value, let s = v.stringValue { map[opt.name] = s }
         }
         return (components.joined(separator: " "), map)
     }

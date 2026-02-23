@@ -21,6 +21,17 @@ public enum JSONValue: Codable, Hashable {
         self = .null
     }
 
+    /// Returns a plain-string representation of a scalar JSONValue, or nil for objects/arrays/null.
+    public var stringValue: String? {
+        switch self {
+        case .string(let s): return s
+        case .int(let i): return String(i)
+        case .number(let n): return String(n)
+        case .bool(let b): return String(b)
+        default: return nil
+        }
+    }
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
