@@ -328,6 +328,28 @@ actor GatewayClient {
                             if let payload = try? dec.decode(GatewayPayload<GuildBanRemove>.self, from: data), let ev = payload.d {
                                 eventSink(.guildBanRemove(ev))
                             }
+                        } else if t == "AUTO_MODERATION_RULE_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<AutoModerationRule>.self, from: data), let ev = payload.d {
+                                eventSink(.autoModerationRuleCreate(ev))
+                            }
+                        } else if t == "AUTO_MODERATION_RULE_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<AutoModerationRule>.self, from: data), let ev = payload.d {
+                                eventSink(.autoModerationRuleUpdate(ev))
+                            }
+                        } else if t == "AUTO_MODERATION_RULE_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<AutoModerationRule>.self, from: data), let ev = payload.d {
+                                eventSink(.autoModerationRuleDelete(ev))
+                            }
+                        } else if t == "AUTO_MODERATION_ACTION_EXECUTION" {
+                            if let payload = try? dec.decode(GatewayPayload<AutoModerationActionExecution>.self, from: data), let ev = payload.d {
+                                eventSink(.autoModerationActionExecution(ev))
+                            }
+                        } else if t == "GUILD_AUDIT_LOG_ENTRY_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<AuditLogEntry>.self, from: data), let ev = payload.d {
+                                eventSink(.guildAuditLogEntryCreate(ev))
+                            } else if let payload = try? dec.decode(GatewayPayload<GuildAuditLogEntryCreate>.self, from: data), let ev = payload.d {
+                                eventSink(.guildAuditLogEntryCreate(ev.entry))
+                            }
                         } else if t == "WEBHOOKS_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<WebhooksUpdate>.self, from: data), let ev = payload.d {
                                 eventSink(.webhooksUpdate(ev))
@@ -335,6 +357,38 @@ actor GatewayClient {
                         } else if t == "GUILD_INTEGRATIONS_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<GuildIntegrationsUpdate>.self, from: data), let ev = payload.d {
                                 eventSink(.guildIntegrationsUpdate(ev))
+                            }
+                        } else if t == "POLL_VOTE_ADD" {
+                            if let payload = try? dec.decode(GatewayPayload<PollVote>.self, from: data), let ev = payload.d {
+                                eventSink(.pollVoteAdd(ev))
+                            }
+                        } else if t == "POLL_VOTE_REMOVE" {
+                            if let payload = try? dec.decode(GatewayPayload<PollVote>.self, from: data), let ev = payload.d {
+                                eventSink(.pollVoteRemove(ev))
+                            }
+                        } else if t == "SOUND_BOARD_SOUND_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
+                                eventSink(.soundboardSoundCreate(ev))
+                            }
+                        } else if t == "SOUND_BOARD_SOUND_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
+                                eventSink(.soundboardSoundUpdate(ev))
+                            }
+                        } else if t == "SOUND_BOARD_SOUND_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
+                                eventSink(.soundboardSoundDelete(ev))
+                            }
+                        } else if t == "ENTITLEMENT_CREATE" {
+                            if let payload = try? dec.decode(GatewayPayload<Entitlement>.self, from: data), let ev = payload.d {
+                                eventSink(.entitlementCreate(ev))
+                            }
+                        } else if t == "ENTITLEMENT_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<Entitlement>.self, from: data), let ev = payload.d {
+                                eventSink(.entitlementUpdate(ev))
+                            }
+                        } else if t == "ENTITLEMENT_DELETE" {
+                            if let payload = try? dec.decode(GatewayPayload<Entitlement>.self, from: data), let ev = payload.d {
+                                eventSink(.entitlementDelete(ev))
                             }
                         } else if t == "INVITE_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<InviteCreate>.self, from: data), let ev = payload.d {

@@ -112,6 +112,32 @@ actor EventDispatcher {
             break
         case .inviteDelete(_):
             break
+        case .autoModerationRuleCreate(_):
+            break
+        case .autoModerationRuleUpdate(_):
+            break
+        case .autoModerationRuleDelete(_):
+            break
+        case .autoModerationActionExecution(_):
+            break
+        case .guildAuditLogEntryCreate(_):
+            break
+        case .pollVoteAdd(_):
+            break
+        case .pollVoteRemove(_):
+            break
+        case .soundboardSoundCreate(_):
+            break
+        case .soundboardSoundUpdate(_):
+            break
+        case .soundboardSoundDelete(_):
+            break
+        case .entitlementCreate(_):
+            break
+        case .entitlementUpdate(_):
+            break
+        case .entitlementDelete(_):
+            break
         }
         client._internalEmitEvent(event)
     }

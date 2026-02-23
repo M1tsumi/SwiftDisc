@@ -8,4 +8,10 @@ public struct Attachment: Codable, Hashable {
     public let proxy_url: String?
     public let width: Int?
     public let height: Int?
+    public let content_type: String?
+    public let description: String?
+    public let ephemeral: Bool?
+    // Voice message metadata
+    public let duration_secs: Double?
+    public let waveform: String?
 }
