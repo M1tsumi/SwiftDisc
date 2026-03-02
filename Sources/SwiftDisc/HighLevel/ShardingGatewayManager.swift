@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ShardedEvent {
+public struct ShardedEvent: Sendable {
     public let shardId: Int
     public let event: DiscordEvent
     public let receivedAt: Date

@@ -24,7 +24,7 @@ public actor Cache {
 
     /// Background task that prunes expired TTL entries every 60 seconds.
     /// Only started when at least one TTL is configured.
-    private var evictionTask: Task<Void, Never>?
+    nonisolated(unsafe) private var evictionTask: Task<Void, Never>?
 
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration

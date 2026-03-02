@@ -1,6 +1,6 @@
 import Foundation
 
-public struct V2MessagePayload: Encodable {
+public struct V2MessagePayload: Encodable, Sendable {
     public var content: String?
     public var flags: Int?
     public var components: [JSONValue]?
@@ -20,7 +20,7 @@ public struct V2MessagePayload: Encodable {
     }
 }
 
-public struct PollPayload: Encodable {
+public struct PollPayload: Encodable, Sendable {
     public var question: String
     public var answers: [String]
     public var durationSeconds: Int

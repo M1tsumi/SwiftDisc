@@ -1,6 +1,6 @@
 import Foundation
 
-public struct DiscordConfiguration {
+public struct DiscordConfiguration: Sendable {
     public var apiBaseURL: URL
     public var apiVersion: Int
     public var gatewayBaseURL: URL

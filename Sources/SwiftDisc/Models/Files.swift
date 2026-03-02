@@ -14,7 +14,7 @@ public struct FileAttachment: Sendable {
     }
 }
 
-public struct PartialAttachment: Encodable, Hashable {
+public struct PartialAttachment: Encodable, Hashable, Sendable {
     public let id: AttachmentID
     public let description: String?
 
