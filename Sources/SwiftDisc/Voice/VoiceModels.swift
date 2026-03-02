@@ -28,7 +28,7 @@ public struct VoiceConnectionInfo {
     }
 }
 
-public struct VoiceFrame {
+public struct VoiceFrame: Sendable {
     public let guildId: GuildID
     public let ssrc: UInt32
     public let sequence: UInt16

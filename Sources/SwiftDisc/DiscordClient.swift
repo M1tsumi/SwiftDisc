@@ -556,7 +556,7 @@ public actor DiscordClient {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
                 guard let self else { return }
-                Task {
+                Task { [frame] in
                     if let cb = await self.onVoiceFrame {
                         await cb(frame)
                     }
@@ -574,7 +574,7 @@ public actor DiscordClient {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
                 guard let self else { return }
-                Task {
+                Task { [frame] in
                     if let cb = await self.onVoiceFrame {
                         await cb(frame)
                     }
