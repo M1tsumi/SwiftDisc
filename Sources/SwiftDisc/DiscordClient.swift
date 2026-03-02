@@ -168,7 +168,7 @@ public actor DiscordClient {
 
     // Crosspost message
     public func crosspostMessage(channelId: ChannelID, messageId: MessageID) async throws -> Message {
-        struct Empty: Encodable {}
+        struct Empty: Encodable, Sendable {}
         return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/crosspost", body: Empty())
     }
 
@@ -449,7 +449,7 @@ public actor DiscordClient {
     // Modify current user nickname (deprecated but still available)
     public func modifyCurrentUserNick(guildId: GuildID, nick: String?) async throws -> String {
         struct Body: Encodable, Sendable { let nick: String? }
-        struct Resp: Decodable { let nick: String }
+        struct Resp: Decodable, Sendable { let nick: String }
         let resp: Resp = try await http.patch(path: "/guilds/\(guildId)/members/@me/nick", body: Body(nick: nick))
         return resp.nick
     }
@@ -528,16 +528,8 @@ public actor DiscordClient {
     }
 
     // Guild prune (typed)
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let days: Int; public let compute_prune_count: Bool?; public let include_roles: [RoleID]? }
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let pruned: Int }
+    public struct PrunePayload: Codable, Sendable { public let days: Int; public let compute_prune_count: Bool?; public let include_roles: [RoleID]? }
+    public struct PruneResponse: Codable, Sendable { public let pruned: Int }
 
     public func getGuildPruneCount(guildId: GuildID, days: Int = 7) async throws -> Int {
         let resp: PruneResponse = try await http.get(path: "/guilds/\(guildId)/prune?days=\(days)")
@@ -554,7 +546,7 @@ public actor DiscordClient {
     }
 
     public func bulkModifyRolePositions(guildId: GuildID, positions: [(id: RoleID, position: Int)]) async throws -> [Role] {
-        struct Entry: Encodable { let id: RoleID; let position: Int }
+        struct Entry: Encodable, Sendable { let id: RoleID; let position: Int }
         let body = positions.map { Entry(id: $0.id, position: $0.position) }
         return try await http.patch(path: "/guilds/\(guildId)/roles", body: body)
     }
@@ -563,9 +555,11 @@ public actor DiscordClient {
     public func loginAndConnect(intents: GatewayIntents) async throws {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
-                Task { [weak self] in
-                    guard let self else { return }
-                    if let cb = await self.onVoiceFrame { await cb(frame) }
+                guard let self else { return }
+                Task { [self] in
+                    if let cb = await self.onVoiceFrame {
+                        await cb(frame)
+                    }
                 }
             }
         }
@@ -579,9 +573,11 @@ public actor DiscordClient {
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
-                Task { [weak self] in
-                    guard let self else { return }
-                    if let cb = await self.onVoiceFrame { await cb(frame) }
+                guard let self else { return }
+                Task { [self] in
+                    if let cb = await self.onVoiceFrame {
+                        await cb(frame)
+                    }
                 }
             }
         }
@@ -649,7 +645,7 @@ public actor DiscordClient {
 
     /// End a poll attached to a message (closes voting).
     public func endPoll(channelId: ChannelID, messageId: MessageID, pollId: String) async throws -> Poll {
-        struct Empty: Encodable {}
+        struct Empty: Encodable, Sendable {}
         return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/polls/\(pollId)/expire", body: Empty())
     }
 
@@ -680,13 +676,13 @@ public actor DiscordClient {
     // MARK: - REST: Voice State (HTTP, no Gateway needed)
 
     /// Fetch the current bot user's voice state in a guild.
-    /// `GET /guilds/{guild.id}/voice-states/@me` Ã¢â‚¬â€ Added 2025-08-05.
+    /// `GET /guilds/{guild.id}/voice-states/@me` — Added 2025-08-05.
     public func getCurrentUserVoiceState(guildId: GuildID) async throws -> VoiceState {
         try await http.get(path: "/guilds/\(guildId)/voice-states/@me")
     }
 
     /// Fetch another user's voice state in a guild.
-    /// `GET /guilds/{guild.id}/voice-states/{user.id}` Ã¢â‚¬â€ Added 2025-08-05.
+    /// `GET /guilds/{guild.id}/voice-states/{user.id}` — Added 2025-08-05.
     public func getUserVoiceState(guildId: GuildID, userId: UserID) async throws -> VoiceState {
         try await http.get(path: "/guilds/\(guildId)/voice-states/\(userId)")
     }
@@ -832,15 +828,15 @@ public actor DiscordClient {
 
     /// Typed emoji reference for reaction methods.
     ///
-    /// Use `.unicode("Ã°Å¸â€˜Â")` for standard Unicode emoji and
+    /// Use `.unicode("👍")` for standard Unicode emoji and
     /// `.custom(name:id:)` for guild custom emoji.
     ///
     /// ```swift
-    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("Ã°Å¸â€Â¥"))
+    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("🔥"))
     /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .custom(name: "pepega", id: emojiId))
     /// ```
     public enum EmojiRef: Sendable {
-        /// A standard Unicode emoji, e.g. `"Ã°Å¸â€˜Â"` or `"Ã°Å¸â€Â¥"`.
+        /// A standard Unicode emoji, e.g. `"👍"` or `"🔥"`.
         case unicode(String)
         /// A custom guild emoji. `name` is the emoji name and `id` is its snowflake.
         case custom(name: String, id: EmojiID)
@@ -956,7 +952,7 @@ public actor DiscordClient {
 
     // Bulk modify channel positions (guild)
     public func bulkModifyGuildChannelPositions(guildId: GuildID, positions: [(id: ChannelID, position: Int)]) async throws -> [Channel] {
-        struct Entry: Encodable { let id: ChannelID; let position: Int }
+        struct Entry: Encodable, Sendable { let id: ChannelID; let position: Int }
         let body = positions.map { Entry(id: $0.id, position: $0.position) }
         return try await http.patch(path: "/guilds/\(guildId)/channels", body: body)
     }
@@ -965,7 +961,7 @@ public actor DiscordClient {
     // type: 0 = role, 1 = member
     public func editChannelPermission(channelId: ChannelID, overwriteId: OverwriteID, type: Int, allow: String? = nil, deny: String? = nil) async throws {
         struct Body: Encodable, Sendable { let allow: String?; let deny: String?; let type: Int }
-        struct EmptyDecodable: Decodable {}
+        struct EmptyDecodable: Decodable, Sendable {}
         let _: EmptyDecodable = try await http.put(path: "/channels/\(channelId)/permissions/\(overwriteId)", body: Body(allow: allow, deny: deny, type: type))
     }
 
@@ -975,8 +971,8 @@ public actor DiscordClient {
 
     // Channel typing indicator
     public func triggerTypingIndicator(channelId: ChannelID) async throws {
-        struct Empty: Encodable {}
-        struct EmptyDecodable: Decodable {}
+        struct Empty: Encodable, Sendable {}
+        struct EmptyDecodable: Decodable, Sendable {}
         let _: EmptyDecodable = try await http.post(path: "/channels/\(channelId)/typing", body: Empty())
     }
 
@@ -991,16 +987,8 @@ public actor DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/roles/\(roleId)")
     }
 
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let name: String; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let name: String?; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
+    public struct RoleCreate: Codable, Sendable { public let name: String; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
+    public struct RoleUpdate: Codable, Sendable { public let name: String?; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
 
     public func modifyRole(guildId: GuildID, roleId: RoleID, payload: RoleUpdate) async throws -> Role {
         try await http.patch(path: "/guilds/\(guildId)/roles/\(roleId)", body: payload)
@@ -1044,7 +1032,7 @@ public actor DiscordClient {
         if let reason, let encoded = reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
             path += "?reason=\(encoded)"
         }
-        struct EmptyResponse: Decodable {}
+        struct EmptyResponse: Decodable, Sendable {}
         let _: EmptyResponse = try await http.put(path: path, body: Body(delete_message_days: deleteMessageDays))
     }
 
@@ -1053,7 +1041,7 @@ public actor DiscordClient {
     }
 
     public func createGuildBan(guildId: GuildID, userId: UserID, deleteMessageSeconds: Int? = nil) async throws {
-        struct Empty: Encodable {}
+        struct Empty: Encodable, Sendable {}
         var path = "/guilds/\(guildId)/bans/\(userId)"
         if let s = deleteMessageSeconds { path += "?delete_message_seconds=\(s)" }
         let _: ApplicationCommand = try await http.put(path: path, body: Empty())
@@ -1260,11 +1248,7 @@ public actor DiscordClient {
     }
 
     // Autocomplete result helper (type 8)
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct AutocompleteChoice: Codable, Sendable {
         public let name: String
         public let value: String
         public init(name: String, value: String) { self.name = name; self.value = value }
@@ -1299,22 +1283,14 @@ public actor DiscordClient {
     }
 
     // MARK: - Phase 4: Slash Commands (minimal)
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct ApplicationCommand: Codable, Sendable {
         public let id: ApplicationCommandID
         public let application_id: ApplicationID
         public let name: String
         public let description: String
     }
 
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct ApplicationCommandOption: Codable, Sendable {
         public enum ApplicationCommandOptionType: Int, Codable {
             case subCommand = 1
             case subCommandGroup = 2
@@ -1332,11 +1308,7 @@ public actor DiscordClient {
         public let name: String
         public let description: String
         public let required: Bool?
-        
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let name: String; public let value: String }
+        public struct Choice: Codable { public let name: String; public let value: String }
         public let choices: [Choice]?
         public init(type: ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil, choices: [Choice]? = nil) {
             self.type = type
@@ -1347,11 +1319,7 @@ public actor DiscordClient {
         }
     }
 
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct ApplicationCommandCreate: Encodable, Sendable {
         public let name: String
         public let description: String
         public let options: [ApplicationCommandOption]?
@@ -1457,7 +1425,7 @@ public actor DiscordClient {
         let desiredNames  = Set(desired.map(\.name).sorted())
 
         guard existingNames != desiredNames else {
-            // No structural change Ã¢â‚¬â€ return what Discord already has.
+            // No structural change — return what Discord already has.
             return existing
         }
 
@@ -1517,7 +1485,7 @@ public actor DiscordClient {
         if wait {
             return try await http.post(path: "/webhooks/\(webhookId)/\(token)\(waitParam)", body: body)
         } else {
-            struct EmptyResponse: Decodable {}
+            struct EmptyResponse: Decodable, Sendable {}
             let _: EmptyResponse = try await http.post(path: "/webhooks/\(webhookId)/\(token)", body: body)
             return nil
         }
@@ -1569,11 +1537,7 @@ public actor DiscordClient {
     // MARK: - REST: Community Invite Target Users (Added 2026-01-13)
 
     /// Response from the Get Target Users Job Status endpoint.
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct InviteTargetUsersJobStatus: Codable {
         public let job_id: String
         public let status: String  // e.g. "pending", "complete", "failed"
         public let invite_code: String
@@ -1582,21 +1546,21 @@ public actor DiscordClient {
     /// Get the raw CSV of user IDs allowed to accept a restricted invite.
     /// The response is CSV bytes with a `user_id` header column (not JSON).
     /// Decode with `String(data: result, encoding: .utf8)` to get the CSV text.
-    /// `GET /invites/{code}/users` Ã¢â‚¬â€ Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
+    /// `GET /invites/{code}/users` — Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
     public func getInviteTargetUsers(code: String) async throws -> Data {
         try await http.getRaw(path: "/invites/\(code)/users")
     }
 
     /// Replace the list of users allowed to accept a restricted invite by uploading a CSV file.
     /// The CSV must have a `user_id` column. Returns the async job status.
-    /// `PATCH /invites/{code}/users` Ã¢â‚¬â€ Added 2026-01-13.
+    /// `PATCH /invites/{code}/users` — Added 2026-01-13.
     public func updateInviteTargetUsers(code: String, file: FileAttachment) async throws -> InviteTargetUsersJobStatus {
-        struct Empty: Encodable {}
+        struct Empty: Encodable, Sendable {}
         return try await http.patchMultipart(path: "/invites/\(code)/users", jsonBody: Empty(), files: [file])
     }
 
     /// Check the status of the background job that processes a target-users CSV upload.
-    /// `GET /invites/{code}/users/jobs/{job_id}` Ã¢â‚¬â€ Added 2026-01-13.
+    /// `GET /invites/{code}/users/jobs/{job_id}` — Added 2026-01-13.
     public func getInviteTargetUsersJobStatus(code: String, jobId: String) async throws -> InviteTargetUsersJobStatus {
         try await http.get(path: "/invites/\(code)/users/jobs/\(jobId)")
     }
@@ -1620,7 +1584,7 @@ public actor DiscordClient {
     }
 
     public func syncGuildTemplate(guildId: GuildID, code: String) async throws -> Template {
-        struct Empty: Encodable {}
+        struct Empty: Encodable, Sendable {}
         return try await http.put(path: "/guilds/\(guildId)/templates/\(code)", body: Empty())
     }
 
@@ -1634,7 +1598,7 @@ public actor DiscordClient {
     }
 
     public func listStickerPacks() async throws -> [StickerPack] {
-        struct Packs: Decodable { let sticker_packs: [StickerPack] }
+        struct Packs: Decodable, Sendable { let sticker_packs: [StickerPack] }
         let resp: Packs = try await http.get(path: "/sticker-packs")
         return resp.sticker_packs
     }
@@ -1673,7 +1637,7 @@ public actor DiscordClient {
         autoArchiveDuration: Int? = nil,
         rateLimitPerUser: Int? = nil
     ) async throws -> Channel {
-        struct Msg: Encodable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]? }
+        struct Msg: Encodable, Sendable { let content: String?; let embeds: [Embed]?; let components: [MessageComponent]? }
         struct Body: Encodable, Sendable {
             let name: String
             let auto_archive_duration: Int?

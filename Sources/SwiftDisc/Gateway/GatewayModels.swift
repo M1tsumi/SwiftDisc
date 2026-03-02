@@ -1,18 +1,10 @@
 import Foundation
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GatewayHello: Codable, Sendable {
     public let heartbeat_interval: Int
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct ThreadMembersUpdate: Codable, Hashable, Sendable {
     public let id: ChannelID
     public let guild_id: GuildID
     public let member_count: Int
@@ -20,22 +12,14 @@ import Foundation
     public let removed_member_ids: [UserID]?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct VoiceState: Codable, Hashable, Sendable {
     public let guild_id: GuildID?
     public let channel_id: ChannelID?
     public let user_id: UserID
     public let session_id: String
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct VoiceServerUpdate: Codable, Hashable, Sendable {
     public let token: String
     public let guild_id: GuildID
     public let endpoint: String?
@@ -55,16 +39,13 @@ public enum GatewayOpcode: Int, Codable, Sendable {
     case heartbeatAck = 11
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GatewayPayload<D: Codable>: Codable {
     public let op: GatewayOpcode
     public let d: D?
     public let s: Int?
     public let t: String?
 }
+extension GatewayPayload: Sendable where D: Sendable {}
 
 public enum DiscordEvent: Hashable, Sendable {
     case ready(ReadyEvent)
@@ -137,31 +118,19 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementDelete(Entitlement)
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageDelete: Codable, Hashable, Sendable {
     public let id: MessageID
     public let channel_id: ChannelID
     public let guild_id: GuildID?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageDeleteBulk: Codable, Hashable, Sendable {
     public let ids: [MessageID]
     public let channel_id: ChannelID
     public let guild_id: GuildID?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageReactionAdd: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
     public let message_id: MessageID
@@ -170,11 +139,7 @@ public enum DiscordEvent: Hashable, Sendable {
     public let emoji: PartialEmoji
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageReactionRemove: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
     public let message_id: MessageID
@@ -182,43 +147,27 @@ public enum DiscordEvent: Hashable, Sendable {
     public let emoji: PartialEmoji
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageReactionRemoveAll: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let message_id: MessageID
     public let guild_id: GuildID?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let message_id: MessageID
     public let guild_id: GuildID?
     public let emoji: PartialEmoji
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct ReadyEvent: Codable, Hashable, Sendable {
     public let user: User
     public let session_id: String?
 }
 
 // Note: Guild model lives in Sources/SwiftDisc/Models/Guild.swift
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildDelete: Codable, Hashable, Sendable {
     public let id: GuildID
     public let unavailable: Bool?
 }
@@ -226,11 +175,7 @@ public enum DiscordEvent: Hashable, Sendable {
 // Note: Interaction model lives in Sources/SwiftDisc/Models/Interaction.swift
 
 // MARK: - Guild Member Events
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildMemberAdd: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
     public let nick: String?
@@ -244,20 +189,12 @@ public enum DiscordEvent: Hashable, Sendable {
     public let permissions: String?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildMemberRemove: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildMemberUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
     public let nick: String?
@@ -267,65 +204,37 @@ public enum DiscordEvent: Hashable, Sendable {
 }
 
 // MARK: - Role CRUD Events
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildRoleCreate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role: Role
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildRoleUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role: Role
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildRoleDelete: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role_id: RoleID
 }
 
 // MARK: - Emoji / Sticker Update
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildEmojisUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let emojis: [Emoji]
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildStickersUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let stickers: [Sticker]
 }
 
 // MARK: - Request/Receive Guild Members
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct RequestGuildMembers: Codable, Hashable, Sendable {
     public let op: Int = 8
     public let d: Payload
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct Payload: Codable, Hashable, Sendable {
         public let guild_id: GuildID
         public let query: String?
         public let limit: Int?
@@ -335,17 +244,9 @@ public enum DiscordEvent: Hashable, Sendable {
     }
 }
 
+public struct Presence: Codable, Hashable, Sendable {}
 
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    }
-
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildMembersChunk: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let members: [GuildMember]
     public let chunk_index: Int
@@ -355,11 +256,7 @@ public enum DiscordEvent: Hashable, Sendable {
     public let nonce: String?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct IdentifyPayload: Codable, Sendable {
     public let token: String
     public let intents: UInt64
     public let properties: IdentifyConnectionProperties
@@ -377,11 +274,7 @@ public enum DiscordEvent: Hashable, Sendable {
     }
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct IdentifyConnectionProperties: Codable, Sendable {
     public let os: String
     public let browser: String
     public let device: String
@@ -412,46 +305,18 @@ public enum DiscordEvent: Hashable, Sendable {
 
 public typealias HeartbeatPayload = Int?
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct ResumePayload: Codable, Sendable {
     public let token: String
     public let session_id: String
     public let seq: Int
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
-        
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let start: Int64?; public let end: Int64? }
-        
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
-        
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let id: String?; public let size: [Int]? }
-        
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-     public let join: String?; public let spectate: String?; public let match: String? }
+public struct PresenceUpdatePayload: Codable, Sendable {
+    public struct Activity: Codable, Hashable, Sendable {
+        public struct Timestamps: Codable, Hashable, Sendable { public let start: Int64?; public let end: Int64? }
+        public struct Assets: Codable, Hashable, Sendable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
+        public struct Party: Codable, Hashable, Sendable { public let id: String?; public let size: [Int]? }
+        public struct Secrets: Codable, Hashable, Sendable { public let join: String?; public let spectate: String?; public let match: String? }
         public let name: String
         public let type: Int
         public let state: String?
@@ -483,11 +348,7 @@ public typealias HeartbeatPayload = Int?
             self.secrets = secrets
         }
     }
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct Data: Codable, Sendable {
         public let since: Int?
         public let activities: [Activity]
         public let status: String
@@ -498,11 +359,7 @@ public typealias HeartbeatPayload = Int?
 
 // MARK: - New Gateway Events (v1.1.0)
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct TypingStart: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let guild_id: GuildID?
     public let user_id: UserID
@@ -510,78 +367,46 @@ public typealias HeartbeatPayload = Int?
     public let member: GuildMember?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct ChannelPinsUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID?
     public let channel_id: ChannelID
     public let last_pin_timestamp: String?
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct PresenceUpdate: Codable, Hashable, Sendable {
     public let user: User
     public let guild_id: GuildID
     public let status: String
     public let activities: [PresenceUpdatePayload.Activity]
     public let client_status: ClientStatus
     
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct ClientStatus: Codable, Hashable, Sendable {
         public let desktop: String?
         public let mobile: String?
         public let web: String?
     }
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildBanAdd: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildBanRemove: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct WebhooksUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let channel_id: ChannelID
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildIntegrationsUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct InviteCreate: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let code: String
     public let created_at: String
@@ -595,11 +420,7 @@ public typealias HeartbeatPayload = Int?
     public let temporary: Bool
     public let uses: Int
     
-    
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+    public struct PartialApplication: Codable, Hashable, Sendable {
         public let id: ApplicationID
         public let name: String
         public let icon: String?
@@ -607,11 +428,7 @@ public typealias HeartbeatPayload = Int?
     }
 }
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct InviteDelete: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let guild_id: GuildID?
     public let code: String
@@ -619,11 +436,7 @@ public typealias HeartbeatPayload = Int?
 
 // MARK: - Auto Moderation
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct AutoModerationActionExecution: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let action: AutoModerationRule.Action
     public let rule_id: AutoModerationRuleID
@@ -639,22 +452,14 @@ public typealias HeartbeatPayload = Int?
 
 // MARK: - Audit Log
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct GuildAuditLogEntryCreate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let entry: AuditLogEntry
 }
 
 // MARK: - Poll Votes
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct PollVote: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
     public let guild_id: GuildID?
@@ -664,11 +469,7 @@ public typealias HeartbeatPayload = Int?
 
 // MARK: - Soundboard
 
-
-        $m = $args[0]
-        if ($m.Value -match "Sendable") { $m.Value }
-        else { "$($m.Groups[1].Value): $($m.Groups[2].Value)Sendable {" }
-    
+public struct SoundboardSound: Codable, Hashable, Sendable {
     public let id: SoundboardSoundID
     public let guild_id: GuildID?
     public let name: String
