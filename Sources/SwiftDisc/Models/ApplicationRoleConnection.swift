@@ -42,7 +42,7 @@ public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     }
 }
 
-public enum RoleConnectionMetadataType: Int, Codable, Hashable, CaseIterable {
+public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIterable {
     case integerLessThanOrEqual = 1
     case integerGreaterThanOrEqual = 2
     case integerEqual = 3

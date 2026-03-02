@@ -95,7 +95,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
     }
 
     public struct TextInput: Codable, Hashable, Sendable {
-        public enum Style: Int, Codable { case short = 1, paragraph = 2 }
+        public enum Style: Int, Codable, Sendable { case short = 1, paragraph = 2 }
         public let type: Int = 4
         public let custom_id: String
         public let style: Style

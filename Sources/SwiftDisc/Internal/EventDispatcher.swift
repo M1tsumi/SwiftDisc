@@ -49,7 +49,7 @@ actor EventDispatcher {
             // Eagerly seed channel and user caches from GUILD_CREATE payload
             for channel in guild.channels ?? [] { await client.cache.upsert(channel: channel) }
             for thread in guild.threads ?? []   { await client.cache.upsert(channel: thread) }
-            for member in guild.members ?? [], let user = member.user { await client.cache.upsert(user: user) }
+            for member in guild.members ?? [] { if let user = member.user { await client.cache.upsert(user: user) } }
             if let cb = await client.onGuildCreate { await cb(guild) }
 
         case .guildUpdate(let guild):
@@ -73,7 +73,7 @@ actor EventDispatcher {
             if let cb = await client.onGuildMemberUpdate { await cb(ev) }
 
         case .guildMembersChunk(let chunk):
-            for member in chunk.members, let user = member.user { await client.cache.upsert(user: user) }
+            for member in chunk.members { if let user = member.user { await client.cache.upsert(user: user) } }
 
         // MARK: Roles
         case .guildRoleCreate(let ev):

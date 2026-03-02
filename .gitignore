@@ -36,11 +36,12 @@ Secrets/
 *.profraw
 coverage/
 
-# Local reports (not committed)
+# Local reports / debug logs (not committed)
 advaithpr.ts
 VoiceActivity.txt
 percentage.txt
 Reports/
+errors/
 
 # Internal planning documents
 v2.0.0.txt

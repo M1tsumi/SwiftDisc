@@ -1,6 +1,6 @@
 import Foundation
 
-public struct FileAttachment {
+public struct FileAttachment: Sendable {
     public let filename: String
     public let data: Data
     public let description: String?

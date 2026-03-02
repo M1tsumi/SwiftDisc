@@ -4,7 +4,7 @@ import Foundation
 /// Declared as a `public actor` so concurrent accesses from multiple commands are
 /// data-race free without any manual locking. Use it anywhere in your bot code.
 public actor CooldownManager {
-    private var store: [String: Date] = []
+    private var store: [String: Date] = [:]
 
     public init() {}
 

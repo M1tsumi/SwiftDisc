@@ -7,7 +7,7 @@ import Foundation
 /// are accessible from any context without `await`.
 public actor DiscordClient {
     public let token: String
-    private let http: HTTPClient
+    let http: HTTPClient
     private let gateway: GatewayClient
     private let configuration: DiscordConfiguration
     private let dispatcher = EventDispatcher()
