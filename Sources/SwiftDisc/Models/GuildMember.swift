@@ -1,6 +1,6 @@
 import Foundation
 
-public struct GuildMember: Codable, Hashable {
+public struct GuildMember: Codable, Hashable, Sendable {
     public let user: User?
     public let nick: String?
     public let avatar: String?

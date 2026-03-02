@@ -1,6 +1,6 @@
 import Foundation
 
-public enum MessageComponent: Codable, Hashable {
+public enum MessageComponent: Codable, Hashable, Sendable {
     case actionRow(ActionRow)
     case button(Button)
     case select(SelectMenu)
@@ -47,13 +47,13 @@ public enum MessageComponent: Codable, Hashable {
 
     private enum CodingKeys: String, CodingKey { case type }
 
-    public struct ActionRow: Codable, Hashable {
+    public struct ActionRow: Codable, Hashable, Sendable {
         public let type: Int = 1
         public let components: [MessageComponent]
         public init(components: [MessageComponent]) { self.components = components }
     }
 
-    public struct Button: Codable, Hashable {
+    public struct Button: Codable, Hashable, Sendable {
         public let type: Int = 2
         public let style: Int
         public let label: String?
@@ -69,8 +69,8 @@ public enum MessageComponent: Codable, Hashable {
         }
     }
 
-    public struct SelectMenu: Codable, Hashable {
-        public struct Option: Codable, Hashable {
+    public struct SelectMenu: Codable, Hashable, Sendable {
+        public struct Option: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
             public let description: String?
@@ -94,7 +94,7 @@ public enum MessageComponent: Codable, Hashable {
         }
     }
 
-    public struct TextInput: Codable, Hashable {
+    public struct TextInput: Codable, Hashable, Sendable {
         public enum Style: Int, Codable { case short = 1, paragraph = 2 }
         public let type: Int = 4
         public let custom_id: String
@@ -121,7 +121,7 @@ public enum MessageComponent: Codable, Hashable {
 
     /// Label layout component (type 21). Top-level container for modal components.
     /// Provides a `label` and optional `description`, and wraps a single interactive component.
-    public struct Label: Codable, Hashable {
+    public struct Label: Codable, Hashable, Sendable {
         public let type: Int = 21
         public let label: String
         public let description: String?
@@ -135,12 +135,12 @@ public enum MessageComponent: Codable, Hashable {
     }
 
     /// Radio Group component (type 22). Single-selection picker for modals; must be inside a Label.
-    public struct RadioGroup: Codable, Hashable {
+    public struct RadioGroup: Codable, Hashable, Sendable {
         public let type: Int = 22
         public let custom_id: String
         public let options: [RadioOption]
         public let required: Bool?
-        public struct RadioOption: Codable, Hashable {
+        public struct RadioOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
             public let description: String?
@@ -160,13 +160,13 @@ public enum MessageComponent: Codable, Hashable {
     }
 
     /// Checkbox Group component (type 23). Multi-selection picker for modals; must be inside a Label.
-    public struct CheckboxGroup: Codable, Hashable {
+    public struct CheckboxGroup: Codable, Hashable, Sendable {
         public let type: Int = 23
         public let custom_id: String
         public let options: [CheckboxOption]
         public let min_values: Int?
         public let max_values: Int?
-        public struct CheckboxOption: Codable, Hashable {
+        public struct CheckboxOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
             public let description: String?
@@ -187,7 +187,7 @@ public enum MessageComponent: Codable, Hashable {
     }
 
     /// Checkbox component (type 24). Boolean yes/no toggle for modals; must be inside a Label.
-    public struct Checkbox: Codable, Hashable {
+    public struct Checkbox: Codable, Hashable, Sendable {
         public let type: Int = 24
         public let custom_id: String
         public let required: Bool?

@@ -7,6 +7,10 @@ public struct Snowflake<T>: Hashable, Codable, CustomStringConvertible, Expressi
     public var description: String { rawValue }
 }
 
+// Snowflake only stores a plain `String`; the phantom type parameter `T` is never
+// stored at runtime, so this conformance is sound unconditionally.
+extension Snowflake: @unchecked Sendable {}
+
 public typealias UserID = Snowflake<User>
 public typealias ChannelID = Snowflake<Channel>
 public typealias MessageID = Snowflake<Message>

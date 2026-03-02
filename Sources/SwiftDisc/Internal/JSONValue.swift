@@ -1,6 +1,6 @@
 import Foundation
 
-public enum JSONValue: Codable, Hashable {
+public enum JSONValue: Codable, Hashable, Sendable {
     case string(String)
     case number(Double)
     case int(Int)

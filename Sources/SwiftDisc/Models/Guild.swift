@@ -3,7 +3,7 @@ import Foundation
 /// A full Discord Guild (server) object.
 /// Fields such as `members`, `channels`, and `threads` are only populated
 /// in the `GUILD_CREATE` gateway event; REST responses return `nil` for them.
-public struct Guild: Codable, Hashable {
+public struct Guild: Codable, Hashable, Sendable {
     // MARK: - Core Identity
     public let id: GuildID
     public let name: String

@@ -1,15 +1,15 @@
 import Foundation
 
-public struct AutoModerationRule: Codable, Hashable {
-    public struct TriggerMetadata: Codable, Hashable {
+public struct AutoModerationRule: Codable, Hashable, Sendable {
+    public struct TriggerMetadata: Codable, Hashable, Sendable {
         public let keyword_filter: [String]?
         public let presets: [Int]?
         public let allow_list: [String]?
         public let mention_total_limit: Int?
         public let mention_raid_protection_enabled: Bool?
     }
-    public struct Action: Codable, Hashable {
-        public struct Metadata: Codable, Hashable {
+    public struct Action: Codable, Hashable, Sendable {
+        public struct Metadata: Codable, Hashable, Sendable {
             public let channel_id: ChannelID?
             public let duration_seconds: Int?
             public let custom_message: String?
