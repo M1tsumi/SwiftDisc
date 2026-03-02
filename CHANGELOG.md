@@ -70,6 +70,69 @@ event-stream helpers, and a background cache-eviction task.
   for await interaction in client.interactionEvents()  { ... }
   for await member      in client.memberAddEvents()    { ... }
   ```
+- **`MessagePayload` fluent builder** — composable payload type covering every
+  message-send option. Automatically dispatches to multipart when files are present:
+  ```swift
+  try await client.send(to: channelId, MessagePayload()
+      .content("Hello!")
+      .embed(EmbedBuilder().title("World").build())
+      .ephemeral()
+      .silent())
+  try await client.edit(channelId: cid, messageId: mid, MessagePayload().content("Updated"))
+  try await client.respond(to: interaction, with: MessagePayload().content("OK").ephemeral())
+  ```
+- **`WebhookClient`** — standalone token-free webhook client (uses `URLSession`
+  directly, no bot token required). Parse from URL or supply ID + token directly:
+  ```swift
+  let hook = WebhookClient(url: "https://discord.com/api/webhooks/123/abc")!
+  let msg  = try await hook.execute(content: "Hi!", wait: true)
+  try await hook.editMessage(messageId: msg!.id.rawValue, content: "Updated")
+  try await hook.deleteMessage(messageId: msg!.id.rawValue)
+  ```
+- **`EmojiRef` typed enum** — type-safe emoji references for all reaction APIs:
+  ```swift
+  try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("👍"))
+  try await client.addReaction(channelId: cid, messageId: mid, emoji: .custom(name: "uwu", id: emojiId))
+  ```
+- **`DiscordClient.archiveThread(channelId:locked:)`** — archive (and optionally
+  lock) a thread in one call via `PATCH /channels/{id}`.
+- **`DiscordClient.syncCommands(_:guildId:)`** — smart command sync that fetches
+  existing commands, diffs the name sets, and only calls `bulkOverwrite` when there
+  is an actual change. Avoids rate-limit churn on every restart:
+  ```swift
+  try await client.syncCommands(myCommands)            // global
+  try await client.syncCommands(myCommands, guildId: guildId) // guild
+  ```
+- **Middleware for `CommandRouter` and `SlashCommandRouter`** — register
+  cross-cutting concerns (logging, auth gates, rate-limiting) independently of
+  command handlers:
+  ```swift
+  router.use { ctx, next in
+      guard ctx.isAdmin else {
+          try await ctx.message.reply(client: ctx.client, content: "🚫 Admins only.")
+          return
+      }
+      try await next(ctx)
+  }
+  ```
+- **Permission helpers on `Context`** — both `CommandRouter.Context` and
+  `SlashCommandRouter.Context` gain `hasPermission(_:)`, `isAdmin`, and
+  `memberHasRole(_:)`:
+  ```swift
+  guard ctx.isAdmin else { return }
+  guard ctx.hasPermission(1 << 5) else { return } // MANAGE_MESSAGES
+  guard ctx.memberHasRole(modRoleId) else { return }
+  ```
+- **Cache role + emoji storage** — `Cache` now stores per-guild roles and emojis:
+  ```swift
+  cache.upsert(role: role, guildId: guildId)
+  let allRoles = cache.getRoles(guildId: guildId)
+  cache.upsert(emojis: guild.emojis ?? [], guildId: guild.id)
+  let emojis   = cache.getEmojis(guildId: guildId)
+  ```
+- **`GuildMember.permissions`** — added `permissions: String?` field that Discord
+  includes in interaction and some gateway member payloads (effective permission
+  bitfield as a decimal string).
 
 ### Added — Discord API Coverage
 - **32 new gateway event callbacks** added to `DiscordClient` — every previously

@@ -6,6 +6,21 @@ public actor CommandRouter {
     /// The async, Sendable handler type invoked when a command matches.
     public typealias Handler = @Sendable (Context) async throws -> Void
 
+    /// Middleware type. A sendable closure that receives the context and a `next`
+    /// handler. Call `try await next(ctx)` to continue the chain, or
+    /// throw / return early to halt further processing.
+    ///
+    /// ```swift
+    /// router.use { ctx, next in
+    ///     guard ctx.isAdmin else {
+    ///         try await ctx.message.reply(client: ctx.client, content: "🚫 Admins only.")
+    ///         return
+    ///     }
+    ///     try await next(ctx)
+    /// }
+    /// ```
+    public typealias Middleware = @Sendable (Context, @escaping Handler) async throws -> Void
+
     /// Per-invocation context provided to every command handler.
     public struct Context: Sendable {
         public let client: DiscordClient
@@ -15,6 +30,28 @@ public actor CommandRouter {
             self.client = client
             self.message = message
             self.args = args
+        }
+
+        // MARK: - Permission helpers
+
+        /// Returns `true` if the message author has the given raw permission bit set.
+        ///
+        /// Uses `member.permissions`, which Discord provides in guild message events.
+        /// Returns `false` for DMs (no member attached) or if the field is absent.
+        public func hasPermission(_ bit: UInt64) -> Bool {
+            guard let permStr = message.member?.permissions,
+                  let permInt = UInt64(permStr) else { return false }
+            return (permInt & bit) != 0
+        }
+
+        /// Returns `true` if the member holds the `ADMINISTRATOR` permission (`1 << 3`).
+        ///
+        /// Administrators bypass all channel-level permission overwrites.
+        public var isAdmin: Bool { hasPermission(1 << 3) }
+
+        /// Returns `true` if the member has the specified role.
+        public func memberHasRole(_ roleId: RoleID) -> Bool {
+            message.member?.roles.contains(roleId) ?? false
         }
     }
 
@@ -27,6 +64,7 @@ public actor CommandRouter {
     private var prefix: String
     private var handlers: [String: Handler] = [:]
     private var metadata: [String: CommandMeta] = [:]
+    private var middlewares: [Middleware] = []
     /// Optional error handler invoked when a command handler throws.
     public var onError: (@Sendable (Error, Context) -> Void)?
 
@@ -37,6 +75,15 @@ public actor CommandRouter {
     /// Update the command prefix at runtime.
     public func use(prefix: String) {
         self.prefix = prefix
+    }
+
+    /// Register a middleware to run before every command handler.
+    ///
+    /// Middlewares execute in registration order. Each middleware **must** call
+    /// `next(ctx)` to proceed to the next middleware (or the final handler).
+    /// Omitting the call acts as an early-exit / guard.
+    public func use(_ middleware: @escaping Middleware) {
+        middlewares.append(middleware)
     }
 
     /// Register a command name (case-insensitive) with a handler.
@@ -55,10 +102,18 @@ public actor CommandRouter {
         guard let cmd = parts.first?.lowercased() else { return }
         let args = Array(parts.dropFirst())
         guard let handler = handlers[cmd] else { return }
+        let ctx = Context(client: client, message: message, args: args)
         do {
-            try await handler(Context(client: client, message: message, args: args))
+            // Build the middleware chain from back to front so the first registered
+            // middleware is the outermost wrapper.
+            var chain: Handler = handler
+            for mw in middlewares.reversed() {
+                let next = chain
+                let m = mw
+                chain = { @Sendable ctx in try await m(ctx, next) }
+            }
+            try await chain(ctx)
         } catch {
-            let ctx = Context(client: client, message: message, args: args)
             if let onError { onError(error, ctx) }
         }
     }

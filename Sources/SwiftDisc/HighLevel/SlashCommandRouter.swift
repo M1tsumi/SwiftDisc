@@ -56,12 +56,53 @@ public actor SlashCommandRouter {
             guard let rawId = option(name) else { return nil }
             return interaction.data?.resolved?.members?[UserID(rawId)]
         }
+
+        // MARK: - Permission helpers
+
+        /// Returns `true` if the invoking member has the given raw permission bit set.
+        ///
+        /// Uses `interaction.member?.permissions`, which Discord provides in guild
+        /// application command interactions. Returns `false` for DMs (no member) or
+        /// if the field is absent.
+        public func hasPermission(_ bit: UInt64) -> Bool {
+            guard let permStr = interaction.member?.permissions,
+                  let permInt = UInt64(permStr) else { return false }
+            return (permInt & bit) != 0
+        }
+
+        /// Returns `true` if the invoking member holds the `ADMINISTRATOR` permission (`1 << 3`).
+        public var isAdmin: Bool { hasPermission(1 << 3) }
+
+        /// Returns `true` if the invoking member has the specified role.
+        public func memberHasRole(_ roleId: RoleID) -> Bool {
+            interaction.member?.roles.contains(roleId) ?? false
+        }
     }
 
     /// The async, Sendable handler type invoked when a slash command matches.
     public typealias Handler = @Sendable (Context) async throws -> Void
 
+    /// Middleware type. A sendable closure that receives the context and a `next`
+    /// handler. Call `try await next(ctx)` to continue the chain, or
+    /// throw / return early to halt further processing.
+    ///
+    /// ```swift
+    /// router.use { ctx, next in
+    ///     guard ctx.isAdmin else {
+    ///         try await ctx.client.createInteractionResponse(
+    ///             id: ctx.interaction.id,
+    ///             token: ctx.interaction.token,
+    ///             response: ["type": 4, "data": ["content": "🚫 Admins only.", "flags": 64]]
+    ///         )
+    ///         return
+    ///     }
+    ///     try await next(ctx)
+    /// }
+    /// ```
+    public typealias Middleware = @Sendable (Context, @escaping Handler) async throws -> Void
+
     private var handlers: [String: Handler] = [:]
+    private var middlewares: [Middleware] = []
     /// Optional error handler invoked when a command handler throws.
     public var onError: (@Sendable (Error, Context) -> Void)?
 
@@ -77,12 +118,28 @@ public actor SlashCommandRouter {
         handlers[path.lowercased()] = handler
     }
 
+    /// Register a middleware to run before every slash-command handler.
+    ///
+    /// Middlewares execute in registration order. Each middleware **must** call
+    /// `next(ctx)` to proceed to the next middleware (or the final handler).
+    public func use(_ middleware: @escaping Middleware) {
+        middlewares.append(middleware)
+    }
+
     /// Dispatch an incoming interaction to the matching handler.
     public func handle(interaction: Interaction, client: DiscordClient) async {
         guard interaction.data?.name.isEmpty == false else { return }
         let ctx = Context(client: client, interaction: interaction)
         guard let handler = handlers[ctx.path.lowercased()] ?? handlers[interaction.data!.name.lowercased()] else { return }
-        do { try await handler(ctx) } catch { if let onError { onError(error, ctx) } }
+        do {
+            var chain: Handler = handler
+            for mw in middlewares.reversed() {
+                let next = chain
+                let m = mw
+                chain = { @Sendable ctx in try await m(ctx, next) }
+            }
+            try await chain(ctx)
+        } catch { if let onError { onError(error, ctx) } }
     }
 
     // MARK: - Path and options resolution

@@ -8,4 +8,7 @@ public struct GuildMember: Codable, Hashable {
     public let joined_at: String?
     public let deaf: Bool?
     public let mute: Bool?
+    /// Effective permissions bitfield (decimal string) included by Discord in
+    /// interaction payloads and some gateway member events.
+    public let permissions: String?
 }

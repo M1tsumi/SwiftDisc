@@ -18,6 +18,8 @@ public actor Cache {
     private var usersTimed: [UserID: TimedValue<User>] = [:]
     private var channelsTimed: [ChannelID: TimedValue<Channel>] = [:]
     private var guildsTimed: [GuildID: TimedValue<Guild>] = [:]
+    private var rolesByGuild: [GuildID: [RoleID: TimedValue<Role>]] = [:]
+    private var emojisByGuild: [GuildID: [Emoji]] = [:]
     public private(set) var recentMessagesByChannel: [ChannelID: [Message]] = [:]
 
     /// Background task that prunes expired TTL entries every 60 seconds.
@@ -51,6 +53,47 @@ public actor Cache {
 
     public func upsert(guild: Guild) {
         guildsTimed[guild.id] = TimedValue(value: guild, storedAt: Date())
+    }
+
+    // MARK: - Roles
+
+    /// Insert or update a role within a guild's role cache.
+    public func upsert(role: Role, guildId: GuildID) {
+        var dict = rolesByGuild[guildId] ?? [:]
+        dict[role.id] = TimedValue(value: role, storedAt: Date())
+        rolesByGuild[guildId] = dict
+    }
+
+    /// Remove a single role from the cache.
+    public func removeRole(id: RoleID, guildId: GuildID) {
+        rolesByGuild[guildId]?.removeValue(forKey: id)
+    }
+
+    /// Retrieve a single role.
+    public func getRole(id: RoleID, guildId: GuildID) -> Role? {
+        rolesByGuild[guildId]?[id]?.value
+    }
+
+    /// Retrieve all cached roles for a guild.
+    public func getRoles(guildId: GuildID) -> [Role] {
+        (rolesByGuild[guildId] ?? [:]).values.map(\.value)
+    }
+
+    // MARK: - Emojis
+
+    /// Replace the emoji list for a guild.
+    public func upsert(emojis: [Emoji], guildId: GuildID) {
+        emojisByGuild[guildId] = emojis
+    }
+
+    /// Retrieve all cached emojis for a guild.
+    public func getEmojis(guildId: GuildID) -> [Emoji] {
+        emojisByGuild[guildId] ?? []
+    }
+
+    /// Retrieve a single custom emoji by ID from a guild.
+    public func getEmoji(id: EmojiID, guildId: GuildID) -> Emoji? {
+        emojisByGuild[guildId]?.first { $0.id == id }
     }
 
     public func add(message: Message) {

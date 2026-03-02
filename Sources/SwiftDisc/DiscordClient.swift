@@ -816,6 +816,34 @@ public actor DiscordClient {
     }
 
     // MARK: - Message Reactions
+
+    /// Typed emoji reference for reaction methods.
+    ///
+    /// Use `.unicode("👍")` for standard Unicode emoji and
+    /// `.custom(name:id:)` for guild custom emoji.
+    ///
+    /// ```swift
+    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("🔥"))
+    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .custom(name: "pepega", id: emojiId))
+    /// ```
+    public enum EmojiRef: Sendable {
+        /// A standard Unicode emoji, e.g. `"👍"` or `"🔥"`.
+        case unicode(String)
+        /// A custom guild emoji. `name` is the emoji name and `id` is its snowflake.
+        case custom(name: String, id: EmojiID)
+
+        /// The percent-encoded string Discord expects in reaction URL paths.
+        public var encoded: String {
+            switch self {
+            case .unicode(let char):
+                return char.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? char
+            case .custom(let name, let id):
+                let raw = "\(name):\(id)"
+                return raw.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? raw
+            }
+        }
+    }
+
     private func encodeEmoji(_ emoji: String) -> String {
         emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? emoji
     }
@@ -854,6 +882,34 @@ public actor DiscordClient {
     public func removeAllReactionsForEmoji(channelId: ChannelID, messageId: MessageID, emoji: String) async throws {
         let e = encodeEmoji(emoji)
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)")
+    }
+
+    // MARK: Typed EmojiRef reaction overloads
+
+    /// Add a reaction using a typed ``EmojiRef``.
+    public func addReaction(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef) async throws {
+        try await http.put(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)/@me")
+    }
+
+    /// Remove the bot's own reaction using a typed ``EmojiRef``.
+    public func removeOwnReaction(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef) async throws {
+        try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)/@me")
+    }
+
+    /// Remove another user's reaction using a typed ``EmojiRef``.
+    public func removeUserReaction(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef, userId: UserID) async throws {
+        try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)/\(userId)")
+    }
+
+    /// Fetch all users who reacted with a typed ``EmojiRef``.
+    public func getReactions(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef, limit: Int? = 25) async throws -> [User] {
+        let q = limit != nil ? "?limit=\(limit!)" : ""
+        return try await http.get(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)\(q)")
+    }
+
+    /// Remove all reactions for a typed ``EmojiRef``.
+    public func removeAllReactionsForEmoji(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef) async throws {
+        try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)")
     }
 
     // MARK: - Phase 2 REST: Guilds
@@ -1079,6 +1135,19 @@ public actor DiscordClient {
     // Remove thread member
     public func removeThreadMember(channelId: ChannelID, userId: UserID) async throws {
         try await http.delete(path: "/channels/\(channelId)/thread-members/\(userId)")
+    }
+
+    /// Archive (and optionally lock) a thread channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The thread channel ID to archive.
+    ///   - locked: When `true`, only members with `MANAGE_THREADS` can unarchive the thread.
+    ///             Defaults to `false`.
+    /// - Returns: The updated ``Channel`` object.
+    @discardableResult
+    public func archiveThread(channelId: ChannelID, locked: Bool = false) async throws -> Channel {
+        struct Body: Encodable { let archived: Bool = true; let locked: Bool }
+        return try await http.patch(path: "/channels/\(channelId)", body: Body(locked: locked))
     }
 
     // Get thread member
@@ -1318,6 +1387,44 @@ public actor DiscordClient {
     public func bulkOverwriteGuildCommands(guildId: GuildID, _ commands: [ApplicationCommandCreate]) async throws -> [ApplicationCommand] {
         let appId = try await getCurrentUser().id
         return try await http.put(path: "/applications/\(appId)/guilds/\(guildId)/commands", body: commands)
+    }
+
+    /// Sync the desired application commands with Discord.
+    ///
+    /// Fetches the currently registered commands, compares name sets, and only
+    /// calls `bulkOverwrite` when there is a difference (new commands, deleted
+    /// commands, or a name change). This avoids unnecessary API writes during
+    /// repeated bot restarts.
+    ///
+    /// - Parameters:
+    ///   - desired: The full list of commands you want registered.
+    ///   - guildId: Target guild for guild-scoped commands, or `nil` for global commands.
+    /// - Returns: The commands now registered with Discord.
+    @discardableResult
+    public func syncCommands(
+        _ desired: [ApplicationCommandCreate],
+        guildId: GuildID? = nil
+    ) async throws -> [ApplicationCommand] {
+        let existing: [ApplicationCommand]
+        if let guildId {
+            existing = try await listGuildCommands(guildId: guildId)
+        } else {
+            existing = try await listGlobalCommands()
+        }
+
+        let existingNames = Set(existing.map(\.name).sorted())
+        let desiredNames  = Set(desired.map(\.name).sorted())
+
+        guard existingNames != desiredNames else {
+            // No structural change — return what Discord already has.
+            return existing
+        }
+
+        if let guildId {
+            return try await bulkOverwriteGuildCommands(guildId: guildId, desired)
+        } else {
+            return try await bulkOverwriteGlobalCommands(desired)
+        }
     }
 
     // MARK: - Phase 2 REST: Webhooks
