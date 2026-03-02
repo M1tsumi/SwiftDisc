@@ -556,7 +556,7 @@ public actor DiscordClient {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
                 guard let self else { return }
-                Task { [self] in
+                Task {
                     if let cb = await self.onVoiceFrame {
                         await cb(frame)
                     }
@@ -574,7 +574,7 @@ public actor DiscordClient {
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
                 guard let self else { return }
-                Task { [self] in
+                Task {
                     if let cb = await self.onVoiceFrame {
                         await cb(frame)
                     }
@@ -724,9 +724,9 @@ public actor DiscordClient {
 
     // MARK: - Raw REST passthroughs (coverage helper)
     public func rawGET<T: Decodable>(_ path: String) async throws -> T { try await http.get(path: path) }
-    public func rawPOST<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.post(path: path, body: body) }
-    public func rawPATCH<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.patch(path: path, body: body) }
-    public func rawPUT<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.put(path: path, body: body) }
+    public func rawPOST<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.post(path: path, body: body) }
+    public func rawPATCH<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.patch(path: path, body: body) }
+    public func rawPUT<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.put(path: path, body: body) }
     public func rawDELETE<T: Decodable>(_ path: String) async throws -> T { try await http.delete(path: path) }
 
     // MARK: - Generic Application-scoped helpers (for userApps/appEmoji and future endpoints)
