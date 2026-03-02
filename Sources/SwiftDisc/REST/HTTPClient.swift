@@ -7,7 +7,7 @@ private struct APIErrorBody: Decodable { let message: String; let code: Int? }
 
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
 
-final class HTTPClient {
+final class HTTPClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
@@ -33,12 +33,12 @@ final class HTTPClient {
         self.session = URLSession(configuration: config)
     }
 
-    func get<T: Decodable>(path: String) async throws -> T {
+    func get<T: Decodable>(path: String) async throws(DiscordError) -> T {
         try await request(method: "GET", path: path, body: Optional<Data>.none)
     }
 
     /// Fetch raw response bytes without JSON decoding. Useful for non-JSON endpoints (e.g. CSV).
-    func getRaw(path: String) async throws -> Data {
+    func getRaw(path: String) async throws(DiscordError) -> Data {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "GET", path: trimmed)
         var attempt = 0; let maxAttempts = 4
@@ -67,6 +67,8 @@ final class HTTPClient {
                     throw DiscordError.api(message: apiErr.message, code: apiErr.code)
                 }
                 throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+            } catch let de as DiscordError {
+                throw de
             } catch {
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
@@ -78,40 +80,40 @@ final class HTTPClient {
         }
     }
 
-    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
+    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
         return try await request(method: "POST", path: path, body: data)
     }
 
-    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
+    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
         return try await request(method: "PATCH", path: path, body: data)
     }
 
-    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
+    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
         return try await request(method: "PUT", path: path, body: data)
     }
 
     // Convenience: PUT with no body and expecting no content (204)
-    func put(path: String) async throws {
+    func put(path: String) async throws(DiscordError) {
         let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none)
     }
 
-    func delete<T: Decodable>(path: String) async throws -> T {
+    func delete<T: Decodable>(path: String) async throws(DiscordError) -> T {
         try await request(method: "DELETE", path: path, body: Optional<Data>.none)
     }
 
-    func delete(path: String) async throws {
+    func delete(path: String) async throws(DiscordError) {
         let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none)
     }
 
     private struct EmptyResponse: Decodable {}
 
-    private func request<T: Decodable>(method: String, path: String, body: Data?) async throws -> T {
+    private func request<T: Decodable>(method: String, path: String, body: Data?) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: method, path: trimmed)
 
@@ -159,6 +161,9 @@ final class HTTPClient {
                 }
                 let message = String(data: data, encoding: .utf8) ?? ""
                 throw DiscordError.http(http.statusCode, message)
+            } catch let de as DiscordError {
+                // Re-throw typed DiscordErrors without wrapping them
+                throw de
             } catch {
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
@@ -228,7 +233,7 @@ final class HTTPClient {
         return body
     }
 
-    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws -> T {
+    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "POST", path: trimmed)
 
@@ -275,6 +280,8 @@ final class HTTPClient {
                 }
                 let message = String(data: data, encoding: .utf8) ?? ""
                 throw DiscordError.http(http.statusCode, message)
+            } catch let de as DiscordError {
+                throw de
             } catch {
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
@@ -287,7 +294,7 @@ final class HTTPClient {
         }
     }
 
-    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws -> T {
+    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "PATCH", path: trimmed)
 
@@ -335,6 +342,8 @@ final class HTTPClient {
                 }
                 let message = String(data: data, encoding: .utf8) ?? ""
                 throw DiscordError.http(http.statusCode, message)
+            } catch let de as DiscordError {
+                throw de
             } catch {
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
@@ -376,7 +385,7 @@ final class HTTPClient {
 
 #else
 
-final class HTTPClient {
+final class HTTPClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
 
@@ -385,46 +394,44 @@ final class HTTPClient {
         self.configuration = configuration
     }
 
-    struct HTTPUnavailable: Error {}
-
-    func get<T: Decodable>(path: String) async throws -> T {
-        throw HTTPUnavailable()
+    func get<T: Decodable>(path: String) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
-        throw HTTPUnavailable()
+    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
-        throw HTTPUnavailable()
+    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws -> T {
-        throw HTTPUnavailable()
+    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func put(path: String) async throws {
-        throw HTTPUnavailable()
+    func put(path: String) async throws(DiscordError) {
+        throw DiscordError.unavailable
     }
 
-    func delete<T: Decodable>(path: String) async throws -> T {
-        throw HTTPUnavailable()
+    func delete<T: Decodable>(path: String) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func delete(path: String) async throws {
-        throw HTTPUnavailable()
+    func delete(path: String) async throws(DiscordError) {
+        throw DiscordError.unavailable
     }
 
-    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws -> T {
-        throw HTTPUnavailable()
+    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws -> T {
-        throw HTTPUnavailable()
+    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
     }
 
-    func getRaw(path: String) async throws -> Data {
-        throw HTTPUnavailable()
+    func getRaw(path: String) async throws(DiscordError) -> Data {
+        throw DiscordError.unavailable
     }
 }
 

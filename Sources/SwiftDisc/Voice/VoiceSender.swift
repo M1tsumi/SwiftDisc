@@ -3,11 +3,11 @@ import Foundation
 import Network
 #endif
 
-protocol VoiceEncryptor {
+protocol VoiceEncryptor: Sendable {
     func seal(nonce: Data, key: [UInt8], plaintext: Data) throws -> Data
 }
 
-final class RTPVoiceSender {
+final class RTPVoiceSender: @unchecked Sendable {
     private var sequence: UInt16 = 0
     private var timestamp: UInt32 = 0
     private let ssrc: UInt32

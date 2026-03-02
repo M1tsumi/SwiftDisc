@@ -1,7 +1,9 @@
 import Foundation
 
-// Box class to break infinite recursion for value types
-public final class Box<T: Codable & Hashable>: Codable, Hashable {
+// Box class to break infinite recursion for value types.
+// Marked `@unchecked Sendable` because the single stored property is immutable (`let`),
+// making instances effectively thread-safe despite being a class.
+public final class Box<T: Codable & Hashable>: Codable, Hashable, @unchecked Sendable {
     public let value: T
     public init(_ value: T) { self.value = value }
     public static func == (lhs: Box<T>, rhs: Box<T>) -> Bool { lhs.value == rhs.value }
@@ -147,4 +149,45 @@ public struct PartialEmoji: Codable, Hashable {
     public let id: EmojiID?
     public let name: String?
     public let animated: Bool?
+}
+
+// MARK: - Reply convenience
+
+public extension Message {
+    /// Reply to this message in the same channel, setting `message_reference` automatically.
+    ///
+    /// - Parameters:
+    ///   - client:     The `DiscordClient` to use for the HTTP call.
+    ///   - content:    Plain-text content for the reply.
+    ///   - embeds:     Optional embeds to attach.
+    ///   - components: Optional component rows to attach.
+    ///   - mention:    When `false`, suppresses the @mention ping on the replied-to author.
+    ///                 Defaults to `true` (Discord default behaviour).
+    /// - Returns: The newly created reply `Message`.
+    @discardableResult
+    func reply(
+        client: DiscordClient,
+        content: String? = nil,
+        embeds: [Embed]? = nil,
+        components: [MessageComponent]? = nil,
+        mention: Bool = true
+    ) async throws -> Message {
+        let ref = MessageReference(
+            message_id: id,
+            channel_id: channel_id,
+            guild_id: guild_id,
+            fail_if_not_exists: false
+        )
+        let allowed: AllowedMentions? = mention
+            ? nil
+            : AllowedMentions(parse: [], roles: nil, users: nil, replied_user: false)
+        return try await client.sendMessage(
+            channelId: channel_id,
+            content: content,
+            embeds: embeds,
+            components: components,
+            allowedMentions: allowed,
+            messageReference: ref
+        )
+    }
 }

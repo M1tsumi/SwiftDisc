@@ -1,6 +1,6 @@
 import Foundation
 
-public typealias ViewHandler = (Interaction, DiscordClient) async -> Void
+public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async -> Void
 
 /// Pattern matching type for view custom_id routing.
 public enum MatchType {
@@ -10,7 +10,9 @@ public enum MatchType {
 }
 
 /// A persistent view with handlers keyed by `custom_id` or matching prefixes.
-public struct View {
+/// Marked `@unchecked Sendable` because the `state` dictionary uses `Any`
+/// values; callers are responsible for thread-safe state access.
+public struct View: @unchecked Sendable {
     public let id: String
     public let timeout: TimeInterval?
     /// Patterns: (pattern string, match type, handler)
@@ -90,7 +92,8 @@ public actor ViewManager {
             if await listeningTask != nil { return }
             let task = Task.detached { [weak client] in
                 guard let client else { return }
-                for await event in client.events {
+                let eventStream = await client.events
+                for await event in eventStream {
                     switch event {
                     case .interactionCreate(let interaction):
                         if let data = interaction.data, let cid = data.custom_id {

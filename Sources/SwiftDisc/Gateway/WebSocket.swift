@@ -3,18 +3,20 @@ import Foundation
 import FoundationNetworking
 #endif
 
-enum WebSocketMessage {
+enum WebSocketMessage: Sendable {
     case string(String)
     case data(Data)
 }
 
-protocol WebSocketClient {
+/// A type-erased WebSocket connection. All conforming types must be safe to use
+/// across actor/task boundaries (`Sendable`).
+protocol WebSocketClient: Sendable {
     func send(_ message: WebSocketMessage) async throws
     func receive() async throws -> WebSocketMessage
     func close() async
 }
 
-final class URLSessionWebSocketAdapter: WebSocketClient {
+final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     private let session: URLSession
 
@@ -55,7 +57,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient {
     }
 }
 
-final class UnavailableWebSocketAdapter: WebSocketClient {
+final class UnavailableWebSocketAdapter: WebSocketClient, Sendable {
     func send(_ message: WebSocketMessage) async throws { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func receive() async throws -> WebSocketMessage { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func close() async { }

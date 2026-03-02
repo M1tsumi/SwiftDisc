@@ -14,7 +14,7 @@ final class ReleaseV1Tests: XCTestCase {
     func testPinsStreamType() async {
         // Ensure the client provides a streaming API for pins (no network call here — just type check)
         let client = DiscordClient(token: "", configuration: .init())
-        let stream = client.streamChannelPins(channelId: "0")
+        let stream = await client.streamChannelPins(channelId: "0")
         var iter = stream.makeAsyncIterator()
         // The iterator should conform; we won't await a value since there's no network in tests here
         _ = iter

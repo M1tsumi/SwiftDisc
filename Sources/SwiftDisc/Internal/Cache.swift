@@ -20,9 +20,22 @@ public actor Cache {
     private var guildsTimed: [GuildID: TimedValue<Guild>] = [:]
     public private(set) var recentMessagesByChannel: [ChannelID: [Message]] = [:]
 
+    /// Background task that prunes expired TTL entries every 60 seconds.
+    /// Only started when at least one TTL is configured.
+    private var evictionTask: Task<Void, Never>?
+
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
+        self.evictionTask = nil
+        let hasTTL = configuration.userTTL != nil
+            || configuration.channelTTL != nil
+            || configuration.guildTTL != nil
+        if hasTTL {
+            self.evictionTask = Task { await self.evictionLoop() }
+        }
     }
+
+    deinit { evictionTask?.cancel() }
 
     public func upsert(user: User) {
         usersTimed[user.id] = TimedValue(value: user, storedAt: Date())
@@ -72,6 +85,22 @@ public actor Cache {
         }
         if let ttl = configuration.guildTTL {
             guildsTimed = guildsTimed.filter { now.timeIntervalSince($0.value.storedAt) < ttl }
+        }
+    }
+
+    /// Cancels the background eviction task (e.g. during teardown).
+    public func stopEviction() {
+        evictionTask?.cancel()
+        evictionTask = nil
+    }
+
+    // MARK: - Private
+
+    private func evictionLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 60_000_000_000) // 60 seconds
+            guard !Task.isCancelled else { break }
+            pruneIfNeeded()
         }
     }
 }

@@ -3,142 +3,221 @@ import Foundation
 actor EventDispatcher {
     func process(event: DiscordEvent, client: DiscordClient) async {
         switch event {
+
+        // MARK: Ready
         case .ready(let info):
             await client.cache.upsert(user: info.user)
             await client._internalSetCurrentUserId(info.user.id)
-            if let onReady = client.onReady { await onReady(info) }
+            if let cb = await client.onReady { await cb(info) }
+
+        // MARK: Messages
         case .messageCreate(let msg):
             await client.cache.upsert(user: msg.author)
-            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, rate_limit_per_user: nil, default_auto_archive_duration: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, permission_overwrites: nil))
+            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
             await client.cache.add(message: msg)
-            if let onMessage = client.onMessage { await onMessage(msg) }
-            if let router = client.commands { await router.handleIfCommand(message: msg, client: client) }
+            if let cb = await client.onMessage { await cb(msg) }
+            if let router = await client.commands { await router.handleIfCommand(message: msg, client: client) }
+
         case .messageUpdate(let msg):
             await client.cache.upsert(user: msg.author)
             await client.cache.add(message: msg)
-            if let cb = client.onMessageUpdate { await cb(msg) }
+            if let cb = await client.onMessageUpdate { await cb(msg) }
+
         case .messageDelete(let del):
             await client.cache.removeMessage(id: del.id)
-            if let cb = client.onMessageDelete { await cb(del) }
-        case .messageDeleteBulk(_):
-            break
+            if let cb = await client.onMessageDelete { await cb(del) }
+
+        case .messageDeleteBulk(let bulk):
+            for id in bulk.ids { await client.cache.removeMessage(id: id) }
+            if let cb = await client.onMessageDeleteBulk { await cb(bulk) }
+
         case .messageReactionAdd(let ev):
-            if let cb = client.onReactionAdd { await cb(ev) }
+            if let cb = await client.onReactionAdd { await cb(ev) }
+
         case .messageReactionRemove(let ev):
-            if let cb = client.onReactionRemove { await cb(ev) }
+            if let cb = await client.onReactionRemove { await cb(ev) }
+
         case .messageReactionRemoveAll(let ev):
-            if let cb = client.onReactionRemoveAll { await cb(ev) }
+            if let cb = await client.onReactionRemoveAll { await cb(ev) }
+
         case .messageReactionRemoveEmoji(let ev):
-            if let cb = client.onReactionRemoveEmoji { await cb(ev) }
+            if let cb = await client.onReactionRemoveEmoji { await cb(ev) }
+
+        // MARK: Guilds
         case .guildCreate(let guild):
             await client.cache.upsert(guild: guild)
-            if let onGuildCreate = client.onGuildCreate { await onGuildCreate(guild) }
-        case .guildUpdate(_):
+            // Eagerly seed channel and user caches from GUILD_CREATE payload
+            for channel in guild.channels ?? [] { await client.cache.upsert(channel: channel) }
+            for thread in guild.threads ?? []   { await client.cache.upsert(channel: thread) }
+            for member in guild.members ?? [], let user = member.user { await client.cache.upsert(user: user) }
+            if let cb = await client.onGuildCreate { await cb(guild) }
+
+        case .guildUpdate(let guild):
+            await client.cache.upsert(guild: guild)
+            if let cb = await client.onGuildUpdate { await cb(guild) }
+
+        case .guildDelete(let ev):
+            if let cb = await client.onGuildDelete { await cb(ev) }
+
+        // MARK: Members
+        case .guildMemberAdd(let ev):
+            await client.cache.upsert(user: ev.user)
+            if let cb = await client.onGuildMemberAdd { await cb(ev) }
+
+        case .guildMemberRemove(let ev):
+            await client.cache.upsert(user: ev.user)
+            if let cb = await client.onGuildMemberRemove { await cb(ev) }
+
+        case .guildMemberUpdate(let ev):
+            await client.cache.upsert(user: ev.user)
+            if let cb = await client.onGuildMemberUpdate { await cb(ev) }
+
+        case .guildMembersChunk(let chunk):
+            for member in chunk.members, let user = member.user { await client.cache.upsert(user: user) }
+
+        // MARK: Roles
+        case .guildRoleCreate(let ev):
+            if let cb = await client.onGuildRoleCreate { await cb(ev) }
+
+        case .guildRoleUpdate(let ev):
+            if let cb = await client.onGuildRoleUpdate { await cb(ev) }
+
+        case .guildRoleDelete(let ev):
+            if let cb = await client.onGuildRoleDelete { await cb(ev) }
+
+        // MARK: Emojis / Stickers (no callback – stream-only)
+        case .guildEmojisUpdate, .guildStickersUpdate:
             break
-        case .guildDelete(_):
-            break
-        case .guildMemberAdd(_):
-            break
-        case .guildMemberRemove(_):
-            break
-        case .guildMemberUpdate(_):
-            break
-        case .guildRoleCreate(_):
-            break
-        case .guildRoleUpdate(_):
-            break
-        case .guildRoleDelete(_):
-            break
-        case .guildEmojisUpdate(_):
-            break
-        case .guildStickersUpdate(_):
-            break
-        case .guildMembersChunk(_):
-            break
-        case .channelCreate(let channel), .channelUpdate(let channel):
+
+        // MARK: Channels
+        case .channelCreate(let channel):
             await client.cache.upsert(channel: channel)
+            if let cb = await client.onChannelCreate { await cb(channel) }
+
+        case .channelUpdate(let channel):
+            await client.cache.upsert(channel: channel)
+            if let cb = await client.onChannelUpdate { await cb(channel) }
+
         case .channelDelete(let channel):
             await client.cache.removeChannel(id: channel.id)
+            if let cb = await client.onChannelDelete { await cb(channel) }
+
+        // MARK: Threads
+        case .threadCreate(let ch):
+            await client.cache.upsert(channel: ch)
+            if let cb = await client.onThreadCreate { await cb(ch) }
+
+        case .threadUpdate(let ch):
+            await client.cache.upsert(channel: ch)
+            if let cb = await client.onThreadUpdate { await cb(ch) }
+
+        case .threadDelete(let ch):
+            await client.cache.removeChannel(id: ch.id)
+            if let cb = await client.onThreadDelete { await cb(ch) }
+
+        case .threadMemberUpdate, .threadMembersUpdate:
+            break
+
+        // MARK: Interactions
         case .interactionCreate(let interaction):
             if let cid = interaction.channel_id {
-                await client.cache.upsert(channel: Channel(id: cid, type: 0, name: nil, topic: nil, nsfw: nil, position: nil, parent_id: nil, rate_limit_per_user: nil, default_auto_archive_duration: nil, available_tags: nil, default_reaction_emoji: nil, default_sort_order: nil, default_forum_layout: nil, permission_overwrites: nil))
+                await client.cache.upsert(channel: Channel(id: cid, type: 0))
             }
-            if interaction.type == 4, let ac = client.autocomplete {
+            if let cb = await client.onInteractionCreate { await cb(interaction) }
+            if interaction.type == 4, let ac = await client.autocomplete {
                 await ac.handle(interaction: interaction, client: client)
-            } else if let s = client.slashCommands {
+            } else if let s = await client.slashCommands {
                 await s.handle(interaction: interaction, client: client)
             }
+
+        // MARK: Voice
         case .voiceStateUpdate(let state):
             await client._internalOnVoiceStateUpdate(state)
+            if let cb = await client.onVoiceStateUpdate { await cb(state) }
+
         case .voiceServerUpdate(let vsu):
             await client._internalOnVoiceServerUpdate(vsu)
-        case .raw(_, _):
+
+        // MARK: Presence & Typing
+        case .typingStart(let ev):
+            if let cb = await client.onTypingStart { await cb(ev) }
+
+        case .presenceUpdate(let ev):
+            await client.cache.upsert(user: ev.user)
+            if let cb = await client.onPresenceUpdate { await cb(ev) }
+
+        case .channelPinsUpdate:
             break
-        case .threadCreate(_):
+
+        // MARK: Bans
+        case .guildBanAdd(let ev):
+            if let cb = await client.onGuildBanAdd { await cb(ev) }
+
+        case .guildBanRemove(let ev):
+            if let cb = await client.onGuildBanRemove { await cb(ev) }
+
+        // MARK: Webhooks / Integrations / Invites (stream-only)
+        case .webhooksUpdate, .guildIntegrationsUpdate, .inviteCreate, .inviteDelete:
             break
-        case .threadUpdate(_):
+
+        // MARK: AutoMod
+        case .autoModerationRuleCreate, .autoModerationRuleUpdate, .autoModerationRuleDelete:
             break
-        case .threadDelete(_):
+
+        case .autoModerationActionExecution(let ev):
+            if let cb = await client.onAutoModerationActionExecution { await cb(ev) }
+
+        // MARK: Audit Log (stream-only)
+        case .guildAuditLogEntryCreate:
             break
-        case .threadMemberUpdate(_):
+
+        // MARK: Scheduled Events
+        case .guildScheduledEventCreate(let ev):
+            if let cb = await client.onGuildScheduledEventCreate { await cb(ev) }
+
+        case .guildScheduledEventUpdate(let ev):
+            if let cb = await client.onGuildScheduledEventUpdate { await cb(ev) }
+
+        case .guildScheduledEventDelete(let ev):
+            if let cb = await client.onGuildScheduledEventDelete { await cb(ev) }
+
+        case .guildScheduledEventUserAdd, .guildScheduledEventUserRemove:
             break
-        case .threadMembersUpdate(_):
-            break
-        case .guildScheduledEventCreate(_):
-            break
-        case .guildScheduledEventUpdate(_):
-            break
-        case .guildScheduledEventDelete(_):
-            break
-        case .guildScheduledEventUserAdd(_):
-            break
-        case .guildScheduledEventUserRemove(_):
-            break
-        case .typingStart(_):
-            break
-        case .channelPinsUpdate(_):
-            break
-        case .presenceUpdate(_):
-            break
-        case .guildBanAdd(_):
-            break
-        case .guildBanRemove(_):
-            break
-        case .webhooksUpdate(_):
-            break
-        case .guildIntegrationsUpdate(_):
-            break
-        case .inviteCreate(_):
-            break
-        case .inviteDelete(_):
-            break
-        case .autoModerationRuleCreate(_):
-            break
-        case .autoModerationRuleUpdate(_):
-            break
-        case .autoModerationRuleDelete(_):
-            break
-        case .autoModerationActionExecution(_):
-            break
-        case .guildAuditLogEntryCreate(_):
-            break
-        case .pollVoteAdd(_):
-            break
-        case .pollVoteRemove(_):
-            break
-        case .soundboardSoundCreate(_):
-            break
-        case .soundboardSoundUpdate(_):
-            break
-        case .soundboardSoundDelete(_):
-            break
-        case .entitlementCreate(_):
-            break
-        case .entitlementUpdate(_):
-            break
-        case .entitlementDelete(_):
+
+        // MARK: Polls
+        case .pollVoteAdd(let ev):
+            if let cb = await client.onPollVoteAdd { await cb(ev) }
+
+        case .pollVoteRemove(let ev):
+            if let cb = await client.onPollVoteRemove { await cb(ev) }
+
+        // MARK: Soundboard
+        case .soundboardSoundCreate(let ev):
+            if let cb = await client.onSoundboardSoundCreate { await cb(ev) }
+
+        case .soundboardSoundUpdate(let ev):
+            if let cb = await client.onSoundboardSoundUpdate { await cb(ev) }
+
+        case .soundboardSoundDelete(let ev):
+            if let cb = await client.onSoundboardSoundDelete { await cb(ev) }
+
+        // MARK: Entitlements
+        case .entitlementCreate(let ev):
+            if let cb = await client.onEntitlementCreate { await cb(ev) }
+
+        case .entitlementUpdate(let ev):
+            if let cb = await client.onEntitlementUpdate { await cb(ev) }
+
+        case .entitlementDelete(let ev):
+            if let cb = await client.onEntitlementDelete { await cb(ev) }
+
+        // MARK: Raw / Other
+        case .raw:
             break
         }
-        client._internalEmitEvent(event)
+
+        await client._internalEmitEvent(event)
     }
 }
+
+

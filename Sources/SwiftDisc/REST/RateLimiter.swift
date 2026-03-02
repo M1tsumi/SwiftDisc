@@ -10,13 +10,14 @@ actor RateLimiter {
     private var buckets: [String: BucketState] = [:]
     private var globalResetAt: Date?
 
-    func waitTurn(routeKey: String) async throws {
+    func waitTurn(routeKey: String) async throws(DiscordError) {
         // Respect global rate limit if active
         if let greset = globalResetAt {
             let now = Date()
             if greset > now {
                 let delay = greset.timeIntervalSince(now)
-                try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000))
+                do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
+                catch { throw DiscordError.cancelled }
             } else {
                 globalResetAt = nil
             }
@@ -28,7 +29,8 @@ actor RateLimiter {
                 let now = Date()
                 if resetAt > now {
                     let delay = resetAt.timeIntervalSince(now)
-                    try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000))
+                    do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
+                    catch { throw DiscordError.cancelled }
                 }
                 // After reset, clear remaining; let next response headers set correct values
                 buckets[routeKey]?.remaining = nil

@@ -2,14 +2,14 @@ import Foundation
 #if canImport(Network)
 import Network
 
-final class RTPVoiceReceiver {
+final class RTPVoiceReceiver: @unchecked Sendable {
     private let ssrc: UInt32
     private let key: [UInt8]
     private let encryptor: Secretbox
     private let connection: NWConnection
-    private let onFrame: (UInt16, UInt32, Data) -> Void
+    private let onFrame: @Sendable (UInt16, UInt32, Data) -> Void
 
-    init(ssrc: UInt32, key: [UInt8], host: String, port: UInt16, onFrame: @escaping (UInt16, UInt32, Data) -> Void) {
+    init(ssrc: UInt32, key: [UInt8], host: String, port: UInt16, onFrame: @escaping @Sendable (UInt16, UInt32, Data) -> Void) {
         self.ssrc = ssrc
         self.key = key
         self.encryptor = Secretbox()
@@ -64,8 +64,8 @@ final class RTPVoiceReceiver {
 
 #else
 
-final class RTPVoiceReceiver {
-    init(ssrc: UInt32, key: [UInt8], host: String, port: UInt16, onFrame: @escaping (UInt16, UInt32, Data) -> Void) {}
+final class RTPVoiceReceiver: Sendable {
+    init(ssrc: UInt32, key: [UInt8], host: String, port: UInt16, onFrame: @escaping @Sendable (UInt16, UInt32, Data) -> Void) {}
     func start() {}
     func stop() {}
 }

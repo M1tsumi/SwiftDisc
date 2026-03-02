@@ -5,7 +5,7 @@
 # SwiftDisc
 
 [![Discord](https://img.shields.io/discord/1439300942167146508?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
-[![Swift Version](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![Swift Version](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -31,7 +31,7 @@ Add SwiftDisc to your Swift package dependencies in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "1.3.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.0.0")
 ]
 ```
 
@@ -55,7 +55,7 @@ targets: [
 
 ## Quick Start
 
-Here's a simple bot that responds to messages:
+Here's a simple bot that responds to messages using the v2.0 callback API:
 
 ```swift
 import SwiftDisc
@@ -65,28 +65,33 @@ struct MyBot {
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
-        
+
+        // Assign callbacks — no switch statement needed
+        client.onReady = { info in
+            print("✅ Logged in as \(info.user.username)")
+        }
+
+        client.onMessage = { message in
+            guard message.content == "!ping" else { return }
+            // reply() sets message_reference automatically
+            try? await message.reply(client: client, content: "🏓 Pong!")
+        }
+
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-            
-            for await event in client.events {
-                switch event {
-                case .ready(let info):
-                    print("✅ Logged in as \(info.user.username)")
-                    
-                case .messageCreate(let message) where message.content == "!ping":
-                    try await client.sendMessage(
-                        channelId: message.channel_id,
-                        content: "🏓 Pong!"
-                    )
-                    
-                default:
-                    break
-                }
-            }
         } catch {
             print("❌ Error: \(error)")
         }
+    }
+}
+```
+
+Or use typed filtered streams when you need an event loop:
+
+```swift
+for await message in await client.messageEvents() {
+    if message.content == "!ping" {
+        try? await message.reply(client: client, content: "🏓 Pong!")
     }
 }
 ```
@@ -110,6 +115,17 @@ struct MyBot {
 - **Collectors**: AsyncStream-based message and component collectors
 - **Extensions/Cogs**: Modular architecture for organizing bot features
 - **Utilities**: Mention formatters, emoji helpers, timestamp formatting, and more
+
+### v2.0 Developer Experience
+
+- **`message.reply()`** — reply to any message in one line, mention control included
+- **`client.sendDM()`** — open a DM and send a message in a single call
+- **Typed slash option accessors** — `ctx.user()`, `ctx.channel()`, `ctx.role()`, `ctx.attachment()`
+- **Filtered event streams** — `client.messageEvents()`, `client.interactionEvents()`, etc.
+- **`EmbedBuilder.timestamp(Date)`** — pass `Date()` directly, no ISO 8601 string needed
+- **Public `CooldownManager`** — use it anywhere in your bot, not just command routers
+- **32 event callbacks** — one `@Sendable` closure per event, no `switch` boilerplate
+- **Background cache eviction** — TTL expiry runs automatically, no manual calls needed
 
 ### What's Included
 
@@ -424,9 +440,13 @@ MessageFormat.escapeSpecialCharacters(userInput)
 ✅ Role connections (linked roles)  
 ✅ Sticker info (read-only)  
 
+### Soundboard
+✅ Send soundboard sounds  
+✅ List, create, modify, delete guild soundboard sounds  
+✅ Soundboard gateway events (`SOUNDBOARD_SOUND_CREATE/UPDATE/DELETE`)  
+
 ### Not Yet Implemented
 ❌ Guild sticker creation/modification  
-❌ Soundboard endpoints  
 
 For unsupported endpoints, use the raw HTTP methods: `rawGET`, `rawPOST`, `rawPATCH`, `rawDELETE`
 
@@ -466,7 +486,7 @@ swift test
 swift test --enable-code-coverage
 ```
 
-CI runs on macOS (Xcode 16.4) and Windows (Swift 6.2).
+CI runs on macOS (Xcode 16.4) and Windows (Swift 6.2). Requires Swift 6.2+ toolchain.
 
 ## Contributing
 
@@ -479,16 +499,23 @@ Before contributing, please:
 
 ## Roadmap
 
-### Current Version: v1.3.1
+### Current Version: v2.0.0
 
-Adds new modal interaction components (Radio Groups, Checkbox Groups, Checkboxes, Labels), community invite management endpoints, gradient role colors, guild tags, voice state REST endpoints, and subscription renewal SKUs. See [CHANGELOG.md](CHANGELOG.md) for the full breakdown.
+Major release delivering Swift 6 strict-concurrency, typed throws throughout the
+REST layer, 32 new event callbacks, full Guild model, critical bug fixes, and
+high-impact DX improvements (`message.reply()`, `sendDM()`, typed slash accessors,
+filtered event streams, background cache eviction). See [CHANGELOG.md](CHANGELOG.md).
 
 ### Future Plans
 
-- Soundboard endpoints
+- `MessagePayload` builder to consolidate `sendMessage` overloads
+- Middleware/guard pattern for `CommandRouter` and `SlashCommandRouter`
+- HTTP rate-limit bucket header consolidation
+- Standalone `WebhookClient` (no bot token required)
+- Application command sync utility (diff + bulk-overwrite only on change)
+- Full Components V2 fluent builders (MediaGallery, Section, Container, Separator)
 - Guild sticker creation/modification
 - Enhanced voice support
-- Performance optimizations and caching improvements
 
 Have ideas? Open an issue or join the discussion on Discord!
 

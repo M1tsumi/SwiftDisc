@@ -5,6 +5,147 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-02
+
+### Overview
+SwiftDisc 2.0.0 is a major release delivering a complete Swift 6 strict-concurrency
+migration, typed throws throughout the REST layer, 32 new gateway event callbacks,
+a fully expanded Guild model, critical bug fixes, and high-impact developer-experience
+improvements including `message.reply()`, `client.sendDM()`, typed slash-option
+accessors, `EmbedBuilder.timestamp(Date)`, a public `CooldownManager`, filtered
+event-stream helpers, and a background cache-eviction task.
+
+### Breaking Changes
+- **`DiscordClient`** is now a `public actor` (was `public final class`). All method
+  calls from outside the actor require `await`. Immutable `let` properties (`token`,
+  `cache`) remain accessible without `await`.
+- **`CommandRouter`**, **`SlashCommandRouter`**, **`AutocompleteRouter`**,
+  **`ShardManager`** are now `actor` types. All mutating methods (e.g. `register`,
+  `registerPath`, `useCommands`) require `await`.
+- **`CooldownManager`** is now a `public actor`. `isOnCooldown` and `setCooldown`
+  require `await`.
+- All stored handler closures (`onReady`, `onMessage`, `onVoiceFrame`, `Handler`
+  typealiases, etc.) are now `@Sendable`.
+- `SwiftDiscExtension` protocol now requires `Sendable` conformance.
+- `VoiceAudioSource` protocol now requires `Sendable` conformance.
+- `WebSocketClient` protocol now requires `Sendable` conformance.
+- `HTTPClient` REST methods now declare `throws(DiscordError)` instead of untyped
+  `throws`. Call sites using `catch { }` will need to handle `DiscordError` directly.
+- `Guild` model expanded from 4 fields to ~50 fields — any code that relied on the
+  minimal stub may need to handle new optionals.
+
+### Added — Developer Experience
+- **`message.reply(...)`** — reply to any `Message` in one call. Sets
+  `message_reference` automatically and optionally suppresses the mention:
+  ```swift
+  let response = try await message.reply(client: client, content: "Pong!")
+  let quiet    = try await message.reply(client: client, content: "...", mention: false)
+  ```
+- **`client.sendDM(userId:content:embeds:components:)`** — open a DM channel and
+  send a message in a single awaitable call, replacing the two-step
+  `createDM` + `sendMessage` pattern:
+  ```swift
+  try await client.sendDM(userId: userId, content: "Welcome to the server!")
+  ```
+- **`SlashCommandRouter.Context` typed option accessors** — resolve Discord
+  interaction option values to strongly-typed objects using the `resolved` map:
+  ```swift
+  let target     = ctx.user("target")       // → User?
+  let destination = ctx.channel("channel") // → Interaction.ResolvedChannel?
+  let role       = ctx.role("role")         // → Interaction.ResolvedRole?
+  let file       = ctx.attachment("upload") // → Interaction.ResolvedAttachment?
+  ```
+- **`EmbedBuilder.timestamp(_ date: Date)`** — pass a `Date` directly instead of
+  manually formatting an ISO 8601 string:
+  ```swift
+  EmbedBuilder().timestamp(Date()).build()
+  ```
+- **`CooldownManager`** is now `public` — use it directly in any bot code, not just
+  inside the built-in command routers.
+- **Filtered event-stream helpers** on `DiscordClient` — typed `AsyncStream`
+  subscriptions without manual `switch event` boilerplate:
+  ```swift
+  for await message     in client.messageEvents()      { ... }
+  for await reaction    in client.reactionAddEvents()  { ... }
+  for await interaction in client.interactionEvents()  { ... }
+  for await member      in client.memberAddEvents()    { ... }
+  ```
+
+### Added — Discord API Coverage
+- **32 new gateway event callbacks** added to `DiscordClient` — every previously
+  missing event now has a dedicated `@Sendable` callback property:
+  - `onMessageDeleteBulk`, `onReactionAdd`, `onReactionRemove`,
+    `onReactionRemoveAll`, `onReactionRemoveEmoji`
+  - `onGuildUpdate`, `onGuildDelete`
+  - `onGuildMemberAdd`, `onGuildMemberRemove`, `onGuildMemberUpdate`
+  - `onChannelCreate`, `onChannelUpdate`, `onChannelDelete`
+  - `onThreadCreate`, `onThreadUpdate`, `onThreadDelete`
+  - `onGuildRoleCreate`, `onGuildRoleUpdate`, `onGuildRoleDelete`
+  - `onGuildBanAdd`, `onGuildBanRemove`, `onAutoModerationActionExecution`
+  - `onInteractionCreate`
+  - `onTypingStart`, `onPresenceUpdate`, `onVoiceStateUpdate`
+  - `onGuildScheduledEventCreate`, `onGuildScheduledEventUpdate`, `onGuildScheduledEventDelete`
+  - `onPollVoteAdd`, `onPollVoteRemove`
+  - `onEntitlementCreate`, `onEntitlementUpdate`, `onEntitlementDelete`
+  - `onSoundboardSoundCreate`, `onSoundboardSoundUpdate`, `onSoundboardSoundDelete`
+- **Full `Guild` model** — expanded from a 4-field stub to a complete ~50-field
+  model matching Discord's `GUILD_CREATE` and REST guild response, including
+  `roles`, `emojis`, `features`, `stickers`, `members`, `channels`, `threads`,
+  `presences`, `stage_instances`, `guild_scheduled_events`, and more.
+- **`EventDispatcher` full rewire** — all previously-stubbed `break` dispatches now
+  invoke the appropriate callbacks. `GUILD_CREATE` seeds the full channel, thread,
+  and member user cache. Presence, member, and thread events update the cache.
+
+### Fixed
+- **HTTPClient double-wrap bug** — errors thrown inside the inner `do {}` block
+  (e.g. `DiscordError.decoding`, `.http`, `.api`) were being caught by the outer
+  `catch {}` and re-wrapped as `DiscordError.network(DiscordError.xxx)`. Fixed by
+  inserting `catch let de as DiscordError { throw de }` before each generic catch.
+- **Soundboard gateway event names** — three event strings were incorrect, causing
+  soundboard events to be silently dropped:
+  - `SOUND_BOARD_SOUND_CREATE/UPDATE/DELETE` → `SOUNDBOARD_SOUND_CREATE/UPDATE/DELETE`
+- **`DiscordError` not `Sendable`** — error values could not safely cross actor
+  boundaries. Added explicit `Sendable` conformance.
+
+### Changed — Concurrency Architecture
+- **`Package.swift`**: upgraded to `swift-tools-version:6.2` with
+  `.swiftLanguageMode(.v6)` for both `SwiftDisc` and `SwiftDiscTests` targets.
+- **`DiscordClient`**: converted to `actor`. Callback properties typed as
+  `@Sendable`. All REST and gateway methods are actor-isolated async. `let`
+  properties are `nonisolated`.
+- **`CommandRouter`**, **`SlashCommandRouter`**, **`AutocompleteRouter`**: converted
+  to `actor`. `Handler` typealiases updated to `@Sendable`. `Context` types conform
+  to `Sendable`. Static helpers marked `nonisolated`.
+- **`ShardManager`**: converted to `actor`.
+- **`CooldownManager`**: replaced `NSLock`-guarded `final class` with a clean
+  `public actor`. All synchronization is now compiler-enforced.
+- **`EventDispatcher`**: all `client.*` property accesses use `await`.
+- **`GatewayClient`**: `connect` and `readLoop` `eventSink` parameters typed
+  `@escaping @Sendable`. Soundboard event name strings corrected.
+- **`ViewManager`**: `ViewHandler` typealias is now `@Sendable`.
+- **`Cache`**: added background periodic eviction task (runs every 60 s) for
+  entries with configured TTL. No longer requires manual `pruneIfNeeded()` calls.
+
+### Changed — REST Layer
+- **Typed throws** — all `HTTPClient` and `RateLimiter` methods now declare
+  `throws(DiscordError)`. Call sites no longer need `as? DiscordError` casts.
+- **`DiscordError`**: added `Sendable` conformance, `.unavailable` case (replaces
+  the internal `HTTPUnavailable` struct), and doc comments on every case.
+- **`RateLimiter.waitTurn(routeKey:)`**: `throws(DiscordError)`. Wraps
+  `Task.sleep` `CancellationError` as `DiscordError.cancelled`.
+
+### Changed — Types Marked Sendable
+- `Box<T>` (`Message.swift`): `@unchecked Sendable`.
+- `HTTPClient`: `@unchecked Sendable`.
+- `VoiceClient`, `VoiceGateway`, `RTPVoiceSender`, `RTPVoiceReceiver`,
+  `PipeOpusSource`, `URLSessionWebSocketAdapter`: `@unchecked Sendable`.
+- `VoiceEncryptor`, `OpusFrame`, `VoiceAudioSource`, `WebSocketClient`,
+  `DiscordEvent`: explicit `Sendable` conformance.
+
+### Changed — Tests
+- All test methods calling actor methods updated with `await`.
+- `CooldownTests.testCooldownSetAndCheck()` made `async`.
+
 ## [1.3.1] - 2026-02-22
 
 ### Fixed

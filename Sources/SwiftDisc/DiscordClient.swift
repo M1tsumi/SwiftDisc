@@ -1,6 +1,11 @@
 import Foundation
 
-public final class DiscordClient {
+/// The primary client for interacting with the Discord API.
+///
+/// `DiscordClient` is an `actor`, giving every method and stored property
+/// automatic data-race safety. `let` stored properties (e.g. `token`, `cache`)
+/// are accessible from any context without `await`.
+public actor DiscordClient {
     public let token: String
     private let http: HTTPClient
     private let gateway: GatewayClient
@@ -19,16 +24,81 @@ public final class DiscordClient {
 
     public var events: AsyncStream<DiscordEvent> { eventStream }
 
-    // Phase 3: Callback adapters
-    public var onReady: ((ReadyEvent) async -> Void)?
-    public var onMessage: ((Message) async -> Void)?
-    public var onMessageUpdate: ((Message) async -> Void)?
-    public var onMessageDelete: ((MessageDelete) async -> Void)?
-    public var onReactionAdd: ((MessageReactionAdd) async -> Void)?
-    public var onReactionRemove: ((MessageReactionRemove) async -> Void)?
-    public var onReactionRemoveAll: ((MessageReactionRemoveAll) async -> Void)?
-    public var onReactionRemoveEmoji: ((MessageReactionRemoveEmoji) async -> Void)?
-    public var onGuildCreate: ((Guild) async -> Void)?
+    // MARK: - Event Callbacks
+    // Assign any of these to be notified of specific gateway events.
+    // All callbacks are @Sendable so they can be used safely across actor / task boundaries.
+
+    // -- Ready --
+    public var onReady: (@Sendable (ReadyEvent) async -> Void)?
+
+    // -- Messages --
+    public var onMessage: (@Sendable (Message) async -> Void)?
+    public var onMessageUpdate: (@Sendable (Message) async -> Void)?
+    public var onMessageDelete: (@Sendable (MessageDelete) async -> Void)?
+    public var onMessageDeleteBulk: (@Sendable (MessageDeleteBulk) async -> Void)?
+
+    // -- Reactions --
+    public var onReactionAdd: (@Sendable (MessageReactionAdd) async -> Void)?
+    public var onReactionRemove: (@Sendable (MessageReactionRemove) async -> Void)?
+    public var onReactionRemoveAll: (@Sendable (MessageReactionRemoveAll) async -> Void)?
+    public var onReactionRemoveEmoji: (@Sendable (MessageReactionRemoveEmoji) async -> Void)?
+
+    // -- Guilds --
+    public var onGuildCreate: (@Sendable (Guild) async -> Void)?
+    public var onGuildUpdate: (@Sendable (Guild) async -> Void)?
+    public var onGuildDelete: (@Sendable (GuildDelete) async -> Void)?
+
+    // -- Members --
+    public var onGuildMemberAdd: (@Sendable (GuildMemberAdd) async -> Void)?
+    public var onGuildMemberRemove: (@Sendable (GuildMemberRemove) async -> Void)?
+    public var onGuildMemberUpdate: (@Sendable (GuildMemberUpdate) async -> Void)?
+
+    // -- Channels --
+    public var onChannelCreate: (@Sendable (Channel) async -> Void)?
+    public var onChannelUpdate: (@Sendable (Channel) async -> Void)?
+    public var onChannelDelete: (@Sendable (Channel) async -> Void)?
+
+    // -- Threads --
+    public var onThreadCreate: (@Sendable (Channel) async -> Void)?
+    public var onThreadUpdate: (@Sendable (Channel) async -> Void)?
+    public var onThreadDelete: (@Sendable (Channel) async -> Void)?
+
+    // -- Roles --
+    public var onGuildRoleCreate: (@Sendable (GuildRoleCreate) async -> Void)?
+    public var onGuildRoleUpdate: (@Sendable (GuildRoleUpdate) async -> Void)?
+    public var onGuildRoleDelete: (@Sendable (GuildRoleDelete) async -> Void)?
+
+    // -- Moderation --
+    public var onGuildBanAdd: (@Sendable (GuildBanAdd) async -> Void)?
+    public var onGuildBanRemove: (@Sendable (GuildBanRemove) async -> Void)?
+    public var onAutoModerationActionExecution: (@Sendable (AutoModerationActionExecution) async -> Void)?
+
+    // -- Interactions --
+    public var onInteractionCreate: (@Sendable (Interaction) async -> Void)?
+
+    // -- Presence & Typing --
+    public var onTypingStart: (@Sendable (TypingStart) async -> Void)?
+    public var onPresenceUpdate: (@Sendable (PresenceUpdate) async -> Void)?
+    public var onVoiceStateUpdate: (@Sendable (VoiceState) async -> Void)?
+
+    // -- Scheduled Events --
+    public var onGuildScheduledEventCreate: (@Sendable (GuildScheduledEvent) async -> Void)?
+    public var onGuildScheduledEventUpdate: (@Sendable (GuildScheduledEvent) async -> Void)?
+    public var onGuildScheduledEventDelete: (@Sendable (GuildScheduledEvent) async -> Void)?
+
+    // -- Polls --
+    public var onPollVoteAdd: (@Sendable (PollVote) async -> Void)?
+    public var onPollVoteRemove: (@Sendable (PollVote) async -> Void)?
+
+    // -- Entitlements / Monetization --
+    public var onEntitlementCreate: (@Sendable (Entitlement) async -> Void)?
+    public var onEntitlementUpdate: (@Sendable (Entitlement) async -> Void)?
+    public var onEntitlementDelete: (@Sendable (Entitlement) async -> Void)?
+
+    // -- Soundboard --
+    public var onSoundboardSoundCreate: (@Sendable (SoundboardSound) async -> Void)?
+    public var onSoundboardSoundUpdate: (@Sendable (SoundboardSound) async -> Void)?
+    public var onSoundboardSoundDelete: (@Sendable (SoundboardSound) async -> Void)?
 
     // Phase 3: Command framework
     public var commands: CommandRouter?
@@ -49,7 +119,7 @@ public final class DiscordClient {
     public var autocomplete: AutocompleteRouter?
     public func useAutocomplete(_ router: AutocompleteRouter) { self.autocomplete = router }
 
-    public var onVoiceFrame: ((VoiceFrame) async -> Void)?
+    public var onVoiceFrame: (@Sendable (VoiceFrame) async -> Void)?
 
     public init(token: String, configuration: DiscordConfiguration = .init()) {
         self.token = token
@@ -70,9 +140,11 @@ public final class DiscordClient {
 
         if let vc = self.voiceClient {
             vc.setOnFrame { [weak self] frame in
-                guard let self, let cb = self.onVoiceFrame else { return }
-                Task {
-                    await cb(frame)
+                guard let self else { return }
+                Task { [self] in
+                    if let cb = await self.onVoiceFrame {
+                        await cb(frame)
+                    }
                 }
             }
         }
@@ -438,6 +510,26 @@ public final class DiscordClient {
     public func createDM(recipientId: UserID) async throws -> Channel {
         struct Body: Encodable { let recipient_id: UserID }
         return try await http.post(path: "/users/@me/channels", body: Body(recipient_id: recipientId))
+    }
+
+    /// Open a DM channel with `userId` and send a message in one call.
+    ///
+    /// Internally calls `createDM(recipientId:)` followed by `sendMessage(...)`.
+    /// - Returns: The sent `Message`.
+    @discardableResult
+    public func sendDM(
+        userId: UserID,
+        content: String? = nil,
+        embeds: [Embed]? = nil,
+        components: [MessageComponent]? = nil
+    ) async throws -> Message {
+        let dm = try await createDM(recipientId: userId)
+        return try await sendMessage(
+            channelId: dm.id,
+            content: content,
+            embeds: embeds,
+            components: components
+        )
     }
 
     // Create group DM

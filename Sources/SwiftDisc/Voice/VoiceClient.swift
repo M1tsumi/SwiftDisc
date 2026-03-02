@@ -3,10 +3,10 @@ import Foundation
 import Network
 #endif
 
-final class VoiceClient {
+final class VoiceClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
-    private let sendVoiceStateUpdate: (GuildID, ChannelID?, Bool, Bool) async -> Void
+    private let sendVoiceStateUpdate: @Sendable (GuildID, ChannelID?, Bool, Bool) async -> Void
 
     private struct Session {
         var guildId: GuildID
@@ -25,15 +25,15 @@ final class VoiceClient {
 
     private var sessions: [GuildID: Session] = [:]
     private var botUserId: UserID?
-    private var onFrame: ((VoiceFrame) -> Void)?
+    private var onFrame: (@Sendable (VoiceFrame) -> Void)?
 
-    init(token: String, configuration: DiscordConfiguration, sendVoiceStateUpdate: @escaping (GuildID, ChannelID?, Bool, Bool) async -> Void) {
+    init(token: String, configuration: DiscordConfiguration, sendVoiceStateUpdate: @escaping @Sendable (GuildID, ChannelID?, Bool, Bool) async -> Void) {
         self.token = token
         self.configuration = configuration
         self.sendVoiceStateUpdate = sendVoiceStateUpdate
     }
 
-    func setOnFrame(_ handler: @escaping (VoiceFrame) -> Void) {
+    func setOnFrame(_ handler: @escaping @Sendable (VoiceFrame) -> Void) {
         self.onFrame = handler
     }
 

@@ -5,7 +5,7 @@ final class ViewManagerTests: XCTestCase {
     func testRegisterAndUnregisterView() async {
         let client = DiscordClient(token: "")
         let manager = ViewManager()
-        client.useViewManager(manager)
+        await client.useViewManager(manager)
 
         var called = false
         let handlers: [String: ViewHandler] = ["btn_ok": { _, _ in called = true }]

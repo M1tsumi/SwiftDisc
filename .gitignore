@@ -42,6 +42,9 @@ VoiceActivity.txt
 percentage.txt
 Reports/
 
+# Internal planning documents
+v2.0.0.txt
+
 # Carthage / CocoaPods (not used, but ignore if present)
 Carthage/
 Pods/

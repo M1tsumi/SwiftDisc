@@ -46,7 +46,7 @@ public struct GatewayPayload<D: Codable>: Codable {
     public let t: String?
 }
 
-public enum DiscordEvent: Hashable {
+public enum DiscordEvent: Hashable, Sendable {
     case ready(ReadyEvent)
     case messageCreate(Message)
     case messageUpdate(Message)

@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.2
 import PackageDescription
 
 let package = Package(
@@ -13,7 +13,14 @@ let package = Package(
         .library(name: "SwiftDisc", targets: ["SwiftDisc"])
     ],
     targets: [
-        .target(name: "SwiftDisc"),
-        .testTarget(name: "SwiftDiscTests", dependencies: ["SwiftDisc"])
+        .target(
+            name: "SwiftDisc",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "SwiftDiscTests",
+            dependencies: ["SwiftDisc"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        )
     ]
 )

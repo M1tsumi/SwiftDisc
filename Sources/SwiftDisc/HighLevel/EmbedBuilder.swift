@@ -26,6 +26,15 @@ public struct EmbedBuilder {
     public func image(url: String) -> EmbedBuilder { var c = self; c.image = .init(url: url); return c }
     public func timestamp(_ iso8601: String) -> EmbedBuilder { var c = self; c.timestamp = iso8601; return c }
 
+    /// Set the embed timestamp to a `Date`, automatically formatting it as ISO 8601.
+    public func timestamp(_ date: Date) -> EmbedBuilder {
+        var c = self
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        c.timestamp = formatter.string(from: date)
+        return c
+    }
+
     public func build() -> Embed {
         return Embed(title: title, description: description, url: url, color: color, footer: footer, author: author, fields: fields.isEmpty ? nil : fields, thumbnail: thumbnail, image: image, timestamp: timestamp)
     }
