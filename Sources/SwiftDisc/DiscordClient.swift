@@ -1291,7 +1291,7 @@ public actor DiscordClient {
     }
 
     public struct ApplicationCommandOption: Codable, Sendable {
-        public enum ApplicationCommandOptionType: Int, Codable {
+        public enum ApplicationCommandOptionType: Int, Codable, Sendable {
             case subCommand = 1
             case subCommandGroup = 2
             case string = 3
@@ -1308,7 +1308,7 @@ public actor DiscordClient {
         public let name: String
         public let description: String
         public let required: Bool?
-        public struct Choice: Codable { public let name: String; public let value: String }
+        public struct Choice: Codable, Sendable { public let name: String; public let value: String }
         public let choices: [Choice]?
         public init(type: ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil, choices: [Choice]? = nil) {
             self.type = type
