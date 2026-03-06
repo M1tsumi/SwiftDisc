@@ -150,20 +150,6 @@ For a complete API checklist, see the [REST API Coverage](#rest-api-coverage) se
 
 ### Command Framework
 
-```swift
-let router = CommandRouter(prefix: "!")
-router.register("ping") { ctx in
-    try? await ctx.reply("Pong!")
-}
-
-client.onMessageCreate { message in
-    await router.processMessage(message)
-}
-```
-
-
-### Command Framework
-
 Create command-based bots easily with the built-in router:
 
 ```swift
@@ -494,7 +480,7 @@ We welcome contributions! Whether it's bug reports, feature requests, or pull re
 
 Before contributing, please:
 - Check existing issues and PRs to avoid duplicates
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- Open a discussion issue for significant changes before starting work
 - Join our [Discord server](https://discord.gg/6nS2KqxQtj) if you have questions
 
 ## Roadmap
@@ -506,16 +492,12 @@ REST layer, 32 new event callbacks, full Guild model, critical bug fixes, and
 high-impact DX improvements (`message.reply()`, `sendDM()`, typed slash accessors,
 filtered event streams, background cache eviction). See [CHANGELOG.md](CHANGELOG.md).
 
-### Future Plans
+### Upcoming
 
-- `MessagePayload` builder to consolidate `sendMessage` overloads
-- Middleware/guard pattern for `CommandRouter` and `SlashCommandRouter`
-- HTTP rate-limit bucket header consolidation
-- Standalone `WebhookClient` (no bot token required)
-- Application command sync utility (diff + bulk-overwrite only on change)
 - Full Components V2 fluent builders (MediaGallery, Section, Container, Separator)
-- Guild sticker creation/modification
-- Enhanced voice support
+- Guild sticker creation and modification
+- Enhanced and stable voice support
+- Expanded test coverage across REST and Gateway layers
 
 Have ideas? Open an issue or join the discussion on Discord!
 
