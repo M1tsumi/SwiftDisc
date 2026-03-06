@@ -1,7 +1,18 @@
 import Foundation
 
+/// A collection of static utility helpers for common bot development tasks.
 public enum BotUtils {
-    // Splits content into Discord-safe chunks (approx 2000 chars)
+    /// Splits a long string into Discord-safe message chunks.
+    ///
+    /// Discord enforces a 2000-character message limit. This helper splits content
+    /// on newline boundaries to avoid cutting words mid-line while keeping each
+    /// chunk within the specified `maxLength`.
+    ///
+    /// - Parameters:
+    ///   - content: The full text to split.
+    ///   - maxLength: Maximum character length per chunk. Defaults to `1900` to leave
+    ///     headroom for prefixes or suffixes your bot may append.
+    /// - Returns: An array of strings, each at most `maxLength` characters long.
     public static func chunkMessage(_ content: String, maxLength: Int = 1900) -> [String] {
         guard content.count > maxLength else { return [content] }
         var chunks: [String] = []
@@ -19,13 +30,25 @@ public enum BotUtils {
         return chunks
     }
 
-    // Returns true if message starts with any of the provided prefixes
+    /// Returns `true` if the message content begins with any of the provided prefix strings.
+    ///
+    /// Useful for multi-prefix bots that support more than one command trigger character.
+    ///
+    /// - Parameters:
+    ///   - content: The message text to check.
+    ///   - prefixes: An array of prefix strings to test against.
+    /// - Returns: `true` if `content` starts with at least one of the given prefixes.
     public static func hasPrefix(_ content: String, prefixes: [String]) -> Bool {
         for p in prefixes where content.hasPrefix(p) { return true }
         return false
     }
 
-    // Extract user mentions in <@id> or <@!id> format
+    /// Extracts user IDs from Discord mention tags embedded in a message string.
+    ///
+    /// Parses both `<@userID>` and legacy `<@!userID>` mention formats.
+    ///
+    /// - Parameter content: The message text to scan.
+    /// - Returns: An array of user ID strings found in the content, in order of appearance.
     public static func extractMentions(_ content: String) -> [String] {
         let pattern = #"<@!?([0-9]{5,})>"#
         guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
@@ -39,6 +62,12 @@ public enum BotUtils {
         return ids
     }
 
+    /// Returns `true` if the message content contains a mention of the given bot user ID.
+    ///
+    /// - Parameters:
+    ///   - content: The message text to check.
+    ///   - botId: The bot's user ID as a string.
+    /// - Returns: `true` if a mention matching `botId` appears anywhere in `content`.
     public static func mentionsBot(_ content: String, botId: String) -> Bool {
         extractMentions(content).contains(botId)
     }

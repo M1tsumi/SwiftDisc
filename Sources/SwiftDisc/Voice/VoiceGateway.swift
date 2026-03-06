@@ -1,6 +1,6 @@
 import Foundation
 
-final class VoiceGateway {
+final class VoiceGateway: @unchecked Sendable {
     struct Hello: Codable { let heartbeat_interval: Int }
     struct Ready: Codable { let ssrc: UInt32; let port: UInt16; let modes: [String] }
     struct SessionDescription: Codable { let mode: String; let secret_key: [UInt8] }

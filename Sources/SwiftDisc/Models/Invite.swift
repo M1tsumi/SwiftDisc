@@ -1,11 +1,11 @@
 import Foundation
 
-public struct Invite: Codable, Hashable {
-    public struct InviteGuild: Codable, Hashable { public let id: GuildID; public let name: String? }
-    public struct InviteChannel: Codable, Hashable { public let id: ChannelID; public let name: String?; public let type: Int? }
+public struct Invite: Codable, Hashable, Sendable {
+    public struct InviteGuild: Codable, Hashable, Sendable { public let id: GuildID; public let name: String? }
+    public struct InviteChannel: Codable, Hashable, Sendable { public let id: ChannelID; public let name: String?; public let type: Int? }
     /// Partial role returned on community invite objects. Only contains id, name,
     /// position, color, colors, icon, and unicode_emoji per the 2026-02-05 breaking change.
-    public struct PartialInviteRole: Codable, Hashable {
+    public struct PartialInviteRole: Codable, Hashable, Sendable {
         public let id: RoleID
         public let name: String?
         public let position: Int?

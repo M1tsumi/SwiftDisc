@@ -8,7 +8,7 @@ public extension DiscordClient {
     ///   - timeout: optional timeout after which the stream finishes
     ///   - maxMessages: optional maximum number of messages to collect
     ///   - filter: predicate to decide whether to yield a message
-    func createMessageCollector(channelId: ChannelID? = nil, timeout: TimeInterval? = nil, maxMessages: Int? = nil, filter: @escaping (Message) -> Bool = { _ in true }) -> AsyncStream<Message> {
+    func createMessageCollector(channelId: ChannelID? = nil, timeout: TimeInterval? = nil, maxMessages: Int? = nil, filter: @escaping @Sendable (Message) -> Bool = { _ in true }) -> AsyncStream<Message> {
         AsyncStream { continuation in
             var collected = 0
             let task = Task {
@@ -61,6 +61,90 @@ public extension DiscordClient {
                         continuation.finish()
                         return
                     }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    // MARK: - Typed Event Stream Helpers
+
+    /// A filtered `AsyncStream` that yields only incoming `Message` objects.
+    ///
+    /// Equivalent to listening to `events` and matching `.messageCreate`, but
+    /// without any boilerplate switch statement.
+    /// ```swift
+    /// for await message in await client.messageEvents() {
+    ///     print(message.content ?? "")
+    /// }
+    /// ```
+    func messageEvents() -> AsyncStream<Message> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .messageCreate(let msg) = event { continuation.yield(msg) }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    /// A filtered `AsyncStream` that yields every `MessageReactionAdd` event.
+    func reactionAddEvents() -> AsyncStream<MessageReactionAdd> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .messageReactionAdd(let ev) = event { continuation.yield(ev) }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    /// A filtered `AsyncStream` that yields every incoming `Interaction`.
+    ///
+    /// Useful for bots that handle interactions outside of `SlashCommandRouter`.
+    func interactionEvents() -> AsyncStream<Interaction> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .interactionCreate(let interaction) = event { continuation.yield(interaction) }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    /// A filtered `AsyncStream` that yields `GuildMemberAdd` events.
+    func memberAddEvents() -> AsyncStream<GuildMemberAdd> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .guildMemberAdd(let ev) = event { continuation.yield(ev) }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    /// A filtered `AsyncStream` that yields `GuildMemberRemove` events.
+    func memberRemoveEvents() -> AsyncStream<GuildMemberRemove> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .guildMemberRemove(let ev) = event { continuation.yield(ev) }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
+    /// A filtered `AsyncStream` that yields `PresenceUpdate` events.
+    func presenceUpdateEvents() -> AsyncStream<PresenceUpdate> {
+        AsyncStream { continuation in
+            Task {
+                for await event in self.events {
+                    if case .presenceUpdate(let ev) = event { continuation.yield(ev) }
                 }
                 continuation.finish()
             }

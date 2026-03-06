@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Onboarding: Codable, Hashable {
+public struct Onboarding: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let prompts: [OnboardingPrompt]
     public let default_channel_ids: [ChannelID]
@@ -9,7 +9,7 @@ public struct Onboarding: Codable, Hashable {
     public let default_recommendation_channel_ids: [ChannelID]?
 }
 
-public struct OnboardingPrompt: Codable, Hashable {
+public struct OnboardingPrompt: Codable, Hashable, Sendable {
     public let id: Snowflake<OnboardingPrompt>
     public let type: Int
     public let options: [OnboardingPromptOption]
@@ -19,7 +19,7 @@ public struct OnboardingPrompt: Codable, Hashable {
     public let in_onboarding: Bool
 }
 
-public struct OnboardingPromptOption: Codable, Hashable {
+public struct OnboardingPromptOption: Codable, Hashable, Sendable {
     public let id: Snowflake<OnboardingPromptOption>
     public let channel_ids: [ChannelID]?
     public let role_ids: [RoleID]?

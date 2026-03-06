@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ShardedEvent {
+public struct ShardedEvent: Sendable {
     public let shardId: Int
     public let event: DiscordEvent
     public let receivedAt: Date
@@ -107,7 +107,7 @@ public actor ShardingGatewayManager {
 
     // Logging
     private enum LogLevel: String { case info = "INFO", warning = "WARN", error = "ERROR", debug = "DEBUG" }
-    private static let logDateFormatter: ISO8601DateFormatter = {
+    nonisolated(unsafe) private static let logDateFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         return f
     }()
@@ -117,7 +117,7 @@ public actor ShardingGatewayManager {
     }
 
     // Per-shard
-    public struct ShardHandle {
+    public struct ShardHandle: Sendable {
         public let id: Int
         fileprivate let client: GatewayClient
         public func heartbeatLatency() async -> TimeInterval? { await client.heartbeatLatency() }

@@ -1,18 +1,18 @@
 import Foundation
 
-public struct AuditLog: Codable, Hashable {
+public struct AuditLog: Codable, Hashable, Sendable {
     public let audit_log_entries: [AuditLogEntry]
     public let users: [User]?
     public let webhooks: [Webhook]?
 }
 
-public struct AuditLogEntry: Codable, Hashable {
-    public struct Change: Codable, Hashable {
+public struct AuditLogEntry: Codable, Hashable, Sendable {
+    public struct Change: Codable, Hashable, Sendable {
         public let key: String
         public let new_value: CodableValue?
         public let old_value: CodableValue?
     }
-    public struct OptionalInfo: Codable, Hashable {
+    public struct OptionalInfo: Codable, Hashable, Sendable {
         public let channel_id: ChannelID?
         public let count: String?
         public let delete_member_days: String?
@@ -32,7 +32,7 @@ public struct AuditLogEntry: Codable, Hashable {
     public let reason: String?
 }
 
-public enum CodableValue: Codable, Hashable {
+public enum CodableValue: Codable, Hashable, Sendable {
     case string(String)
     case int(Int)
     case double(Double)

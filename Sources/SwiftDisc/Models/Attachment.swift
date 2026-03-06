@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Attachment: Codable, Hashable {
+public struct Attachment: Codable, Hashable, Sendable {
     public let id: AttachmentID
     public let filename: String
     public let size: Int?

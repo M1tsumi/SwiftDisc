@@ -1,8 +1,8 @@
 import Foundation
 
-public struct GuildScheduledEvent: Codable, Hashable {
-    public enum EntityType: Int, Codable { case stageInstance = 1, voice = 2, external = 3 }
-    public enum Status: Int, Codable { case scheduled = 1, active = 2, completed = 3, canceled = 4 }
+public struct GuildScheduledEvent: Codable, Hashable, Sendable {
+    public enum EntityType: Int, Codable, Sendable { case stageInstance = 1, voice = 2, external = 3 }
+    public enum Status: Int, Codable, Sendable { case scheduled = 1, active = 2, completed = 3, canceled = 4 }
     public let id: GuildScheduledEventID
     public let guild_id: GuildID
     public let channel_id: ChannelID?
@@ -18,7 +18,7 @@ public struct GuildScheduledEvent: Codable, Hashable {
     public let entity_metadata: EntityMetadata?
     public let user_count: Int?
 
-    public struct EntityMetadata: Codable, Hashable {
+    public struct EntityMetadata: Codable, Hashable, Sendable {
         public let location: String?
     }
 }

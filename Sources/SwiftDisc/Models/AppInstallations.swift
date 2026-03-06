@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AppInstallation: Codable, Hashable {
+public struct AppInstallation: Codable, Hashable, Sendable {
     public let id: Snowflake<AppInstallation>
     public let application_id: ApplicationID
     public let user_id: UserID?
@@ -10,7 +10,7 @@ public struct AppInstallation: Codable, Hashable {
     public let created_at: String?
 }
 
-public struct AppSubscription: Codable, Hashable {
+public struct AppSubscription: Codable, Hashable, Sendable {
     public let id: Snowflake<AppSubscription>
     public let application_id: ApplicationID
     public let sku_id: SKUID

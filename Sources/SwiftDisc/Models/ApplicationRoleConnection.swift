@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ApplicationRoleConnection: Codable, Hashable {
+public struct ApplicationRoleConnection: Codable, Hashable, Sendable {
     public let platformName: String?
     public let platformUsername: String?
     public let metadata: [String: String]
@@ -18,7 +18,7 @@ public struct ApplicationRoleConnection: Codable, Hashable {
     }
 }
 
-public struct ApplicationRoleConnectionMetadata: Codable, Hashable {
+public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     public let type: RoleConnectionMetadataType
     public let key: String
     public let name: String
@@ -42,7 +42,7 @@ public struct ApplicationRoleConnectionMetadata: Codable, Hashable {
     }
 }
 
-public enum RoleConnectionMetadataType: Int, Codable, Hashable, CaseIterable {
+public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIterable {
     case integerLessThanOrEqual = 1
     case integerGreaterThanOrEqual = 2
     case integerEqual = 3

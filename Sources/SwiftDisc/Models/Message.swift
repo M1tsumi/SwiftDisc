@@ -1,7 +1,9 @@
 import Foundation
 
-// Box class to break infinite recursion for value types
-public final class Box<T: Codable & Hashable>: Codable, Hashable {
+// Box class to break infinite recursion for value types.
+// Marked `@unchecked Sendable` because the single stored property is immutable (`let`),
+// making instances effectively thread-safe despite being a class.
+public final class Box<T: Codable & Hashable>: Codable, Hashable, @unchecked Sendable {
     public let value: T
     public init(_ value: T) { self.value = value }
     public static func == (lhs: Box<T>, rhs: Box<T>) -> Bool { lhs.value == rhs.value }
@@ -10,7 +12,7 @@ public final class Box<T: Codable & Hashable>: Codable, Hashable {
 
 /// Discord message model with broad field coverage, including polls, interaction metadata,
 /// replies, voice messages, and components.
-public struct Message: Codable, Hashable {
+public struct Message: Codable, Hashable, Sendable {
     public let id: MessageID
     public let channel_id: ChannelID
     public let guild_id: GuildID?
@@ -47,26 +49,26 @@ public struct Message: Codable, Hashable {
     public let attachments_sync_status: Int?
 }
 
-public struct ChannelMention: Codable, Hashable {
+public struct ChannelMention: Codable, Hashable, Sendable {
     public let id: ChannelID
     public let guild_id: GuildID
     public let type: Int
     public let name: String
 }
 
-public struct MessageReference: Codable, Hashable {
+public struct MessageReference: Codable, Hashable, Sendable {
     public let message_id: MessageID?
     public let channel_id: ChannelID?
     public let guild_id: GuildID?
     public let fail_if_not_exists: Bool?
 }
 
-public struct MessageActivity: Codable, Hashable {
+public struct MessageActivity: Codable, Hashable, Sendable {
     public let type: Int
     public let party_id: String?
 }
 
-public struct MessageApplication: Codable, Hashable {
+public struct MessageApplication: Codable, Hashable, Sendable {
     public let id: ApplicationID
     public let cover_image: String?
     public let description: String
@@ -74,7 +76,7 @@ public struct MessageApplication: Codable, Hashable {
     public let name: String
 }
 
-public struct MessageInteractionMetadata: Codable, Hashable {
+public struct MessageInteractionMetadata: Codable, Hashable, Sendable {
     public let id: InteractionID
     public let type: Int
     public let user: User?
@@ -84,14 +86,14 @@ public struct MessageInteractionMetadata: Codable, Hashable {
     public let triggering_interaction_metadata: Box<MessageInteractionMetadata>?
 }
 
-public struct RoleSubscriptionData: Codable, Hashable {
+public struct RoleSubscriptionData: Codable, Hashable, Sendable {
     public let role_subscription_listing_id: Snowflake<Role>
     public let tier_name: String
     public let total_months_subscribed: Int
     public let is_renewal: Bool
 }
 
-public struct ResolvedData: Codable, Hashable {
+public struct ResolvedData: Codable, Hashable, Sendable {
     public let attachments: [AttachmentID: Attachment]?
     public let users: [UserID: User]?
     public let members: [UserID: GuildMember]?
@@ -100,19 +102,19 @@ public struct ResolvedData: Codable, Hashable {
     public let messages: [MessageID: Box<Message>]?
 }
 
-public struct Poll: Codable, Hashable {
-    public struct Media: Codable, Hashable {
+public struct Poll: Codable, Hashable, Sendable {
+    public struct Media: Codable, Hashable, Sendable {
         public let text: String?
         public let emoji: PartialEmoji?
     }
 
-    public struct Answer: Codable, Hashable {
+    public struct Answer: Codable, Hashable, Sendable {
         public let answer_id: Int
         public let poll_media: Media
     }
 
-    public struct Results: Codable, Hashable {
-        public struct Count: Codable, Hashable {
+    public struct Results: Codable, Hashable, Sendable {
+        public struct Count: Codable, Hashable, Sendable {
             public let id: Int
             public let count: Int
             public let me_voted: Bool?
@@ -130,21 +132,62 @@ public struct Poll: Codable, Hashable {
     public let results: Results?
 }
 
-public struct AllowedMentions: Codable, Hashable {
+public struct AllowedMentions: Codable, Hashable, Sendable {
     public let parse: [String]?
     public let roles: [RoleID]?
     public let users: [UserID]?
     public let replied_user: Bool?
 }
 
-public struct Reaction: Codable, Hashable {
+public struct Reaction: Codable, Hashable, Sendable {
     public let count: Int
     public let me: Bool
     public let emoji: PartialEmoji
 }
 
-public struct PartialEmoji: Codable, Hashable {
+public struct PartialEmoji: Codable, Hashable, Sendable {
     public let id: EmojiID?
     public let name: String?
     public let animated: Bool?
+}
+
+// MARK: - Reply convenience
+
+public extension Message {
+    /// Reply to this message in the same channel, setting `message_reference` automatically.
+    ///
+    /// - Parameters:
+    ///   - client:     The `DiscordClient` to use for the HTTP call.
+    ///   - content:    Plain-text content for the reply.
+    ///   - embeds:     Optional embeds to attach.
+    ///   - components: Optional component rows to attach.
+    ///   - mention:    When `false`, suppresses the @mention ping on the replied-to author.
+    ///                 Defaults to `true` (Discord default behaviour).
+    /// - Returns: The newly created reply `Message`.
+    @discardableResult
+    func reply(
+        client: DiscordClient,
+        content: String? = nil,
+        embeds: [Embed]? = nil,
+        components: [MessageComponent]? = nil,
+        mention: Bool = true
+    ) async throws -> Message {
+        let ref = MessageReference(
+            message_id: id,
+            channel_id: channel_id,
+            guild_id: guild_id,
+            fail_if_not_exists: false
+        )
+        let allowed: AllowedMentions? = mention
+            ? nil
+            : AllowedMentions(parse: [], roles: nil, users: nil, replied_user: false)
+        return try await client.sendMessage(
+            channelId: channel_id,
+            content: content,
+            embeds: embeds,
+            components: components,
+            allowedMentions: allowed,
+            messageReference: ref
+        )
+    }
 }

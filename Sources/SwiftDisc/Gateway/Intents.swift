@@ -1,6 +1,6 @@
 import Foundation
 
-public struct GatewayIntents: OptionSet, Codable, Hashable {
+public struct GatewayIntents: OptionSet, Codable, Hashable, Sendable {
     public let rawValue: UInt64
     public init(rawValue: UInt64) { self.rawValue = rawValue }
 

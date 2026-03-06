@@ -7,8 +7,8 @@ SwiftDisc is a Swift-native Discord API library supporting iOS, macOS, tvOS, wat
 
 Requirements
 -----------
-- Swift 5.9+
-- On Apple platforms: Xcode 15+ recommended
+- Swift 6.2+
+- On Apple platforms: Xcode 16.4+ recommended
 - A Discord Bot token from the Developer Portal
 - If using message content, ensure the privileged intent is enabled on your application
 
@@ -17,7 +17,7 @@ Install via Swift Package Manager (SPM)
 Option A) Add to Package.swift (for server/CLI projects)
 
 1) In your Package.swift dependencies, add:
-   .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "0.10.2")
+   .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.0.0")
 
 2) Add "SwiftDisc" to your target dependencies.
 
@@ -25,7 +25,7 @@ Option B) Add to Xcode project (for App targets)
 
 1) Xcode > File > Add Packages...
 2) Enter URL: https://github.com/M1tsumi/SwiftDisc.git
-3) Choose version: Up to Next Major from 0.10.2
+3) Choose version: Up to Next Major from 2.0.0
 4) Add the SwiftDisc product to your app target
 
 Configuring your Token
@@ -71,14 +71,14 @@ struct BotMain {
 
 Windows Notes
 -------------
-- If URLSessionWebSocketTask is unavailable on your toolchain, the current Gateway adapter will report that WebSocket is unavailable
-- A dedicated Windows WebSocket adapter is planned; track the project CHANGELOG for updates
+- SwiftDisc uses URLSessionWebSocketTask for gateway connections. On Windows, this is fully supported via the Swift 6.2+ toolchain.
+- If you encounter connection issues, confirm you are running Swift 6.2 or later.
 
 Troubleshooting
 ---------------
 - Invalid token: Confirm DISCORD_TOKEN is set and correct
 - No events received: Check intents; ensure messageContent privileged intent is enabled if you expect full message bodies
-- Rate limiting: REST requests are minimally throttled; heavy usage may require per-route buckets (planned)
+- Rate limiting: Per-route and global rate limit buckets are fully implemented with exponential backoff. If you encounter 429 responses, avoid tight concurrent loops to the same endpoint.
 - Gateway disconnects: The client has basic heartbeat ACK tracking and will attempt reconnect; intermittent networks may still cause delays
 
 Support & Documentation

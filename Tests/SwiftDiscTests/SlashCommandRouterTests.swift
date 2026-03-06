@@ -12,7 +12,7 @@ final class SlashCommandRouterTests: XCTestCase {
         let client = DiscordClient(token: "x")
         let router = SlashCommandRouter()
         let exp = expectation(description: "handler")
-        router.registerPath("admin ban") { ctx in
+        await router.registerPath("admin ban") { ctx in
             XCTAssertEqual(ctx.path, "admin ban")
             XCTAssertEqual(ctx.string("user"), "123")
             exp.fulfill()

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StageInstance: Codable, Hashable {
+public struct StageInstance: Codable, Hashable, Sendable {
     public let id: StageInstanceID
     public let guild_id: GuildID
     public let channel_id: ChannelID

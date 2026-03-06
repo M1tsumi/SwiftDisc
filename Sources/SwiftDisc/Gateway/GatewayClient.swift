@@ -39,7 +39,7 @@ actor GatewayClient {
     private var status: Status = .disconnected
 
     private var lastIntents: GatewayIntents = []
-    private var lastEventSink: ((DiscordEvent) -> Void)?
+    private var lastEventSink: (@Sendable (DiscordEvent) -> Void)?
     private var lastShard: (index: Int, total: Int)?
 
     init(token: String, configuration: DiscordConfiguration) {
@@ -61,7 +61,7 @@ actor GatewayClient {
         }
     }
 
-    func connect(intents: GatewayIntents, shard: (index: Int, total: Int)? = nil, eventSink: @escaping (DiscordEvent) -> Void) async throws {
+    func connect(intents: GatewayIntents, shard: (index: Int, total: Int)? = nil, eventSink: @escaping @Sendable (DiscordEvent) -> Void) async throws {
         guard let url = URL(string: "\(configuration.gatewayBaseURL.absoluteString)?v=\(configuration.apiVersion)&encoding=json") else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
@@ -123,7 +123,7 @@ actor GatewayClient {
         }
     }
 
-    private func readLoop(eventSink: @escaping (DiscordEvent) -> Void) async {
+    private func readLoop(eventSink: @escaping @Sendable (DiscordEvent) -> Void) async {
         guard let socket = self.socket else { return }
         let dec = JSONDecoder()
         while true {
@@ -366,15 +366,15 @@ actor GatewayClient {
                             if let payload = try? dec.decode(GatewayPayload<PollVote>.self, from: data), let ev = payload.d {
                                 eventSink(.pollVoteRemove(ev))
                             }
-                        } else if t == "SOUND_BOARD_SOUND_CREATE" {
+                        } else if t == "SOUNDBOARD_SOUND_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
                                 eventSink(.soundboardSoundCreate(ev))
                             }
-                        } else if t == "SOUND_BOARD_SOUND_UPDATE" {
+                        } else if t == "SOUNDBOARD_SOUND_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
                                 eventSink(.soundboardSoundUpdate(ev))
                             }
-                        } else if t == "SOUND_BOARD_SOUND_DELETE" {
+                        } else if t == "SOUNDBOARD_SOUND_DELETE" {
                             if let payload = try? dec.decode(GatewayPayload<SoundboardSound>.self, from: data), let ev = payload.d {
                                 eventSink(.soundboardSoundDelete(ev))
                             }

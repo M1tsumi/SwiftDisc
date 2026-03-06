@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a single stop in a gradient role color.
-public struct RoleColorStop: Codable, Hashable {
+public struct RoleColorStop: Codable, Hashable, Sendable {
     public let color: Int
     public let position: Double?
     public init(color: Int, position: Double? = nil) {
@@ -12,7 +12,7 @@ public struct RoleColorStop: Codable, Hashable {
 
 /// Gradient role colors object. Present when the guild has `ENHANCED_ROLE_COLORS` feature.
 /// Added 2025-07-02 per Discord API changelog.
-public struct RoleColors: Codable, Hashable {
+public struct RoleColors: Codable, Hashable, Sendable {
     /// Primary (single) color as an integer, for backwards compatibility.
     public let primary_color: Int?
     /// Gradient color stops. When present the role displays a gradient.
@@ -23,7 +23,7 @@ public struct RoleColors: Codable, Hashable {
     }
 }
 
-public struct Role: Codable, Hashable {
+public struct Role: Codable, Hashable, Sendable {
     public let id: RoleID
     public let name: String
     /// Deprecated in favour of `colors`; still returned for backwards compatibility.

@@ -12,10 +12,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 16.4
-        uses: maxim-lobanov/setup-xcode@v1
+      - name: Install Swift 6.2
+        uses: compnerd/gha-setup-swift@main
         with:
-          xcode-version: '16.4'
+          source: swift.org
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
       - name: Toolchain diagnostics
         run: |
           xcodebuild -version

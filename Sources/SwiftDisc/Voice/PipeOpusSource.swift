@@ -2,7 +2,9 @@ import Foundation
 
 // Reads length-prefixed Opus frames from a FileHandle.
 // Format: [u32 little-endian length][<length> bytes payload] repeated.
-public final class PipeOpusSource: VoiceAudioSource {
+// Marked `@unchecked Sendable` because `FileHandle` is not Sendable in Swift 6;
+// callers are responsible for ensuring single-threaded access to the handle.
+public final class PipeOpusSource: VoiceAudioSource, @unchecked Sendable {
     private let handle: FileHandle
     private let defaultFrameDurationMs: Int
 

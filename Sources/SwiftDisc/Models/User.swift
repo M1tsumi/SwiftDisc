@@ -2,7 +2,7 @@ import Foundation
 
 /// Represents the user's primary guild (guild tag) information.
 /// Added 2025-07-02 per Discord API changelog (Guild Tags).
-public struct UserPrimaryGuild: Codable, Hashable {
+public struct UserPrimaryGuild: Codable, Hashable, Sendable {
     /// The ID of the guild the user has set as their primary guild.
     public let guild_id: String?
     /// The badge / tag string displayed next to the user's display name (1–4 characters).
@@ -12,7 +12,7 @@ public struct UserPrimaryGuild: Codable, Hashable {
     public let identity_guild_id: String?
 }
 
-public struct User: Codable, Hashable {
+public struct User: Codable, Hashable, Sendable {
     public let id: UserID
     public let username: String
     public let discriminator: String?

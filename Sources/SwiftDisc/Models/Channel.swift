@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Channel: Codable, Hashable {
+public struct Channel: Codable, Hashable, Sendable {
     public let id: ChannelID
     public let type: Int
     public let name: String?
@@ -112,7 +112,7 @@ public struct Channel: Codable, Hashable {
     }
 }
 
-public struct ForumTag: Codable, Hashable {
+public struct ForumTag: Codable, Hashable, Sendable {
     public let id: ForumTagID
     public let name: String
     public let moderated: Bool?
@@ -120,12 +120,12 @@ public struct ForumTag: Codable, Hashable {
     public let emoji_name: String?
 }
 
-public struct DefaultReaction: Codable, Hashable {
+public struct DefaultReaction: Codable, Hashable, Sendable {
     public let emoji_id: EmojiID?
     public let emoji_name: String?
 }
 
-public struct PermissionOverwrite: Codable, Hashable {
+public struct PermissionOverwrite: Codable, Hashable, Sendable {
     // type: 0 role, 1 member
     public let id: OverwriteID
     public let type: Int
@@ -133,7 +133,7 @@ public struct PermissionOverwrite: Codable, Hashable {
     public let deny: String
 }
 
-public struct ThreadMetadata: Codable, Hashable {
+public struct ThreadMetadata: Codable, Hashable, Sendable {
     public let archived: Bool?
     public let auto_archive_duration: Int?
     public let archive_timestamp: String?

@@ -3,7 +3,7 @@ import Foundation
 /// Discord interaction payload (slash command, component, modal submit, autocomplete, ping).
 /// This mirrors the Discord HTTP and gateway shape closely so all option/value types decode correctly,
 /// including attachment command options and resolved maps.
-public struct Interaction: Codable, Hashable {
+public struct Interaction: Codable, Hashable, Sendable {
     public let id: InteractionID
     public let application_id: ApplicationID
     public let type: Int
@@ -24,7 +24,7 @@ public struct Interaction: Codable, Hashable {
 
     // MARK: - Nested Types
 
-    public struct ResolvedChannel: Codable, Hashable {
+    public struct ResolvedChannel: Codable, Hashable, Sendable {
         public let id: ChannelID
         public let type: Int
         public let name: String?
@@ -33,7 +33,7 @@ public struct Interaction: Codable, Hashable {
         public let flags: Int?
     }
 
-    public struct ResolvedRole: Codable, Hashable {
+    public struct ResolvedRole: Codable, Hashable, Sendable {
         public let id: RoleID
         public let name: String?
         public let color: Int?
@@ -47,7 +47,7 @@ public struct Interaction: Codable, Hashable {
         public let flags: Int?
     }
 
-    public struct ResolvedMember: Codable, Hashable {
+    public struct ResolvedMember: Codable, Hashable, Sendable {
         public let roles: [RoleID]
         public let premium_since: String?
         public let pending: Bool?
@@ -58,7 +58,7 @@ public struct Interaction: Codable, Hashable {
         public let joined_at: String?
     }
 
-    public struct ResolvedAttachment: Codable, Hashable {
+    public struct ResolvedAttachment: Codable, Hashable, Sendable {
         public let id: AttachmentID
         public let filename: String
         public let size: Int?
@@ -73,7 +73,7 @@ public struct Interaction: Codable, Hashable {
         public let ephemeral: Bool?
     }
 
-    public struct ResolvedData: Codable, Hashable {
+    public struct ResolvedData: Codable, Hashable, Sendable {
         public let users: [UserID: User]?
         public let members: [UserID: ResolvedMember]?
         public let roles: [RoleID: ResolvedRole]?
@@ -82,7 +82,7 @@ public struct Interaction: Codable, Hashable {
         public let attachments: [AttachmentID: ResolvedAttachment]?
     }
 
-    public struct ApplicationCommandData: Codable, Hashable {
+    public struct ApplicationCommandData: Codable, Hashable, Sendable {
         public let id: InteractionID?
         public let name: String
         public let type: Int?
@@ -99,7 +99,7 @@ public struct Interaction: Codable, Hashable {
         // Attachment command input
         public let attachments: [ResolvedAttachment]?
 
-        public struct Option: Codable, Hashable {
+        public struct Option: Codable, Hashable, Sendable {
             public let name: String
             public let type: Int?
             public let value: JSONValue?

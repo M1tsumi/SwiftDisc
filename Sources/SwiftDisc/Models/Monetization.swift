@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SKU: Codable, Hashable {
+public struct SKU: Codable, Hashable, Sendable {
     public let id: SKUID
     public let type: Int
     public let application_id: ApplicationID
@@ -10,7 +10,7 @@ public struct SKU: Codable, Hashable {
     public let access_type: Int?
 }
 
-public struct Entitlement: Codable, Hashable {
+public struct Entitlement: Codable, Hashable, Sendable {
     public let id: EntitlementID
     public let sku_id: SKUID
     public let application_id: ApplicationID
