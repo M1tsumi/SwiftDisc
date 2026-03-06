@@ -6,7 +6,7 @@ import Foundation
 /// automatic data-race safety. `let` stored properties (e.g. `token`, `cache`)
 /// are accessible from any context without `await`.
 public actor DiscordClient {
-    public let token: String
+    public nonisolated let token: String
     let http: HTTPClient
     private let gateway: GatewayClient
     private let configuration: DiscordConfiguration
