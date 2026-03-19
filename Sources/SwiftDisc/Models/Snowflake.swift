@@ -5,6 +5,38 @@ public struct Snowflake<T>: Hashable, Codable, CustomStringConvertible, Expressi
     public init(_ raw: String) { self.rawValue = raw }
     public init(stringLiteral value: String) { self.rawValue = value }
     public var description: String { rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if let raw = try? container.decode(String.self) {
+            self.rawValue = raw
+            return
+        }
+
+        if let raw = try? container.decode(UInt64.self) {
+            self.rawValue = String(raw)
+            return
+        }
+
+        if let raw = try? container.decode(Int64.self), raw >= 0 {
+            self.rawValue = String(raw)
+            return
+        }
+
+        throw DecodingError.typeMismatch(
+            String.self,
+            DecodingError.Context(
+                codingPath: container.codingPath,
+                debugDescription: "Expected snowflake to be a string or integer"
+            )
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 // Snowflake only stores a plain `String`; the phantom type parameter `T` is never
