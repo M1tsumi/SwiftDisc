@@ -2,126 +2,12 @@ import XCTest
 @testable import SwiftDisc
 
 final class CacheTests: XCTestCase {
-    func testRemoveMessageRemovesFromRecentMessagesByChannel() async {
+    func testRemoveMessageRemovesFromRecentMessagesByChannel() async throws {
         let cache = Cache()
 
-        let user = User(
-            id: "u1",
-            username: "tester",
-            discriminator: nil,
-            global_name: nil,
-            avatar: nil,
-            bot: nil,
-            system: nil,
-            mfa_enabled: nil,
-            banner: nil,
-            accent_color: nil,
-            locale: nil,
-            verified: nil,
-            email: nil,
-            flags: nil,
-            premium_type: nil,
-            public_flags: nil,
-            avatar_decoration_data: nil,
-            collectibles: nil,
-            primary_guild: nil
-        )
-
-        let message1 = Message(
-            id: "m1",
-            channel_id: "c1",
-            guild_id: nil,
-            author: user,
-            member: nil,
-            content: "first",
-            timestamp: nil,
-            edited_timestamp: nil,
-            tts: nil,
-            mention_everyone: nil,
-            mentions: nil,
-            mention_roles: nil,
-            mention_channels: nil,
-            attachments: nil,
-            embeds: nil,
-            reactions: nil,
-            nonce: nil,
-            pinned: nil,
-            type: nil,
-            activity: nil,
-            application: nil,
-            application_id: nil,
-            message_reference: nil,
-            referenced_message: nil,
-            flags: nil,
-            interaction: nil,
-            interaction_metadata: nil,
-            thread: nil,
-            components: nil,
-            sticker_items: nil,
-            stickers: nil,
-            position: nil,
-            role_subscription_data: nil,
-            resolved: nil,
-            poll: nil,
-            call: nil,
-            webhook_id: nil,
-            message_snapshots: nil,
-            authorizing_integration_owners: nil,
-            application_avatar_url: nil,
-            gift_info: nil,
-            purchase_notification: nil,
-            role_subscription_purchase_data: nil,
-            webhook_attachments: nil,
-            triggering_interaction_metadata: nil
-        )
-
-        let message2 = Message(
-            id: "m2",
-            channel_id: "c1",
-            guild_id: nil,
-            author: user,
-            member: nil,
-            content: "second",
-            timestamp: nil,
-            edited_timestamp: nil,
-            tts: nil,
-            mention_everyone: nil,
-            mentions: nil,
-            mention_roles: nil,
-            mention_channels: nil,
-            attachments: nil,
-            embeds: nil,
-            reactions: nil,
-            nonce: nil,
-            pinned: nil,
-            type: nil,
-            activity: nil,
-            application: nil,
-            application_id: nil,
-            message_reference: nil,
-            referenced_message: nil,
-            flags: nil,
-            interaction: nil,
-            interaction_metadata: nil,
-            thread: nil,
-            components: nil,
-            sticker_items: nil,
-            stickers: nil,
-            position: nil,
-            role_subscription_data: nil,
-            resolved: nil,
-            poll: nil,
-            call: nil,
-            webhook_id: nil,
-            message_snapshots: nil,
-            authorizing_integration_owners: nil,
-            application_avatar_url: nil,
-            gift_info: nil,
-            purchase_notification: nil,
-            role_subscription_purchase_data: nil,
-            webhook_attachments: nil,
-            triggering_interaction_metadata: nil
-        )
+        let user = try makeUser(id: "u1", username: "tester")
+        let message1 = try makeMessage(id: "m1", channelId: "c1", content: "first", author: user)
+        let message2 = try makeMessage(id: "m2", channelId: "c1", content: "second", author: user)
 
         await cache.add(message: message1)
         await cache.add(message: message2)
@@ -130,5 +16,30 @@ final class CacheTests: XCTestCase {
         let recent = await cache.recentMessagesByChannel["c1"] ?? []
         XCTAssertEqual(recent.count, 1)
         XCTAssertEqual(recent.first?.id, "m2")
+    }
+
+    private func makeUser(id: String, username: String) throws -> User {
+        let payload: [String: Any] = [
+            "id": id,
+            "username": username
+        ]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        return try JSONDecoder().decode(User.self, from: data)
+    }
+
+    private func makeMessage(id: String, channelId: String, content: String, author: User) throws -> Message {
+        let encoder = JSONEncoder()
+        let authorData = try encoder.encode(author)
+        let authorObject = try JSONSerialization.jsonObject(with: authorData)
+
+        let payload: [String: Any] = [
+            "id": id,
+            "channel_id": channelId,
+            "author": authorObject,
+            "content": content
+        ]
+
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        return try JSONDecoder().decode(Message.self, from: data)
     }
 }
