@@ -128,9 +128,9 @@ public actor SlashCommandRouter {
 
     /// Dispatch an incoming interaction to the matching handler.
     public func handle(interaction: Interaction, client: DiscordClient) async {
-        guard interaction.data?.name.isEmpty == false else { return }
+        guard let commandName = interaction.data?.name, !commandName.isEmpty else { return }
         let ctx = Context(client: client, interaction: interaction)
-        guard let handler = handlers[ctx.path.lowercased()] ?? handlers[interaction.data!.name.lowercased()] else { return }
+        guard let handler = handlers[ctx.path.lowercased()] ?? handlers[commandName.lowercased()] else { return }
         do {
             var chain: Handler = handler
             for mw in middlewares.reversed() {
@@ -148,7 +148,10 @@ public actor SlashCommandRouter {
     /// Marked `nonisolated` so it can be called without an actor hop from `Context.init`.
     nonisolated static func computePathAndOptions(from interaction: Interaction) -> (String, [String: String]) {
         guard let data = interaction.data else { return ("", [:]) }
-        var components: [String] = [data.name]
+        var components: [String] = []
+        if let rootName = data.name, !rootName.isEmpty {
+            components.append(rootName)
+        }
         var cursorOptions = data.options ?? []
         var leafOptions: [Interaction.ApplicationCommandData.Option] = []
         // Drill into subcommand / subcommand-group levels

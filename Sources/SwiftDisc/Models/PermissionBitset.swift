@@ -60,12 +60,28 @@ public struct PermissionBitset: OptionSet, Codable, Hashable, Sendable {
     // Codable conformance for serialization
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(UInt64.self)
-        self.rawValue = rawValue
+
+        if let value = try? container.decode(UInt64.self) {
+            self.rawValue = value
+            return
+        }
+
+        if let raw = try? container.decode(String.self), let value = UInt64(raw) {
+            self.rawValue = value
+            return
+        }
+
+        throw DecodingError.typeMismatch(
+            UInt64.self,
+            DecodingError.Context(
+                codingPath: container.codingPath,
+                debugDescription: "Expected permission bitset to be a UInt64 or decimal string"
+            )
+        )
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
+        try container.encode(String(rawValue))
     }
 }

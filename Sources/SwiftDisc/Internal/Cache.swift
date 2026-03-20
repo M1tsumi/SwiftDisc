@@ -105,7 +105,8 @@ public actor Cache {
     }
 
     public func removeMessage(id: MessageID) {
-        for (cid, arr) in recentMessagesByChannel {
+        let snapshot = Array(recentMessagesByChannel)
+        for (cid, arr) in snapshot {
             if let idx = arr.firstIndex(where: { $0.id == id }) {
                 var newArr = arr
                 newArr.remove(at: idx)

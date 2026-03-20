@@ -112,7 +112,10 @@ public actor ViewManager {
     }
     
     private func routeInteraction(customId: String, interaction: Interaction, client: DiscordClient) async {
-        for (vid, view) in views {
+        let snapshot = Array(views)
+        var oneShotToRemove: [String] = []
+
+        for (vid, view) in snapshot {
             var matched = false
             for (pattern, matchType, handler) in view.patterns {
                 switch matchType {
@@ -128,10 +131,14 @@ public actor ViewManager {
                     } catch { }
                 }
                 if matched {
-                    if view.oneShot { await unregister(vid) }
+                    if view.oneShot { oneShotToRemove.append(vid) }
                     break
                 }
             }
+        }
+
+        for id in oneShotToRemove {
+            unregister(id)
         }
     }
     
