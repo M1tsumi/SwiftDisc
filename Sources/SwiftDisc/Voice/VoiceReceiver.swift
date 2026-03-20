@@ -15,7 +15,8 @@ final class RTPVoiceReceiver: @unchecked Sendable {
         self.encryptor = Secretbox()
         self.onFrame = onFrame
         let params = NWParameters.udp
-        self.connection = NWConnection(to: .hostPort(host: .name(host, nil), port: NWEndpoint.Port(rawValue: port)!), using: params)
+        let nwPort = NWEndpoint.Port(rawValue: port) ?? .any
+        self.connection = NWConnection(to: .hostPort(host: .name(host, nil), port: nwPort), using: params)
         self.connection.start(queue: .global())
     }
 

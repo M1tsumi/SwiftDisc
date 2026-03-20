@@ -47,6 +47,17 @@ actor GatewayClient {
         self.configuration = configuration
     }
 
+    private func logDecodeDiagnostic(_ message: String, data: Data? = nil) {
+        guard configuration.enableGatewayDecodeDiagnostics else { return }
+        let ts = ISO8601DateFormatter().string(from: Date())
+        if let data, !data.isEmpty {
+            let preview = String(decoding: data.prefix(512), as: UTF8.self)
+            print("[SwiftDisc][GW-DECODE][WARN] \(ts) - \(message) | payload-preview=\(preview)")
+        } else {
+            print("[SwiftDisc][GW-DECODE][WARN] \(ts) - \(message)")
+        }
+    }
+
     // VOICE_STATE_UPDATE (op 4)
     func updateVoiceState(guildId: GuildID, channelId: ChannelID?, selfMute: Bool, selfDeaf: Bool) async {
         struct VoiceStateUpdateData: Codable {
@@ -126,6 +137,7 @@ actor GatewayClient {
     private func readLoop(eventSink: @escaping @Sendable (DiscordEvent) -> Void) async {
         guard let socket = self.socket else { return }
         let dec = JSONDecoder()
+        var lastFrameData: Data?
         while true {
             do {
                 let msg = try await socket.receive()
@@ -134,6 +146,7 @@ actor GatewayClient {
                 case .string(let text): data = Data(text.utf8)
                 case .data(let d): data = d
                 }
+                lastFrameData = data
                 // capture seq
                 if let s = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let seqNum = s["s"] as? Int {
                     self.seq = seqNum
@@ -279,6 +292,10 @@ actor GatewayClient {
                         } else if t == "INTERACTION_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<Interaction>.self, from: data), let interaction = payload.d {
                                 eventSink(.interactionCreate(interaction))
+                            } else {
+                                // Preserve visibility when payload shape drifts instead of silently dropping.
+                                logDecodeDiagnostic("Failed to decode INTERACTION_CREATE as Interaction (op=\(opBox.op.rawValue), seq=\(String(describing: self.seq)))", data: data)
+                                eventSink(.raw(t, data))
                             }
                         } else if t == "VOICE_STATE_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<VoiceState>.self, from: data), let state = payload.d {
@@ -422,7 +439,7 @@ actor GatewayClient {
                 }
             } catch let error as DecodingError {
                 // Non-fatal: skip malformed frame and continue
-                _ = error
+                logDecodeDiagnostic("Top-level gateway frame decoding error: \(error)", data: lastFrameData)
                 continue
             } catch {
                 await attemptReconnect()

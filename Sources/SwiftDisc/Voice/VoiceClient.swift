@@ -148,7 +148,8 @@ final class VoiceClient: @unchecked Sendable {
         // Resolve host without protocol
         let cleanHost = host.replacingOccurrences(of: ":\\d+", with: "", options: .regularExpression)
         let params = NWParameters.udp
-        let endpoint = NWEndpoint.hostPort(host: .name(cleanHost, nil), port: NWEndpoint.Port(rawValue: port)!)
+        guard let nwPort = NWEndpoint.Port(rawValue: port) else { return nil }
+        let endpoint = NWEndpoint.hostPort(host: .name(cleanHost, nil), port: nwPort)
         let conn = NWConnection(to: endpoint, using: params)
 
         return try await withTaskCancellationHandler(operation: {

@@ -84,7 +84,8 @@ public struct Interaction: Codable, Hashable, Sendable {
 
     public struct ApplicationCommandData: Codable, Hashable, Sendable {
         public let id: InteractionID?
-        public let name: String
+        // Command name is absent for some interaction kinds (e.g. component/modal).
+        public let name: String?
         public let type: Int?
         public let resolved: ResolvedData?
         public let options: [Option]?
