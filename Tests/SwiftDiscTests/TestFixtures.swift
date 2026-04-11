@@ -32,6 +32,11 @@ enum TestFixtures {
 
     /// Creates a minimal component `Interaction` fixture for collector and router tests.
     static func makeComponentInteraction(customId: String, guildId: String = "guild", channelId: String = "chan", id: String = "1", applicationId: String = "app", token: String = "tok") -> Interaction {
+        let interactionId = InteractionID(id)
+        let appId = ApplicationID(applicationId)
+        let gid = GuildID(guildId)
+        let cid = ChannelID(channelId)
+
         let data = Interaction.ApplicationCommandData(
             id: nil,
             name: nil,
@@ -47,13 +52,13 @@ enum TestFixtures {
         )
 
         return Interaction(
-            id: id,
-            application_id: applicationId,
+            id: interactionId,
+            application_id: appId,
             type: 3,
             data: data,
-            guild_id: guildId,
+            guild_id: gid,
             channel: nil,
-            channel_id: channelId,
+            channel_id: cid,
             member: nil,
             user: nil,
             token: token,
