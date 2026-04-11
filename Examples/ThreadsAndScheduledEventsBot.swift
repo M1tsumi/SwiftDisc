@@ -14,7 +14,8 @@ struct ThreadsAndScheduledEventsBot {
             return
         }
         print("Listening for thread and scheduled event updates…")
-        for await ev in client.events {
+        let events = await client.events
+        for await ev in events {
             switch ev {
             case .threadCreate(let ch):
                 print("[THREAD_CREATE] #\(ch.name ?? "?") id=\(ch.id)")

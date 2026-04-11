@@ -6,7 +6,7 @@ struct HelloCog: Cog {
     let name = "HelloCog"
 
     func onLoad(client: DiscordClient) async throws {
-        client.onMessage = { message in
+        await client.setOnMessage { message in
             if message.content?.lowercased() == "!hello" {
                 do {
                     try await client.sendMessage(channelId: message.channel_id, content: "Hello, \(message.author.username)!")

@@ -10,8 +10,9 @@ struct LinkedRolesBot {
         
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            
-            for await event in client.events {
+
+            let events = await client.events
+            for await event in events {
                 switch event {
                 case .ready(let info):
                     print("Logged in as \(info.user.username)")

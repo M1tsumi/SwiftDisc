@@ -20,7 +20,7 @@ struct CommandFrameworkBot {
         }
 
         // Attach simple message handler to the client's event system.
-        await client.onMessage = { message in
+        await client.setOnMessage { message in
             await router.handleIfCommand(message: message, client: client)
         }
 

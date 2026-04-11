@@ -158,6 +158,17 @@ public actor DiscordClient {
         for ext in exts { await ext.onUnload(client: self) }
     }
     // MARK: - REST: Bulk Messages and Crosspost
+
+    /// Sets the callback invoked when the READY event is received.
+    public func setOnReady(_ handler: (@Sendable (ReadyEvent) async -> Void)?) {
+        self.onReady = handler
+    }
+
+    /// Sets the callback invoked for MESSAGE_CREATE events.
+    public func setOnMessage(_ handler: (@Sendable (Message) async -> Void)?) {
+        self.onMessage = handler
+    }
+
     // Bulk delete messages (2-100, not older than 14 days)
     public func bulkDeleteMessages(channelId: ChannelID, messageIds: [MessageID]) async throws {
         struct Body: Encodable, Sendable { let messages: [MessageID] }

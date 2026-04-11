@@ -38,7 +38,7 @@ struct SlashBotMain {
         }
         await client.useSlashCommands(slash)
 
-        await client.onReady = { info in
+        await client.setOnReady { info in
             print("✅ Connected as: \(info.user.username)")
         }
 
