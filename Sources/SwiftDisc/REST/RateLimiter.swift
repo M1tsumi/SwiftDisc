@@ -1,6 +1,8 @@
 import Foundation
 
 actor RateLimiter {
+    typealias RateLimitHandler = @Sendable (RateLimitEvent) -> Void
+
     struct BucketState {
         var resetAt: Date?
         var remaining: Int?
@@ -9,6 +11,11 @@ actor RateLimiter {
 
     private var buckets: [String: BucketState] = [:]
     private var globalResetAt: Date?
+    private let onRateLimit: RateLimitHandler?
+
+    init(onRateLimit: RateLimitHandler? = nil) {
+        self.onRateLimit = onRateLimit
+    }
 
     func waitTurn(routeKey: String) async throws(DiscordError) {
         // Respect global rate limit if active
@@ -16,6 +23,7 @@ actor RateLimiter {
             let now = Date()
             if greset > now {
                 let delay = greset.timeIntervalSince(now)
+                onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: true, remaining: nil, limit: nil, resetAt: greset, waitedForSeconds: delay))
                 do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
                 catch { throw DiscordError.cancelled }
             } else {
@@ -29,6 +37,7 @@ actor RateLimiter {
                 let now = Date()
                 if resetAt > now {
                     let delay = resetAt.timeIntervalSince(now)
+                    onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: false, remaining: remaining, limit: limit, resetAt: resetAt, waitedForSeconds: delay))
                     do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
                     catch { throw DiscordError.cancelled }
                 }
@@ -52,6 +61,7 @@ actor RateLimiter {
         if let isGlobal = header("X-RateLimit-Global"), isGlobal.lowercased() == "true" {
             if let retry = header("Retry-After"), let secs = Double(retry) {
                 globalResetAt = Date().addingTimeInterval(secs)
+                onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: true, remaining: nil, limit: nil, resetAt: globalResetAt, waitedForSeconds: secs))
             }
         }
 
@@ -66,6 +76,7 @@ actor RateLimiter {
             state.resetAt = Date().addingTimeInterval(secs)
         }
         buckets[routeKey] = state
+        onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: false, remaining: state.remaining, limit: state.limit, resetAt: state.resetAt))
     }
 
     func backoff(after seconds: TimeInterval) async {

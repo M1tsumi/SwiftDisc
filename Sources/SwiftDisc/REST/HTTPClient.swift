@@ -11,11 +11,12 @@ final class HTTPClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
-    private let rateLimiter = RateLimiter()
+    private let rateLimiter: RateLimiter
 
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
         self.configuration = configuration
+        self.rateLimiter = RateLimiter(onRateLimit: configuration.onRateLimit)
         let config = URLSessionConfiguration.ephemeral
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30

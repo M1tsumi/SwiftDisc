@@ -107,12 +107,8 @@ public actor ShardingGatewayManager {
 
     // Logging
     private enum LogLevel: String { case info = "INFO", warning = "WARN", error = "ERROR", debug = "DEBUG" }
-    nonisolated(unsafe) private static let logDateFormatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        return f
-    }()
     private func log(_ level: LogLevel, _ message: @autoclosure () -> String) {
-        let ts = ShardingGatewayManager.logDateFormatter.string(from: Date())
+        let ts = ISO8601DateFormatter().string(from: Date())
         print("[SwiftDisc][\(level.rawValue)] \(ts) - \(message())")
     }
 

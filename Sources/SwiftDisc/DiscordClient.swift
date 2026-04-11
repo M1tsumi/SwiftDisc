@@ -14,8 +14,8 @@ public actor DiscordClient {
     private let voiceClient: VoiceClient?
     private var currentUserId: UserID?
 
-    nonisolated(unsafe) private var eventStream: AsyncStream<DiscordEvent>!
-    nonisolated(unsafe) private var eventContinuation: AsyncStream<DiscordEvent>.Continuation!
+    private let eventStream: AsyncStream<DiscordEvent>
+    private let eventContinuation: AsyncStream<DiscordEvent>.Continuation
 
     public let cache = Cache()
 

@@ -128,7 +128,7 @@ public actor ViewManager {
                         let regex = try NSRegularExpression(pattern: pattern)
                         let range = NSRange(location: 0, length: customId.utf16.count)
                         if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { await handler(interaction, client) } }
-                    } catch { }
+                    } catch { /* invalid regex; treat as non-match */ }
                 }
                 if matched {
                     if view.oneShot { oneShotToRemove.append(vid) }

@@ -22,3 +22,34 @@ public enum DiscordError: Error, Sendable {
     /// HTTP is not available on this platform build.
     case unavailable
 }
+
+extension DiscordError: CustomStringConvertible, LocalizedError {
+    public var description: String {
+        switch self {
+        case .http(let statusCode, let body):
+            if body.isEmpty { return "HTTP error \(statusCode)" }
+            return "HTTP error \(statusCode): \(body)"
+        case .api(let message, let code):
+            if let code { return "Discord API error \(code): \(message)" }
+            return "Discord API error: \(message)"
+        case .decoding(let error):
+            return "Decoding failed: \((error as NSError).localizedDescription)"
+        case .encoding(let error):
+            return "Encoding failed: \((error as NSError).localizedDescription)"
+        case .network(let error):
+            return "Network error: \((error as NSError).localizedDescription)"
+        case .gateway(let message):
+            return "Gateway error: \(message)"
+        case .cancelled:
+            return "Operation cancelled"
+        case .validation(let message):
+            return "Validation failed: \(message)"
+        case .unavailable:
+            return "HTTP is unavailable on this platform build"
+        }
+    }
+
+    public var errorDescription: String? {
+        description
+    }
+}
