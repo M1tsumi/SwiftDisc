@@ -14,6 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Swift 6.2
+        uses: compnerd/gha-setup-swift@main
+        with:
+          source: swift.org
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+
       - name: Run tests (Unix)
         if: matrix.os != 'windows-latest'
         run: |
