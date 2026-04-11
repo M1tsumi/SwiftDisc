@@ -22,16 +22,24 @@ struct AutocompleteBot {
 
         slash.register("search") { ctx in
             let q = ctx.string("query") ?? ""
-            try await ctx.client.createInteractionResponse(
-                interactionId: ctx.interaction.id,
-                token: ctx.interaction.token,
-                type: .channelMessageWithSource,
-                content: "You searched for: \(q)",
-                embeds: nil
-            )
+            do {
+                try await ctx.client.createInteractionResponse(
+                    interactionId: ctx.interaction.id,
+                    token: ctx.interaction.token,
+                    type: .channelMessageWithSource,
+                    content: "You searched for: \(q)",
+                    embeds: nil
+                )
+            } catch {
+                print("Autocomplete handler 'search' failed: \(error)")
+            }
         }
 
-        try? await client.loginAndConnect(intents: [.guilds, .guildMessages])
-        for await _ in client.events { _ = () }
+        do {
+            try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+            for await _ in client.events { _ = () } // keep alive
+        } catch {
+            print("Failed to login/connect: \(error)")
+        }
     }
 }

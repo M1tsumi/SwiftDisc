@@ -5,22 +5,27 @@ import SwiftDisc
 @main
 struct CommandFrameworkBot {
     static func main() async {
-        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? "YOUR_TOKEN_HERE"
+        let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_TOKEN_HERE"
         let client = DiscordClient(token: token)
 
         let router = CommandRouter(prefix: "!")
 
         router.register("ping") { ctx in
-            try? await ctx.reply("Pong!")
+            do {
+                try await ctx.message.reply(client: ctx.client, content: "Pong!")
+            } catch {
+                print("Command 'ping' failed: \(error)")
+            }
         }
 
         // Attach simple message handler to the client's event system.
-        client.onMessageCreate { message in
-            await router.processMessage(message)
+        client.onMessage = { message in
+            await router.handleIfCommand(message: message, client: client)
         }
 
         do {
-            try await client.start()
+            try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+            for await _ in client.events { /* keep alive */ }
         } catch {
             print("Client failed to start: \(error)")
         }

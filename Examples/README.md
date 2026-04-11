@@ -17,8 +17,19 @@ These examples are simple, single-file bots demonstrating new features. They ass
 - File: `Examples/AutocompleteBot.swift`
 - What it does: Registers a `/search` command with an autocomplete provider for the `query` option and echoes the selection.
 - Run (from repo root):
-  - SwiftPM as a script (Swift 5.9+ supports `swift run --swift-file` on some setups). If not supported, copy into your app target.
-  - Suggested: integrate into your app by copying the file contents or loading via Xcode/SwiftPM executable target.
+  - SwiftPM executable targets are provided. Example:
+
+    ```bash
+    swift run PingBotExample
+    ```
+
+    PowerShell (Windows):
+
+    ```powershell
+    swift run PingBotExample
+    ```
+
+  - Alternatively, copy into your app target or run as a script where supported.
 
 ## 2) File Uploads
 - File: `Examples/FileUploadBot.swift`

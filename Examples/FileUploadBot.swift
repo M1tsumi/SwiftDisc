@@ -31,7 +31,11 @@ struct FileUploadBot {
             }
         }
 
-        try? await client.loginAndConnect(intents: [.guilds])
-        for await _ in client.events { _ = () }
+        do {
+            try await client.loginAndConnect(intents: [.guilds])
+            for await _ in client.events { _ = () }
+        } catch {
+            print("Failed to login/connect: \(error)")
+        }
     }
 }
