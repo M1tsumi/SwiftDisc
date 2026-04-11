@@ -126,9 +126,9 @@ Sharding
 - Or call `loginAndConnectSharded(index:total:intents:)` on individual clients.
 - Resume preserves session/shard; reconnect uses exponential backoff.
 
-Production Deployment
+- Production Deployment
 ---------------------
-- Build & Run: SwiftPM build; run with `DISCORD_TOKEN`.
+- Build & Run: SwiftPM build; run with `DISCORD_BOT_TOKEN`.
 - Supervisor: systemd/launchd/PM2/Docker for uptime.
 - Config: Set intents in Developer Portal; configure shard count.
 - Environment: Logging, outbound access to Discord, clock sync.

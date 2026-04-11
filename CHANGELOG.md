@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-04-08
+
+### Overview
+SwiftDisc 2.1.0 focuses on making the library easier to debug, easier to onboard,
+and safer to evolve. This release hardens a few internal lifecycle edges, makes
+errors easier to understand, adds rate-limit observability, and refreshes the
+contributor experience with cleaner docs and reusable test fixtures.
+
+### Added — Developer Experience
+- **Clear `DiscordError` descriptions** — common REST, gateway, and validation
+  failures now produce messages that are easier to read and act on.
+- **Rate-limit observability** — `DiscordConfiguration.onRateLimit` can observe
+  REST bucket updates and waits through a lightweight `RateLimitEvent` snapshot.
+- **Shared test fixtures** — reusable helpers for `User`, `Message`, and
+  interaction payloads reduce repeated JSON boilerplate in tests.
+- **Contributor guide** — a top-level `CONTRIBUTING.md` documents workflow,
+  build/test commands, and PR expectations.
+
+### Changed
+- **`DiscordConfiguration` docs** now explain the voice and gateway diagnostic
+  toggles more clearly.
+- **Documentation defaults** now use `DISCORD_BOT_TOKEN` consistently across the
+  install guide and example onboarding flow.
+- **README roadmap** now frames the release as a reliability and developer
+  experience update instead of a v2.0.0 carryover.
+- **Internal actor ownership** was tightened by removing a few `nonisolated(unsafe)`
+  patterns in the client, cache, and sharding manager.
+
+### Fixed
+- **Gateway interaction fallback visibility** remains intact when typed decoding
+  fails, making payload drift observable instead of silent.
+- **Cache cleanup** avoids mutating recent message storage while iterating.
+- **View cleanup** continues to use snapshot-based one-shot removal.
+
 ## [2.0.0] - 2026-03-02
 
 ### Overview

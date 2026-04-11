@@ -2,57 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  build-and-test-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Swift 6.2
-        uses: compnerd/gha-setup-swift@main
-        with:
-          source: swift.org
-          swift-version: swift-6.2-release
-          swift-build: 6.2-RELEASE
-      - name: Toolchain diagnostics
-        run: |
-          xcodebuild -version
-          xcrun --sdk macosx --show-sdk-version
-          xcrun --sdk macosx --show-sdk-path
-          swift --version
-          xcrun swiftc -version
-          sw_vers
-      - name: Clean
-        run: swift package clean
-      - name: Build
-        run: swift build -v
-      - name: Test
-        run: swift test -v --enable-code-coverage
-      - name: Upload raw coverage directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-macos
-          path: .build/debug/codecov
-          if-no-files-found: warn
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
-  build-and-test-windows:
-    runs-on: windows-latest
-    continue-on-error: true  # Swift + Windows SDK 10.0.26100 can hit a ucrt cyclic dependency; don't fail the whole pipeline
     steps:
       - uses: actions/checkout@v4
-      - name: Install Swift 6.2
-        uses: compnerd/gha-setup-swift@main
-        with:
-          source: swift.org
-          swift-version: swift-6.2-release
-          swift-build: 6.2-RELEASE
-      - name: Build
+
+      - name: Run tests (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          chmod +x scripts/run-tests.sh || true
+          ./scripts/run-tests.sh
+
+      - name: Run tests (Windows)
+        if: matrix.os == 'windows-latest'
         shell: pwsh
-        run: swift build -v
-      - name: Test
-        shell: pwsh
-        run: swift test -v
+        run: |
+          .\scripts\run-tests.ps1
