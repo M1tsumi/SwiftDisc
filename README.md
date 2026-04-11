@@ -1,63 +1,52 @@
-<div align="center">
-
-![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/assets/typing-swiftdisc.svg)
-
 # SwiftDisc
 
-[![Discord](https://img.shields.io/discord/1439300942167146508?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
-[![Swift Version](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Discord](https://img.shields.io/discord/1439300942167146508?label=discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
 
-**A modern Swift library for building Discord bots and integrations.**
+SwiftDisc is a Swift-first Discord API wrapper for building bots and integrations with async/await, typed models, and practical high-level tools.
 
-Built with async/await, strongly typed, and cross-platform.
+This README is intentionally focused on what most people need first: install, run a bot, understand intents, and find examples.
 
-[Documentation](https://github.com/M1tsumi/SwiftDisc/wiki) · [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples) · [Discord Server](https://discord.gg/6nS2KqxQtj)
+## At a glance
 
-</div>
-
----
-
-## About
-
-SwiftDisc is a powerful Swift library for interacting with the Discord API. It embraces modern Swift concurrency with async/await throughout, provides fully typed models for Discord's data structures, and handles common pain points like rate limiting, reconnection, and sharding automatically.
-
-Whether you're building a simple bot or a complex integration, SwiftDisc gives you the tools you need while staying out of your way.
+- Swift 6.2 concurrency model and actor-safe APIs.
+- Gateway and REST support in one library.
+- Built-in rate-limit handling and reconnect logic.
+- High-level routers for commands, slash commands, autocomplete, components, and views.
+- Guild sticker write operations are supported (`createGuildSticker`, `modifyGuildSticker`, `deleteGuildSticker`).
+- Runnable examples in [Examples](Examples).
 
 ## Installation
 
-Add SwiftDisc to your Swift package dependencies in `Package.swift`:
+Add SwiftDisc with Swift Package Manager:
 
 ```swift
-dependencies: [
+// Package.swift
+.dependencies([
     .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.1.0")
-]
+]),
+.targets([
+    .target(
+        name: "YourBot",
+        dependencies: ["SwiftDisc"]
+    )
+])
 ```
 
-Then add it to your target:
+### Platform support
+
+- macOS 11+
+- iOS 14+
+- tvOS 14+
+- watchOS 7+
+- Windows with Swift 6.2+
+
+## Quick start (message bot)
 
 ```swift
-targets: [
-    .target(name: "YourBot", dependencies: ["SwiftDisc"])
-]
-```
-
-### Platform Requirements
-
-| Platform | Minimum Version |
-|----------|----------------|
-| macOS | 11.0+ |
-| iOS | 14.0+ |
-| tvOS | 14.0+ |
-| watchOS | 7.0+ |
-| Windows | Swift 5.9+ |
-
-## Quick Start
-
-Here's a simple bot that responds to messages using the v2.0 callback API:
-
-```swift
+import Foundation
 import SwiftDisc
 
 @main
@@ -66,469 +55,141 @@ struct MyBot {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
 
-        // Assign callbacks — no switch statement needed
-        client.onReady = { info in
-            print("✅ Logged in as \(info.user.username)")
+        await client.setOnReady { ready in
+            print("Logged in as \(ready.user.username)")
         }
 
-        client.onMessage = { message in
-            guard message.content == "!ping" else { return }
-            // reply() sets message_reference automatically
-            try? await message.reply(client: client, content: "🏓 Pong!")
+        await client.setOnMessage { message in
+            guard message.content?.lowercased() == "ping" else { return }
+            do {
+                try await message.reply(client: client, content: "Pong!")
+            } catch {
+                print("Reply failed: \(error)")
+            }
         }
 
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+            let events = await client.events
+            for await _ in events { }
         } catch {
-            print("❌ Error: \(error)")
+            print("Client failed: \(error)")
         }
     }
 }
 ```
 
-Or use typed filtered streams when you need an event loop:
+## Quick start (slash command)
 
 ```swift
-for await message in await client.messageEvents() {
-    if message.content == "!ping" {
-        try? await message.reply(client: client, content: "🏓 Pong!")
+import Foundation
+import SwiftDisc
+
+@main
+struct SlashBot {
+    static func main() async {
+        let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
+        let client = DiscordClient(token: token)
+
+        let slash = SlashCommandRouter()
+        await slash.register("ping") { ctx in
+            try await ctx.client.createInteractionResponse(
+                interactionId: ctx.interaction.id,
+                token: ctx.interaction.token,
+                content: "Pong!"
+            )
+        }
+
+        await client.useSlashCommands(slash)
+
+        try? await client.loginAndConnect(intents: [.guilds])
+        let events = await client.events
+        for await _ in events { }
     }
 }
 ```
 
-## Features
-
-### Core Capabilities
-
-- **Gateway Connection**: WebSocket with automatic heartbeat, session resume, and event streaming
-- **REST API**: Comprehensive coverage of Discord's HTTP endpoints
-- **Rate Limiting**: Automatic per-route and global rate limit handling
-- **Sharding**: Built-in support for large bots with health monitoring
-- **Type Safety**: Strongly typed models throughout with compile-time safety
-- **Cross-Platform**: Works on macOS, iOS, tvOS, watchOS, and Windows
-
-### High-Level Features
-
-- **Command Framework**: Built-in router for prefix and slash commands
-- **Component Builders**: Fluent API for buttons, select menus, embeds, and modals
-- **View Manager**: Persistent UI views with automatic lifecycle management
-- **Collectors**: AsyncStream-based message and component collectors
-- **Extensions/Cogs**: Modular architecture for organizing bot features
-- **Utilities**: Mention formatters, emoji helpers, timestamp formatting, and more
-
-### v2.0 Developer Experience
-
-- **`message.reply()`** — reply to any message in one line, mention control included
-- **`client.sendDM()`** — open a DM and send a message in a single call
-- **Typed slash option accessors** — `ctx.user()`, `ctx.channel()`, `ctx.role()`, `ctx.attachment()`
-- **Filtered event streams** — `client.messageEvents()`, `client.interactionEvents()`, etc.
-- **`EmbedBuilder.timestamp(Date)`** — pass `Date()` directly, no ISO 8601 string needed
-- **Public `CooldownManager`** — use it anywhere in your bot, not just command routers
-- **32 event callbacks** — one `@Sendable` closure per event, no `switch` boilerplate
-- **Background cache eviction** — TTL expiry runs automatically, no manual calls needed
-
-### What's Included
-
-The REST API covers all essential Discord features:
-
-✅ Messages, embeds, reactions, threads  
-✅ Channels, permissions, webhooks  
-✅ Guilds, members, roles, bans  
-✅ Slash commands, autocomplete, modals  
-✅ Components (buttons, select menus, radio groups, checkbox groups)  
-✅ Modal components: Label, RadioGroup, CheckboxGroup, Checkbox  
-✅ Scheduled events, stage instances  
-✅ Auto-moderation rules  
-✅ Application commands and interactions  
-✅ Gradient role colors and guild tags  
-✅ Voice state REST endpoints  
-✅ Community invite target user management  
-
-For a complete API checklist, see the [REST API Coverage](#rest-api-coverage) section below.
-
-## Examples
-
-### Command Framework
-
-Create command-based bots easily with the built-in router:
-
-```swift
-let router = CommandRouter(prefix: "!")
-router.register("ping") { ctx in
-    do {
-        try await ctx.message.reply(client: ctx.client, content: "Pong!")
-    } catch {
-        print("Command 'ping' failed: \(error)")
-    }
-}
-
-client.onMessage = { message in
-    await router.handleIfCommand(message: message, client: client)
-}
-```
-
-Add checks and cooldowns to commands:
-
-```swift
-router.register("ban", checks: [isAdminCheck], cooldown: 10.0) { ctx in
-    // Command logic here
-}
-```
-
-[See full example →](Examples/CommandFrameworkBot.swift)
-
-### Slash Commands
-
-```swift
-let slash = SlashCommandRouter()
-slash.register("greet") { interaction in
-    try await interaction.reply("Hello from SwiftDisc!")
-}
-```
-
-[See full example →](Examples/SlashBot.swift)
-
-### Components & Embeds
-
-Use the fluent builders to create rich messages:
-
-```swift
-let embed = EmbedBuilder()
-    .title("Welcome!")
-    .description("Thanks for joining our server")
-    .color(0x5865F2)
-    .timestamp(Date())
-    .build()
-
-let button = ButtonBuilder()
-    .style(.primary)
-    .label("Click me!")
-    .customId("welcome_button")
-    .build()
-
-let row = ActionRowBuilder()
-    .addButton(button)
-    .build()
-
-try await client.sendMessage(
-    channelId: channelId,
-    embeds: [embed],
-    components: [row]
-)
-```
-
-[See full example →](Examples/ComponentsExample.swift)
-
-### Message Collectors
-
-Collect messages or component interactions using AsyncStreams:
-
-```swift
-let collector = client.createMessageCollector(
-    filter: { $0.author.id == userId && $0.channel_id == channelId },
-    timeout: 60.0,
-    max: 1
-)
-
-for await message in collector {
-    print("Received: \(message.content)")
-}
-```
-
-### View Manager
-
-Create persistent interactive UIs with automatic lifecycle management:
-
-```swift
-let view = BasicView(timeout: 300) { customId, interaction in
-    if customId == "confirm_button" {
-        try? await interaction.reply("Confirmed!")
-        return true // Remove view after use
-    }
-    return false
-}
-
-client.viewManager?.register(view: view, for: messageId)
-```
-
-[See full example →](Examples/ViewExample.swift)
-
-### Extensions/Cogs
-
-Organize your bot into modular extensions:
-
-```swift
-struct ModerationCog: Cog {
-    func onLoad(client: DiscordClient) async {
-        print("Moderation module loaded")
-        // Register commands, set up listeners
-    }
-    
-    func onUnload(client: DiscordClient) async {
-        print("Moderation module unloaded")
-    }
-}
-
-let extensionManager = ExtensionManager()
-await extensionManager.load(cog: ModerationCog(), client: client)
-```
-
-[See full example →](Examples/CogExample.swift)
-
-## Advanced Features
-
-### Sharding
-
-For large bots, SwiftDisc handles sharding automatically:
-
-```swift
-let manager = await ShardingGatewayManager(
-    token: token,
-    configuration: .init(
-        shardCount: .automatic,
-        connectionDelay: .staggered(interval: 1.5)
-    ),
-    intents: [.guilds, .guildMessages]
-)
-
-try await manager.connect()
-
-let health = await manager.healthCheck()
-print("Shards: \(health.readyShards)/\(health.totalShards) ready")
-```
-
-### Voice Support (Experimental)
-
-Connect to voice channels and send audio:
-
-```swift
-// Enable voice in config
-let config = DiscordConfiguration(enableVoiceExperimental: true)
-let client = DiscordClient(token: token, configuration: config)
-
-// Join a voice channel
-try await client.joinVoice(guildId: guildId, channelId: voiceChannelId)
-
-// Send Opus audio
-try await client.playVoiceOpus(guildId: guildId, data: opusPacket)
-
-// Or use an audio source
-try await client.play(source: audioSource, guildId: guildId)
-```
-
-### File Uploads
-
-Send files with messages and interactions:
-
-```swift
-let file = FileAttachment(
-    filename: "image.png",
-    data: imageData,
-    contentType: "image/png"
-)
-
-try await client.sendMessage(
-    channelId: channelId,
-    content: "Check out this image!",
-    files: [file]
-)
-```
-
-For interaction responses:
-
-```swift
-try await client.createInteractionResponseWithFiles(
-    applicationId: appId,
-    interactionToken: token,
-    payload: responsePayload,
-    files: [file]
-)
-```
-
-### Utilities
-
-SwiftDisc includes helpful utilities for common tasks:
-
-```swift
-// Mention formatting
-Mentions.user(userId)           // <@123456>
-Mentions.channel(channelId)     // <#123456>
-Mentions.role(roleId)           // <@&123456>
-
-// Custom emoji
-EmojiUtils.custom(name: "party", id: emojiId, animated: true)
-
-// Timestamp formatting
-DiscordTimestamp.format(date: Date(), style: .relative)
-
-// Escape special characters
-MessageFormat.escapeSpecialCharacters(userInput)
-```
-
-## REST API Coverage
-
-### Messages
-✅ Send, edit, delete messages  
-✅ Reactions (add, remove, remove all)  
-✅ Embeds, components, attachments  
-✅ Pins, bulk delete  
-✅ Crosspost, polls  
-✅ Forward messages  
-
-### Channels
-✅ Create, modify, delete channels  
-✅ Permissions, invites  
-✅ Webhooks (full CRUD + execute)  
-✅ Typing indicators  
-✅ Threads (create, archive, members)  
-
-### Guilds
-✅ Create, modify, delete guilds  
-✅ Channels, roles, emojis  
-✅ Members (add, remove, modify, timeout)  
-✅ Bans, prune, audit logs  
-✅ Widget, preview, vanity URL  
-✅ Templates  
-
-### Roles
-✅ List, create, modify, delete roles  
-✅ Fetch individual role (`getGuildRole`)  
-✅ Gradient role colors (`RoleColors`, `RoleColorStop`)  
-
-### Interactions
-✅ Slash commands (global & guild)  
-✅ Autocomplete  
-✅ Modals and components  
-✅ Interaction responses (including `launchActivity` type 12)  
-✅ Follow-up messages  
-✅ Command localization  
-✅ Modal components: Label (21), RadioGroup (22), CheckboxGroup (23), Checkbox (24)  
-
-### Users & Members
-✅ Get/modify current user  
-✅ Guild tag (`primary_guild`), banner, accent color, flags  
-✅ Modify current member (nick, avatar, banner, bio)  
-
-### Invites
-✅ Create, list, get, delete invites  
-✅ Community invite role assigning (`role_ids`)  
-✅ Target user list management (`getInviteTargetUsers`, `updateInviteTargetUsers`, `getInviteTargetUsersJobStatus`)  
-
-### Voice
-✅ Join/leave voice channels (Gateway)  
-✅ Get voice states via REST (`getCurrentUserVoiceState`, `getUserVoiceState`)  
-✅ Opus audio playback (experimental)  
-
-### Subscriptions & Monetization
-✅ App subscriptions with `renewal_sku_ids`  
-
-### Other Features
-✅ Scheduled events  
-✅ Stage instances  
-✅ Auto-moderation rules  
-✅ Application emojis  
-✅ Role connections (linked roles)  
-✅ Sticker info (read-only)  
-
-### Soundboard
-✅ Send soundboard sounds  
-✅ List, create, modify, delete guild soundboard sounds  
-✅ Soundboard gateway events (`SOUNDBOARD_SOUND_CREATE/UPDATE/DELETE`)  
-
-### Not Yet Implemented
-❌ Guild sticker creation/modification  
-
-For unsupported endpoints, use the raw HTTP methods: `rawGET`, `rawPOST`, `rawPATCH`, `rawDELETE`
-
-## More Examples
-
-Check out the [Examples](Examples) directory for complete, runnable examples:
-
-- [PingBot.swift](Examples/PingBot.swift) - Simple message responder
-- [CommandFrameworkBot.swift](Examples/CommandFrameworkBot.swift) - Command routing with checks
-- [SlashBot.swift](Examples/SlashBot.swift) - Slash command handling
-- [AutocompleteBot.swift](Examples/AutocompleteBot.swift) - Autocomplete interactions
-- [ComponentsExample.swift](Examples/ComponentsExample.swift) - Buttons, selects, and embeds
-- [ViewExample.swift](Examples/ViewExample.swift) - Persistent interactive views
-- [CogExample.swift](Examples/CogExample.swift) - Modular bot architecture
-- [FileUploadBot.swift](Examples/FileUploadBot.swift) - Sending files
-- [ThreadsAndScheduledEventsBot.swift](Examples/ThreadsAndScheduledEventsBot.swift) - Thread and event handling
-- [VoiceStdin.swift](Examples/VoiceStdin.swift) - Voice playback (experimental)
-- [LinkedRolesBot.swift](Examples/LinkedRolesBot.swift) - Role connections
-
-## Documentation
-
-- **[Wiki](https://github.com/M1tsumi/SwiftDisc/wiki)** - Setup guides, concepts, and deployment tips
-- **[Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)** - Complete working examples
-- **[Discord Server](https://discord.gg/6nS2KqxQtj)** - Get help and discuss the library
-- **[Changelog](CHANGELOG.md)** - Version history and migration guides
-
-## Building & Testing
+## Bot setup checklist
+
+If your bot appears to connect but receives no data, one of these is usually the reason:
+
+1. `DISCORD_BOT_TOKEN` is missing or invalid.
+2. Required intents are not passed to `loginAndConnect`.
+3. Privileged intents (especially `messageContent`) are not enabled in the Discord Developer Portal.
+4. Bot was invited without the scopes/permissions you expect.
+
+## How SwiftDisc is organized
+
+- `DiscordClient`: main actor and lifecycle entrypoint.
+- Gateway: real-time events and dispatch.
+- REST client: typed HTTP request/response operations.
+- High-level modules in [Sources/SwiftDisc/HighLevel](Sources/SwiftDisc/HighLevel):
+  - `CommandRouter`
+  - `SlashCommandRouter`
+  - `AutocompleteRouter`
+  - `ViewManager`
+  - collectors/builders/utilities
+- Typed models in [Sources/SwiftDisc/Models](Sources/SwiftDisc/Models).
+
+## Example programs
+
+These examples are included and useful for real onboarding:
+
+- [Examples/PingBot.swift](Examples/PingBot.swift)
+- [Examples/CommandsBot.swift](Examples/CommandsBot.swift)
+- [Examples/SlashBot.swift](Examples/SlashBot.swift)
+- [Examples/AutocompleteBot.swift](Examples/AutocompleteBot.swift)
+- [Examples/ComponentsExample.swift](Examples/ComponentsExample.swift)
+- [Examples/ViewExample.swift](Examples/ViewExample.swift)
+- [Examples/FileUploadBot.swift](Examples/FileUploadBot.swift)
+
+Packaged executable targets can be run with:
 
 ```bash
-# Build the library
-swift build
-
-# Run tests
-swift test
-
-# With code coverage (macOS)
-swift test --enable-code-coverage
+swift run PingBotExample
+swift run CommandsBotExample
+swift run SlashBotExample
+swift run AutocompleteBotExample
+swift run ComponentsExample
+swift run ViewExample
+swift run FileUploadBotExample
 ```
 
-CI runs on macOS (Xcode 16.4) and Windows (Swift 6.2). Requires Swift 6.2+ toolchain.
+## Reliability and DX notes
 
-## Contributing
+SwiftDisc v2.1.0 focuses on predictable behavior and lower onboarding friction:
 
-We welcome contributions! Whether it's bug reports, feature requests, or pull requests, we'd love your help making SwiftDisc better.
+- Actor-safe example patterns for Swift 6 strict concurrency.
+- Reusable test fixtures for faster test authoring.
+- Cleaner callback setup with explicit setter methods.
+- Updated docs aimed at first-run success.
 
-Before contributing, please:
-- Check existing issues and PRs to avoid duplicates
-- Open a discussion issue for significant changes before starting work
-- Join our [Discord server](https://discord.gg/6nS2KqxQtj) if you have questions
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) for the current build, test, and PR workflow
+Research notes on ecosystem norms and the planned DX roadmap are in [DXResearch.md](DXResearch.md).
 
-## Roadmap
+## Troubleshooting
 
-### Current Version: v2.1.0
+- Build/toolchain mismatch:
+  - Use Swift 6.2+.
+- Connected but no command responses:
+  - Verify intents and Developer Portal privileged intent settings.
+- 429/rate-limit issues:
+  - Avoid tight retry loops and bursty duplicate requests.
+- CI failures:
+  - Start by checking runner logs in [Errors](Errors).
 
-Focused release on reliability, diagnostics, and developer experience. v2.1.0 is
-about tightening lifecycle safety, making failure modes easier to understand,
-and smoothing the path from first bot to production bot. See
-[CHANGELOG.md](CHANGELOG.md).
+## Documentation map
 
-Highlights in this pass include clearer error descriptions, rate-limit
-observability, shared test fixtures, and a contributor guide for faster local
-iteration.
+- Main API and usage reference: [SwiftDiscDocs.txt](SwiftDiscDocs.txt)
+- DX research and roadmap: [DXResearch.md](DXResearch.md)
+- Project changes per release: [CHANGELOG.md](CHANGELOG.md)
+- Contributing workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Repository standards and behavior: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
-### Upcoming
+## Community and support
 
-- Full Components V2 fluent builders (MediaGallery, Section, Container, Separator)
-- Guild sticker creation and modification
-- Enhanced and stable voice support
-- Expanded test coverage across REST, Gateway, and lifecycle-heavy code paths
-
-Have ideas? Open an issue or join the discussion on Discord!
-
-## Help
-
-If you need help or have questions:
-
-- Check the [Wiki](https://github.com/M1tsumi/SwiftDisc/wiki) for guides and documentation
-- Browse [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples) for code samples
-- Join our [Discord server](https://discord.gg/6nS2KqxQtj) for live help
-- Search [existing issues](https://github.com/M1tsumi/SwiftDisc/issues) for similar questions
+- Discord support server: https://discord.gg/6nS2KqxQtj
+- Issues and feature requests: https://github.com/M1tsumi/SwiftDisc/issues
 
 ## License
 
-SwiftDisc is released under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Built with ❤️ using Swift**
-
-[Documentation](https://github.com/M1tsumi/SwiftDisc/wiki) · [Discord Server](https://discord.gg/6nS2KqxQtj) · [Examples](https://github.com/M1tsumi/SwiftDisc/tree/main/Examples)
-
-</div>
+MIT. See [LICENSE](LICENSE).

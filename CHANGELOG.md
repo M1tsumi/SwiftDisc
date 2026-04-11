@@ -27,7 +27,7 @@ contributor experience with cleaner docs and reusable test fixtures.
 - **`DiscordConfiguration` docs** now explain the voice and gateway diagnostic
   toggles more clearly.
 - **Documentation defaults** now use `DISCORD_BOT_TOKEN` consistently across the
-  install guide and example onboarding flow.
+  README onboarding flow and examples.
 - **README roadmap** now frames the release as a reliability and developer
   experience update instead of a v2.0.0 carryover.
 - **Internal actor ownership** was tightened by removing a few `nonisolated(unsafe)`
@@ -38,6 +38,10 @@ contributor experience with cleaner docs and reusable test fixtures.
   fails, making payload drift observable instead of silent.
 - **Cache cleanup** avoids mutating recent message storage while iterating.
 - **View cleanup** continues to use snapshot-based one-shot removal.
+- **Guild sticker write support documentation** now matches shipped API support:
+  `createGuildSticker(guildId:name:description:tags:file:)` and
+  `modifyGuildSticker(guildId:stickerId:name:description:tags:)` are available
+  and no longer marked as missing.
 
 ## [2.0.0] - 2026-03-02
 
