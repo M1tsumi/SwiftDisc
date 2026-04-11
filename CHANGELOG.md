@@ -30,6 +30,7 @@ contributor experience with cleaner docs and reusable test fixtures.
   README onboarding flow and examples.
 - **README roadmap** now frames the release as a reliability and developer
   experience update instead of a v2.0.0 carryover.
+- **README header branding** restores the SwiftDisc SVG hero in the top section.
 - **Internal actor ownership** was tightened by removing a few `nonisolated(unsafe)`
   patterns in the client, cache, and sharding manager.
 
