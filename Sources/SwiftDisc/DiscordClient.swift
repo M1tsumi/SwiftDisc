@@ -719,7 +719,7 @@ public actor DiscordClient {
 
     // MARK: - Internal event emission (called by EventDispatcher)
     func _internalEmitEvent(_ event: DiscordEvent) {
-        eventContinuation?.yield(event)
+        eventContinuation.yield(event)
     }
 
     // MARK: - Raw REST passthroughs (coverage helper)
@@ -1279,7 +1279,7 @@ public actor DiscordClient {
 
     public func shutdown() async {
         await gateway.close()
-        eventContinuation?.finish()
+        eventContinuation.finish()
     }
 
     // MARK: - Phase 4: Slash Commands (minimal)

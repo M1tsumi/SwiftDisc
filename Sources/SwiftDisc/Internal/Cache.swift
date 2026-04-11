@@ -33,7 +33,9 @@ public actor Cache {
             || configuration.channelTTL != nil
             || configuration.guildTTL != nil
         if hasTTL {
-            self.evictionTask = Task { await self.evictionLoop() }
+            Task { [weak self] in
+                await self?.startEvictionTaskIfNeeded()
+            }
         }
     }
 
@@ -139,6 +141,13 @@ public actor Cache {
     }
 
     // MARK: - Private
+
+    private func startEvictionTaskIfNeeded() {
+        guard evictionTask == nil else { return }
+        evictionTask = Task { [weak self] in
+            await self?.evictionLoop()
+        }
+    }
 
     private func evictionLoop() async {
         while !Task.isCancelled {
