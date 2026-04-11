@@ -17,7 +17,7 @@ Install via Swift Package Manager (SPM)
 Option A) Add to Package.swift (for server/CLI projects)
 
 1) In your Package.swift dependencies, add:
-   .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.0.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.1.0")
 
 2) Add "SwiftDisc" to your target dependencies.
 
@@ -25,14 +25,14 @@ Option B) Add to Xcode project (for App targets)
 
 1) Xcode > File > Add Packages...
 2) Enter URL: https://github.com/M1tsumi/SwiftDisc.git
-3) Choose version: Up to Next Major from 2.0.0
+3) Choose version: Up to Next Major from 2.1.0
 4) Add the SwiftDisc product to your app target
 
 Configuring your Token
 ----------------------
-- Recommended: Use an environment variable named DISCORD_TOKEN
+- Recommended: Use an environment variable named DISCORD_BOT_TOKEN
   - macOS/iOS: Edit Scheme > Run > Arguments > Environment Variables
-  - CLI/Server: export DISCORD_TOKEN=your_token_here
+    - CLI/Server: export DISCORD_BOT_TOKEN=your_token_here
 - Never hardcode tokens in source control
 
 Selecting Intents
@@ -49,7 +49,7 @@ import SwiftDisc
 @main
 struct BotMain {
     static func main() async {
-        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? "<Bot Token>"
+        let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "<Bot Token>"
         let client = DiscordClient(token: token)
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
@@ -76,7 +76,7 @@ Windows Notes
 
 Troubleshooting
 ---------------
-- Invalid token: Confirm DISCORD_TOKEN is set and correct
+- Invalid token: Confirm DISCORD_BOT_TOKEN is set and correct
 - No events received: Check intents; ensure messageContent privileged intent is enabled if you expect full message bodies
 - Rate limiting: Per-route and global rate limit buckets are fully implemented with exponential backoff. If you encounter 429 responses, avoid tight concurrent loops to the same endpoint.
 - Gateway disconnects: The client has basic heartbeat ACK tracking and will attempt reconnect; intermittent networks may still cause delays
@@ -90,3 +90,28 @@ Support & Documentation
 Versioning
 ----------
 - Semantic Versioning is used (MAJOR.MINOR.PATCH). See CHANGELOG.md for release notes
+
+Running tests locally
+---------------------
+
+You can run the test suite locally using the Swift toolchain or via Docker (recommended for Linux/Windows).
+
+On macOS (native Swift):
+
+```bash
+swift test
+```
+
+On Linux or Windows (via Docker):
+
+```bash
+docker run --rm -v "$(pwd):/workspace" -w /workspace swift:5.9 /bin/bash -lc "swift test"
+```
+
+On Windows PowerShell:
+
+```powershell
+docker run --rm -v "${PWD}:/workspace" -w /workspace swift:5.9 /bin/bash -lc "swift test"
+```
+
+The repository includes a GitHub Actions workflow `.github/workflows/ci.yml` that runs `swift test` on macOS and in a Docker Swift image on Ubuntu.

@@ -31,7 +31,7 @@ Add SwiftDisc to your Swift package dependencies in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.0.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.1.0")
 ]
 ```
 
@@ -155,11 +155,15 @@ Create command-based bots easily with the built-in router:
 ```swift
 let router = CommandRouter(prefix: "!")
 router.register("ping") { ctx in
-    try? await ctx.reply("Pong!")
+    do {
+        try await ctx.message.reply(client: ctx.client, content: "Pong!")
+    } catch {
+        print("Command 'ping' failed: \(error)")
+    }
 }
 
-client.onMessageCreate { message in
-    await router.processMessage(message)
+client.onMessage = { message in
+    await router.handleIfCommand(message: message, client: client)
 }
 ```
 
@@ -482,22 +486,27 @@ Before contributing, please:
 - Check existing issues and PRs to avoid duplicates
 - Open a discussion issue for significant changes before starting work
 - Join our [Discord server](https://discord.gg/6nS2KqxQtj) if you have questions
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for the current build, test, and PR workflow
 
 ## Roadmap
 
-### Current Version: v2.0.0
+### Current Version: v2.1.0
 
-Major release delivering Swift 6 strict-concurrency, typed throws throughout the
-REST layer, 32 new event callbacks, full Guild model, critical bug fixes, and
-high-impact DX improvements (`message.reply()`, `sendDM()`, typed slash accessors,
-filtered event streams, background cache eviction). See [CHANGELOG.md](CHANGELOG.md).
+Focused release on reliability, diagnostics, and developer experience. v2.1.0 is
+about tightening lifecycle safety, making failure modes easier to understand,
+and smoothing the path from first bot to production bot. See
+[CHANGELOG.md](CHANGELOG.md).
+
+Highlights in this pass include clearer error descriptions, rate-limit
+observability, shared test fixtures, and a contributor guide for faster local
+iteration.
 
 ### Upcoming
 
 - Full Components V2 fluent builders (MediaGallery, Section, Container, Separator)
 - Guild sticker creation and modification
 - Enhanced and stable voice support
-- Expanded test coverage across REST and Gateway layers
+- Expanded test coverage across REST, Gateway, and lifecycle-heavy code paths
 
 Have ideas? Open an issue or join the discussion on Discord!
 
