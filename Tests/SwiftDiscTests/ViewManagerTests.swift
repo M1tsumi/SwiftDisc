@@ -29,38 +29,7 @@ final class ViewManagerTests: XCTestCase {
         let view = View(id: "oneshot", timeout: nil, handlers: handlers, oneShot: true)
         await manager.register(view, client: client)
 
-        let data = Interaction.ApplicationCommandData(
-            id: nil,
-            name: nil,
-            type: nil,
-            resolved: nil,
-            options: nil,
-            custom_id: "btn_ok",
-            component_type: 2,
-            values: nil,
-            target_id: nil,
-            components: nil,
-            attachments: nil
-        )
-        let interaction = Interaction(
-            id: "1",
-            application_id: "app",
-            type: 3,
-            data: data,
-            guild_id: "guild",
-            channel: nil,
-            channel_id: "chan",
-            member: nil,
-            user: nil,
-            token: "tok",
-            version: nil,
-            message: nil,
-            app_permissions: nil,
-            locale: nil,
-            guild_locale: nil,
-            authorizing_integration_owners: nil,
-            context: nil
-        )
+        let interaction = TestFixtures.makeComponentInteraction(customId: "btn_ok")
 
         await client._internalEmitEvent(.interactionCreate(interaction))
         await fulfillment(of: [handled], timeout: 1.0)
