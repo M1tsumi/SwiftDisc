@@ -41,7 +41,8 @@ struct ComponentsExample {
         // Start client to receive events etc.
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("Client failed to start: \(error)")
         }

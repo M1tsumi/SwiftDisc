@@ -7,11 +7,11 @@ struct PingBotMain {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
         let client = DiscordClient(token: token)
 
-        client.onReady = { info in
+        await client.onReady = { info in
             print("✅ Connected as: \(info.user.username)")
         }
 
-        client.onMessage = { msg in
+        await client.onMessage = { msg in
             if msg.content?.lowercased() == "ping" {
                 do {
                     try await client.sendMessage(channelId: msg.channel_id, content: "Pong!")
@@ -23,7 +23,8 @@ struct PingBotMain {
 
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("❌ Error: \(error)")
         }

@@ -7,7 +7,7 @@ struct FileUploadBot {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token, configuration: .init(maxUploadBytes: 150 * 1024 * 1024)) // override guardrail if needed
 
-        client.onReady = { ready in
+        await client.onReady = { ready in
             print("Logged in as: \(ready.user.username)")
         }
 
@@ -33,7 +33,8 @@ struct FileUploadBot {
 
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            for await _ in client.events { _ = () }
+            let events = await client.events
+            for await _ in events { _ = () }
         } catch {
             print("Failed to login/connect: \(error)")
         }

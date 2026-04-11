@@ -1,4 +1,5 @@
 import Foundation
+@testable import SwiftDisc
 
 enum TestFixtures {
     static func makeUser(id: String = "u1", username: String = "tester") throws -> User {

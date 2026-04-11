@@ -9,14 +9,14 @@ struct CommandsBotMain {
 
         // Set up command router with a 'ping' and 'help' command
         let router = CommandRouter(prefix: "!")
-        router.register("ping", description: "Replies with Pong!") { ctx in
+        await router.register("ping", description: "Replies with Pong!") { ctx in
             do {
                 _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: "Pong!")
             } catch {
                 print("Command 'ping' failed: \(error)")
             }
         }
-        router.register("echo", description: "Echoes back your text") { ctx in
+        await router.register("echo", description: "Echoes back your text") { ctx in
             let text = ctx.args.joined(separator: " ")
             do {
                 _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: text.isEmpty ? "(no text)" : text)
@@ -24,8 +24,8 @@ struct CommandsBotMain {
                 print("Command 'echo' failed: \(error)")
             }
         }
-        router.register("help", description: "Shows this help text") { ctx in
-            let help = router.helpText()
+        await router.register("help", description: "Shows this help text") { ctx in
+            let help = await router.helpText()
             for chunk in BotUtils.chunkMessage(help) {
                 do {
                     _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: chunk)
@@ -34,15 +34,16 @@ struct CommandsBotMain {
                 }
             }
         }
-        client.useCommands(router)
+        await client.useCommands(router)
 
-        client.onReady = { info in
+        await client.onReady = { info in
             print("✅ Connected as: \(info.user.username)")
         }
 
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("❌ Error: \(error)")
         }

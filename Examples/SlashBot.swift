@@ -20,14 +20,14 @@ struct SlashBotMain {
 
         // Wire slash router
         let slash = SlashCommandRouter()
-        slash.register("ping") { ctx in
+        await slash.register("ping") { ctx in
             do {
                 try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: "Pong!")
             } catch {
                 print("Slash command 'ping' handler failed: \(error)")
             }
         }
-        slash.register("echo") { ctx in
+        await slash.register("echo") { ctx in
             let text = ctx.option("text") ?? "(no text)"
             do {
                 try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: text)
@@ -35,15 +35,16 @@ struct SlashBotMain {
                 print("Slash command 'echo' handler failed: \(error)")
             }
         }
-        client.useSlashCommands(slash)
+        await client.useSlashCommands(slash)
 
-        client.onReady = { info in
+        await client.onReady = { info in
             print("✅ Connected as: \(info.user.username)")
         }
 
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("❌ Error: \(error)")
         }

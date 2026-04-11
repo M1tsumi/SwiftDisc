@@ -10,7 +10,7 @@ struct CommandFrameworkBot {
 
         let router = CommandRouter(prefix: "!")
 
-        router.register("ping") { ctx in
+        await router.register("ping") { ctx in
             do {
                 try await ctx.message.reply(client: ctx.client, content: "Pong!")
             } catch {
@@ -19,13 +19,14 @@ struct CommandFrameworkBot {
         }
 
         // Attach simple message handler to the client's event system.
-        client.onMessage = { message in
+        await client.onMessage = { message in
             await router.handleIfCommand(message: message, client: client)
         }
 
         do {
             try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("Client failed to start: \(error)")
         }
