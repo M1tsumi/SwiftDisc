@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct ComponentsExample {
+    /// Starts an example bot that sends a message with typed component builders.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)

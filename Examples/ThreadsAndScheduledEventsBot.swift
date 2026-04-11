@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct ThreadsAndScheduledEventsBot {
+    /// Starts an event-listener bot for thread and scheduled-event gateway payloads.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)

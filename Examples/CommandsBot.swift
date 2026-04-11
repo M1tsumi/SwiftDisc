@@ -3,6 +3,7 @@ import Foundation
 
 @main
 struct CommandsBotMain {
+    /// Starts a command-based bot with ping, echo, and help handlers.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
         let client = DiscordClient(token: token)

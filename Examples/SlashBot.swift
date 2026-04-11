@@ -3,6 +3,7 @@ import Foundation
 
 @main
 struct SlashBotMain {
+    /// Starts a slash-command bot with sample ping and echo commands.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
         let client = DiscordClient(token: token)

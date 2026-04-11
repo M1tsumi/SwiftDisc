@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct ViewExample {
+    /// Starts an example bot that registers a persistent component view router.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)

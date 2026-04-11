@@ -24,6 +24,7 @@ struct HelloCog: Cog {
 
 @main
 struct CogExampleBot {
+    /// Starts a bot that demonstrates loading a simple Cog extension.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)

@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct AutocompleteBot {
+    /// Starts an example bot that demonstrates slash-command autocomplete wiring.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)

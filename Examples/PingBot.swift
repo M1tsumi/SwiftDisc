@@ -3,6 +3,7 @@ import Foundation
 
 @main
 struct PingBotMain {
+    /// Starts a minimal ping/pong bot for quick connectivity testing.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
         let client = DiscordClient(token: token)

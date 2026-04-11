@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct FileUploadBot {
+    /// Starts an example bot that uploads a local file with optional embed content.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token, configuration: .init(maxUploadBytes: 150 * 1024 * 1024)) // override guardrail if needed

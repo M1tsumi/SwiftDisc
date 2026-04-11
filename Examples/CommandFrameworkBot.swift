@@ -4,6 +4,7 @@ import SwiftDisc
 // Example: a minimal bot showing the CommandRouter usage.
 @main
 struct CommandFrameworkBot {
+    /// Starts a minimal bot that routes prefixed text commands with `CommandRouter`.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_TOKEN_HERE"
         let client = DiscordClient(token: token)

@@ -3,6 +3,7 @@ import Foundation
 
 @main
 struct LinkedRolesBot {
+    /// Starts an example bot that configures and updates linked-role metadata.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
