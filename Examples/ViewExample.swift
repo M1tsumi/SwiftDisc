@@ -8,7 +8,7 @@ struct ViewExample {
         let client = DiscordClient(token: token)
 
         let manager = ViewManager()
-        client.useViewManager(manager)
+        await client.useViewManager(manager)
 
         // Create a view that responds to a button with custom_id "confirm_" prefix
         let view = View(id: "confirm-view", timeout: 60.0, handlers: [:], patterns: [
@@ -21,11 +21,12 @@ struct ViewExample {
             })
         ])
 
-        manager.register(view, client: client)
+        await manager.register(view, client: client)
 
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("Failed to start: \(error)")
         }
