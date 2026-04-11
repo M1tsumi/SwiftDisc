@@ -24,7 +24,7 @@ public actor Cache {
 
     /// Background task that prunes expired TTL entries every 60 seconds.
     /// Only started when at least one TTL is configured.
-    private let evictionTask: Task<Void, Never>?
+    private var evictionTask: Task<Void, Never>?
 
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
@@ -135,6 +135,7 @@ public actor Cache {
     /// Cancels the background eviction task (e.g. during teardown).
     public func stopEviction() {
         evictionTask?.cancel()
+        evictionTask = nil
     }
 
     // MARK: - Private
