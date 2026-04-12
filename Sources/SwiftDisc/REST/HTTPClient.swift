@@ -13,6 +13,11 @@ final class HTTPClient: @unchecked Sendable {
     private let session: URLSession
     private let rateLimiter: RateLimiter
 
+    deinit {
+        // Explicit shutdown avoids libcurl worker-thread crashes during Linux test teardown.
+        session.invalidateAndCancel()
+    }
+
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
         self.configuration = configuration

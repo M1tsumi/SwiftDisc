@@ -20,6 +20,11 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     private let session: URLSession
 
+    deinit {
+        // Ensure FoundationNetworking tears down socket resources deterministically.
+        session.invalidateAndCancel()
+    }
+
     init(url: URL) {
         let config = URLSessionConfiguration.ephemeral
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
@@ -54,6 +59,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
 
     func close() async {
         task.cancel(with: .normalClosure, reason: nil)
+        session.invalidateAndCancel()
     }
 }
 
