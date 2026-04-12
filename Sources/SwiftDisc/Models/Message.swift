@@ -1,8 +1,8 @@
 import Foundation
 
-// Box class to break infinite recursion for value types.
-// Marked `@unchecked Sendable` because the single stored property is immutable (`let`),
-// making instances effectively thread-safe despite being a class.
+// `Box` breaks recursive value-type cycles during Codable decoding.
+// It is `@unchecked Sendable` because it only stores immutable state (`let value`).
+// That keeps instances effectively safe to share across tasks.
 public final class Box<T: Codable & Hashable>: Codable, Hashable, @unchecked Sendable {
     public let value: T
     public init(_ value: T) { self.value = value }
@@ -151,7 +151,7 @@ public struct PartialEmoji: Codable, Hashable, Sendable {
     public let animated: Bool?
 }
 
-// MARK: - Reply convenience
+// MARK: - Reply API
 
 public extension Message {
     /// Reply to this message in the same channel, setting `message_reference` automatically.

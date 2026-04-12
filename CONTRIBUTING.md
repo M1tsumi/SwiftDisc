@@ -20,6 +20,14 @@ SwiftDisc is built around Swift 6 concurrency, typed throws, and actor-based API
 - Keep public names consistent with existing SwiftDisc conventions.
 - Use `@Sendable` closures for callbacks that can cross tasks or actors.
 
+## Comment Style
+
+- Write comments for intent and edge cases, not obvious syntax.
+- Keep comments concise and specific to the code directly below them.
+- Prefer practical wording over marketing language.
+- Avoid filler phrases and AI-like boilerplate.
+- When behavior is surprising (rate limits, retries, protocol quirks), explain the "why" in one or two lines.
+
 ## PR Checklist
 
 - Tests added or updated for the behavior change.

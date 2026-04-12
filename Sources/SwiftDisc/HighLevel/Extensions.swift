@@ -13,7 +13,7 @@ public extension SwiftDiscExtension {
     func onUnload(client: DiscordClient) async {}
 }
 
-/// A closure-based convenience implementation of `SwiftDiscExtension`.
+/// A closure-based implementation of `SwiftDiscExtension`.
 public final class Cog: SwiftDiscExtension {
     public let name: String
     private let registerBlock: @Sendable (DiscordClient) async -> Void

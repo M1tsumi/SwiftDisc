@@ -377,14 +377,14 @@ public actor ShardingGatewayManager {
         }
     }
 
-    // MARK: - Presence & Validation Helpers
+    // MARK: - Presence and validation utilities
     private func presenceForShard(_ shardId: Int, total: Int) async -> Configuration.PresenceConfig? {
         if let make = shardingConfiguration.makePresence { return make(shardId, total) }
         return shardingConfiguration.fallbackPresence
     }
 
     private func validateConfiguration(totalShards: Int) async {
-        // Privileged intents warnings (based on fallback intents)
+        // Warn when privileged intents are requested by the configured intent set.
         var privileged: [String] = []
         if fallbackIntents.contains(.messageContent) { privileged.append("messageContent") }
         if fallbackIntents.contains(.guildMembers) { privileged.append("guildMembers") }
@@ -459,7 +459,7 @@ public actor ShardingGatewayManager {
         }
     }
 
-    // MARK: - Actor-isolated helpers
+    // MARK: - Actor-isolated utilities
     private func recordGuild(shardId: Int, guildId: String) {
         var set = guildsByShard[shardId] ?? []
         set.insert(guildId)

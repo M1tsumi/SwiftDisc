@@ -32,7 +32,7 @@ public actor CommandRouter {
             self.args = args
         }
 
-        // MARK: - Permission helpers
+        // MARK: - Permission utilities
 
         /// Returns `true` if the message author has the given raw permission bit set.
         ///

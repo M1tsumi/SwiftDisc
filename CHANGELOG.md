@@ -8,10 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] - 2026-04-08
 
 ### Overview
-SwiftDisc 2.1.0 focuses on making the library easier to debug, easier to onboard,
-and safer to evolve. This release hardens a few internal lifecycle edges, makes
-errors easier to understand, adds rate-limit observability, and refreshes the
-contributor experience with cleaner docs and reusable test fixtures.
+SwiftDisc 2.1.0 improves debugging and onboarding and hardens internal lifecycle
+behavior. This release improves error clarity, adds rate-limit observability,
+and refreshes contributor workflows with cleaner docs and reusable test fixtures.
 
 ### Added — Developer Experience
 - **Clear `DiscordError` descriptions** — common REST, gateway, and validation
@@ -49,7 +48,7 @@ contributor experience with cleaner docs and reusable test fixtures.
 ### Overview
 SwiftDisc 2.0.0 is a major release delivering a complete Swift 6 strict-concurrency
 migration, typed throws throughout the REST layer, 32 new gateway event callbacks,
-a fully expanded Guild model, critical bug fixes, and high-impact developer-experience
+a fully expanded Guild model, critical bug fixes, and developer-experience
 improvements including `message.reply()`, `client.sendDM()`, typed slash-option
 accessors, `EmbedBuilder.timestamp(Date)`, a public `CooldownManager`, filtered
 event-stream helpers, and a background cache-eviction task.

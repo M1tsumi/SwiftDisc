@@ -1,7 +1,7 @@
 import Foundation
 
 public struct DiscordConfiguration: Sendable {
-    // Safe defaults for base URLs to avoid force-unwrapping string initializers.
+    // Default URLs are static constants so startup never depends on force-unwrapped strings.
     public static let defaultApiBaseURL: URL = {
         guard let url = URL(string: "https://discord.com/api") else {
             fatalError("Invalid default API base URL")
@@ -19,14 +19,14 @@ public struct DiscordConfiguration: Sendable {
     public var apiBaseURL: URL
     public var apiVersion: Int
     public var gatewayBaseURL: URL
-    public var maxUploadBytes: Int // per-file guardrail
+    public var maxUploadBytes: Int // Per-file upload limit used before sending multipart requests.
     public typealias RateLimitHandler = @Sendable (RateLimitEvent) -> Void
-    /// Enables the voice stack. Keep disabled unless you need voice-specific APIs.
+    /// Enables voice features. Keep this off unless your bot joins voice channels.
     public var enableVoiceExperimental: Bool
-    /// When enabled, gateway decode mismatches emit diagnostic logs with event/op metadata.
-    /// Useful when Discord payload shape drifts or a model needs to be updated.
+    /// Enables extra gateway decode logs with opcode/event context.
+    /// Turn this on when payloads drift and you need to see what failed to decode.
     public var enableGatewayDecodeDiagnostics: Bool
-    /// Called when SwiftDisc observes a REST rate limit bucket update or wait.
+    /// Called whenever the REST limiter updates bucket state or enters a wait.
     public var onRateLimit: RateLimitHandler?
 
     public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableVoiceExperimental: Bool = false, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil) {

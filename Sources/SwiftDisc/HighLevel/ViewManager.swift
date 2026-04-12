@@ -142,7 +142,7 @@ public actor ViewManager {
         }
     }
     
-    // Helper: disable interactive components (buttons/selects) in a component tree
+    // Disable interactive components (buttons/selects) throughout a component tree.
     private func disableComponents(_ comps: [MessageComponent]) -> [MessageComponent] {
         return comps.map { comp in
             switch comp {

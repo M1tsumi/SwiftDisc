@@ -1,7 +1,7 @@
 import Foundation
 
-// Minimal pure-Swift XSalsa20-Poly1305 (NaCl secretbox) implementation
-// API: seal(nonce:key:plaintext:) -> ciphertext_with_mac
+// Pure Swift XSalsa20-Poly1305 (NaCl secretbox) implementation.
+// API shape: seal(nonce:key:plaintext:) -> ciphertext prefixed with MAC.
 
 private enum SecretboxError: Error {
     case authenticationFailed

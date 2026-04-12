@@ -11,8 +11,8 @@ try {
             throw "swift test exited with code $LASTEXITCODE"
         }
     } else {
-        Write-Output "Native Swift not found; running tests in Docker (swift:5.9)"
-        docker run --rm -v "${PWD}:/workspace" -w /workspace swift:5.9 /bin/bash -lc "swift test"
+        Write-Output "Native Swift not found; running tests in Docker (swift:6.2)"
+        docker run --rm -v "${PWD}:/workspace" -w /workspace swift:6.2 /bin/bash -lc "swift test"
         if ($LASTEXITCODE -ne 0) {
             throw "Docker swift test exited with code $LASTEXITCODE"
         }

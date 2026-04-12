@@ -17,7 +17,7 @@ let package = Package(
             name: "SwiftDisc",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
-        // Example executables for quick local runs via `swift run <name>`
+        // Example executables so contributors can run sample bots quickly with `swift run <name>`.
         .executableTarget(
             name: "PingBotExample",
             dependencies: ["SwiftDisc"],

@@ -20,13 +20,13 @@ These examples are simple, single-file bots demonstrating new features. They ass
   - SwiftPM executable targets are provided. Example:
 
     ```bash
-    swift run PingBotExample
+    swift run AutocompleteBotExample
     ```
 
     PowerShell (Windows):
 
     ```powershell
-    swift run PingBotExample
+    swift run AutocompleteBotExample
     ```
 
   - Alternatively, copy into your app target or run as a script where supported.

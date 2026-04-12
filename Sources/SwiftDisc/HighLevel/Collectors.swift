@@ -67,7 +67,7 @@ public extension DiscordClient {
         }
     }
 
-    // MARK: - Typed Event Stream Helpers
+    // MARK: - Typed event streams
 
     /// A filtered `AsyncStream` that yields only incoming `Message` objects.
     ///

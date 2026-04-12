@@ -13,7 +13,7 @@
 
 SwiftDisc is a Swift-first Discord API wrapper for building bots and integrations with async/await, typed models, and practical high-level tools.
 
-This README is intentionally focused on what most people need first: install, run a bot, understand intents, and find examples.
+This README covers install, first bot run, intents, and example entry points.
 
 ## At a glance
 
@@ -163,14 +163,12 @@ swift run FileUploadBotExample
 
 ## Reliability and DX notes
 
-SwiftDisc v2.1.0 focuses on predictable behavior and lower onboarding friction:
+SwiftDisc v2.1.0 includes practical reliability and onboarding improvements:
 
 - Actor-safe example patterns for Swift 6 strict concurrency.
 - Reusable test fixtures for faster test authoring.
 - Cleaner callback setup with explicit setter methods.
 - Updated docs aimed at first-run success.
-
-Research notes on ecosystem norms and the planned DX roadmap are in [DXResearch.md](DXResearch.md).
 
 ## Troubleshooting
 
@@ -186,7 +184,6 @@ Research notes on ecosystem norms and the planned DX roadmap are in [DXResearch.
 ## Documentation map
 
 - Main API and usage reference: [SwiftDiscDocs.txt](SwiftDiscDocs.txt)
-- DX research and roadmap: [DXResearch.md](DXResearch.md)
 - Project changes per release: [CHANGELOG.md](CHANGELOG.md)
 - Contributing workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Repository standards and behavior: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)

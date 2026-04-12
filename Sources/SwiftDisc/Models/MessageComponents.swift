@@ -27,7 +27,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         case 23: self = .checkboxGroup(try CheckboxGroup(from: decoder))
         case 24: self = .checkbox(try Checkbox(from: decoder))
         default:
-            // Fallback: attempt button
+            // Unknown component types are treated as buttons to keep decoding resilient.
             self = .button(try Button(from: decoder))
         }
     }
