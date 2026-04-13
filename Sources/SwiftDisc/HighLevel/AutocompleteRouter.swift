@@ -67,7 +67,11 @@ public actor AutocompleteRouter {
                 choices: choices
             )
         } catch {
-            // Autocomplete errors are silenced to avoid noisy logs during typing
+            // Log autocomplete errors with context for debugging while avoiding noisy logs during normal typing
+            // Only log non-cancelled errors to avoid noise from user typing
+            if (error as? DiscordError) != .cancelled {
+                print("[AutocompleteRouter] Error for path '\(ctx.path)' option '\(opt)': \(error)")
+            }
         }
     }
 
