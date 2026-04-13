@@ -76,8 +76,7 @@ public actor ViewManager {
                         try? await client.editMessage(channelId: channelId, messageId: messageId, components: disabled)
                     }
                 } catch {
-                    // Log cleanup errors with context for debugging
-                    print("[ViewManager] Cleanup error for view '\(id)' message \(messageId) in channel \(channelId): \(error)")
+                    print("[ViewManager] Failed to disable components for view '\(id)' (msg:\(messageId)): \(error)")
                 }
             }
         }
@@ -130,8 +129,7 @@ public actor ViewManager {
                         let range = NSRange(location: 0, length: customId.utf16.count)
                         if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { await handler(interaction, client) } }
                     } catch {
-                        // Log invalid regex errors for debugging while treating as non-match
-                        print("[ViewManager] Invalid regex pattern '\(pattern)' for view '\(vid)': \(error)")
+                        print("[ViewManager] Invalid regex '\(pattern)' for view '\(vid)': \(error)")
                     }
                 }
                 if matched {

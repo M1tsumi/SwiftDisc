@@ -67,11 +67,9 @@ public actor AutocompleteRouter {
                 choices: choices
             )
         } catch {
-            // Log autocomplete errors with context for debugging while avoiding noisy logs during normal typing
-            // Only log non-cancelled errors to avoid noise from user typing
-            if (error as? DiscordError) != .cancelled {
-                print("[AutocompleteRouter] Error for path '\(ctx.path)' option '\(opt)': \(error)")
-            }
+            // Only log non-cancelled errors to avoid noise during typing
+            guard (error as? DiscordError) != .cancelled else { return }
+            print("[AutocompleteRouter] Failed for '\(ctx.path)' | '\(opt)': \(error)")
         }
     }
 

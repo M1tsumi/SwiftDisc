@@ -58,8 +58,7 @@ public extension DiscordClient {
                             after = page.last?.user?.id
                         } else { break }
                     } catch {
-                        // Log error with context for debugging before finishing continuation
-                        print("[Collectors] Error in guildMembers stream for guild \(guildId): \(error)")
+                        print("[Collectors] Failed to fetch guild members for guild \(guildId): \(error)")
                         continuation.finish()
                         return
                     }
