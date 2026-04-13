@@ -31,7 +31,7 @@ final class VoiceGateway: @unchecked Sendable {
     func connect(endpoint: String, guildId: GuildID, userId: UserID, sessionId: String, token: String) async throws {
         // Endpoint may not include protocol; ensure wss:// prefix
         let urlString = endpoint.starts(with: "wss://") ? endpoint : "wss://\(endpoint)"
-        guard let url = URL(string: urlString + "?v=4") else { throw DiscordError.gateway("Invalid voice endpoint URL") }
+        guard let url = URL(string: urlString + "?v=8") else { throw DiscordError.gateway("Invalid voice endpoint URL") }
         let sock = URLSessionWebSocketAdapter(url: url)
         self.ws = sock
 
