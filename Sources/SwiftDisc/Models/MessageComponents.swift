@@ -13,6 +13,8 @@ public enum MessageComponent: Codable, Hashable, Sendable {
     case checkboxGroup(CheckboxGroup)
     /// Checkbox boolean toggle inside a modal Label (type 24). Introduced 2026-02-12.
     case checkbox(Checkbox)
+    /// File Upload component for modals (type 25). Allows users to upload files through modal submissions. Introduced 2026.
+    case fileUpload(FileUpload)
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -26,6 +28,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         case 22: self = .radioGroup(try RadioGroup(from: decoder))
         case 23: self = .checkboxGroup(try CheckboxGroup(from: decoder))
         case 24: self = .checkbox(try Checkbox(from: decoder))
+        case 25: self = .fileUpload(try FileUpload(from: decoder))
         default:
             // Unknown component types are treated as buttons to keep decoding resilient.
             self = .button(try Button(from: decoder))
@@ -42,6 +45,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         case .radioGroup(let rg): try rg.encode(to: encoder)
         case .checkboxGroup(let cg): try cg.encode(to: encoder)
         case .checkbox(let cb): try cb.encode(to: encoder)
+        case .fileUpload(let fu): try fu.encode(to: encoder)
         }
     }
 
@@ -196,6 +200,26 @@ public enum MessageComponent: Codable, Hashable, Sendable {
             self.custom_id = custom_id
             self.required = required
             self.default = isDefault
+        }
+    }
+
+    /// File Upload component (type 25). Allows users to upload files through modal submissions.
+    /// Must be inside a Label container. Introduced 2026.
+    public struct FileUpload: Codable, Hashable, Sendable {
+        public let type: Int = 25
+        public let custom_id: String
+        public let label: String
+        public let min_length: Int?
+        public let max_length: Int?
+        public let required: Bool?
+        public let placeholder: String?
+        public init(custom_id: String, label: String, min_length: Int? = nil, max_length: Int? = nil, required: Bool? = nil, placeholder: String? = nil) {
+            self.custom_id = custom_id
+            self.label = label
+            self.min_length = min_length
+            self.max_length = max_length
+            self.required = required
+            self.placeholder = placeholder
         }
     }
 }

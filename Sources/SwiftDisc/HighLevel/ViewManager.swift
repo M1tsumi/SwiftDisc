@@ -163,6 +163,8 @@ public actor ViewManager {
                 return .checkboxGroup(cg)
             case .checkbox(let cb):
                 return .checkbox(cb)
+            case .fileUpload(let fu):
+                return .fileUpload(fu)
             }
         }
     }
