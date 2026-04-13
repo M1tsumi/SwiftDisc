@@ -36,7 +36,11 @@ and refreshes contributor workflows with cleaner docs and reusable test fixtures
 ### Fixed
 - **Gateway URL construction** uses `URLComponents` for safe query parameter handling, preventing malformed URLs when `gatewayBaseURL` contains trailing slashes
 - **Gateway reconnection loop** now has a maximum attempt limit (10) to prevent infinite retry loops
-- **JSON parsing** now consistently uses `JSONDecoder` instead of `JSONSerialization` for seq number extraction
+- **Gateway reconnect exhaustion** now transitions to terminal failure state instead of returning silently
+- **Seq number extraction** now uses proper `GatewaySeqBox` struct to decode heterogeneous gateway frames reliably
+- **GUILD_AUDIT_LOG_ENTRY_CREATE decoding** now uses correct `GuildAuditLogEntryCreate` wrapper type
+- **ViewManager regex validation** now occurs at registration time to fail fast on invalid patterns
+- **README examples** fixed incorrect `await` calls on synchronous methods and added explicit error handling
 
 ## [2.0.0] - 2026-03-02
 
