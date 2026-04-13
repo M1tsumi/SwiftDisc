@@ -28,14 +28,15 @@ public actor Cache {
 
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
-        self.evictionTask = nil
         let hasTTL = configuration.userTTL != nil
             || configuration.channelTTL != nil
             || configuration.guildTTL != nil
         if hasTTL {
-            Task { [weak self] in
+            self.evictionTask = Task { [weak self] in
                 await self?.startEvictionTaskIfNeeded()
             }
+        } else {
+            self.evictionTask = nil
         }
     }
 
