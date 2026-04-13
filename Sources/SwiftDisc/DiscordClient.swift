@@ -1077,9 +1077,9 @@ public actor DiscordClient {
     }
 
     
-    public func modifyGuildMember(guildId: GuildID, userId: UserID, nick: String? = nil, roles: [RoleID]? = nil) async throws -> GuildMember {
-        struct Body: Encodable, Sendable { let nick: String?; let roles: [RoleID]? }
-        return try await http.patch(path: "/guilds/\(guildId)/members/\(userId)", body: Body(nick: nick, roles: roles))
+    public func modifyGuildMember(guildId: GuildID, userId: UserID, nick: String? = nil, roles: [RoleID]? = nil, flags: Int? = nil) async throws -> GuildMember {
+        struct Body: Encodable, Sendable { let nick: String?; let roles: [RoleID]?; let flags: Int? }
+        return try await http.patch(path: "/guilds/\(guildId)/members/\(userId)", body: Body(nick: nick, roles: roles, flags: flags))
     }
 
     // Sets `communication_disabled_until` for timeout moderation.
