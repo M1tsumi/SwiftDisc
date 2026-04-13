@@ -73,8 +73,15 @@ actor GatewayClient {
     }
 
     func connect(intents: GatewayIntents, shard: (index: Int, total: Int)? = nil, eventSink: @escaping @Sendable (DiscordEvent) -> Void) async throws {
-        guard let url = URL(string: "\(configuration.gatewayBaseURL.absoluteString)?v=\(configuration.apiVersion)&encoding=json") else {
+        guard var components = URLComponents(url: configuration.gatewayBaseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
+        }
+        components.queryItems = [
+            URLQueryItem(name: "v", value: String(configuration.apiVersion)),
+            URLQueryItem(name: "encoding", value: "json")
+        ]
+        guard let url = components.url else {
+            throw DiscordError.gateway("Failed to construct gateway URL")
         }
 
         // Pick the best adapter for the current platform.
