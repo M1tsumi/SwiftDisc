@@ -37,13 +37,6 @@ and refreshes contributor workflows with cleaner docs and reusable test fixtures
 - **Gateway URL construction** uses `URLComponents` for safe query parameter handling, preventing malformed URLs when `gatewayBaseURL` contains trailing slashes
 - **Gateway reconnection loop** now has a maximum attempt limit (10) to prevent infinite retry loops
 - **JSON parsing** now consistently uses `JSONDecoder` instead of `JSONSerialization` for seq number extraction
-- **Duplicate decoding** removed for `GUILD_AUDIT_LOG_ENTRY_CREATE` event
-- **Rate limiter bucket modification** now ensures bucket exists before updating remaining count
-- **Rate limiter backoff** now has explicit error handling instead of silently swallowing errors
-- **Channel type inference** in EventDispatcher now correctly infers DM vs guild channel type from message `guild_id` presence
-- **Cache role events** now update cache on role create/update/delete events
-- **Cache eviction task** reference is now stored immediately in init to prevent potential race condition
-- **ViewManager handler tasks** now have error handling to prevent uncaught errors from crashing background tasks
 
 ## [2.0.0] - 2026-03-02
 
