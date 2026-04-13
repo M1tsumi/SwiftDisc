@@ -13,7 +13,8 @@ actor EventDispatcher {
         // MARK: Messages
         case .messageCreate(let msg):
             await client.cache.upsert(user: msg.author)
-            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
+            let isDM = msg.guild_id == nil
+            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: isDM ? 1 : 0))
             await client.cache.add(message: msg)
             if let cb = await client.onMessage { await cb(msg) }
             if let router = await client.commands { await router.handleIfCommand(message: msg, client: client) }
