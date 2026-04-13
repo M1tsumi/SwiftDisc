@@ -30,35 +30,35 @@ extension DiscordError: CustomStringConvertible, LocalizedError {
             var desc: String
             if body.isEmpty { desc = "HTTP error \(statusCode)" }
             else { desc = "HTTP error \(statusCode): \(body)" }
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .api(let message, let code, let debugContext):
             var desc: String
             if let code { desc = "Discord API error \(code): \(message)" }
             else { desc = "Discord API error: \(message)" }
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .decoding(let error, let debugContext):
             var desc = "Decoding failed: \((error as NSError).localizedDescription)"
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .encoding(let error, let debugContext):
             var desc = "Encoding failed: \((error as NSError).localizedDescription)"
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .network(let error, let debugContext):
             var desc = "Network error: \((error as NSError).localizedDescription)"
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .gateway(let message, let debugContext):
             var desc = "Gateway error: \(message)"
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .cancelled:
             return "Operation cancelled"
         case .validation(let message, let debugContext):
             var desc = "Validation failed: \(message)"
-            if let ctx = debugContext { desc += " | Context: \(ctx)" }
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
         case .unavailable:
             return "HTTP is unavailable on this platform build"
