@@ -42,7 +42,7 @@ actor RateLimiter {
                     catch { throw DiscordError.cancelled }
                 }
                 // After reset, clear remaining; let next response headers set correct values
-                buckets[routeKey, default: BucketState()].remaining = nil
+                buckets[routeKey]?.remaining = nil
             }
         }
     }
@@ -80,11 +80,6 @@ actor RateLimiter {
     }
 
     func backoff(after seconds: TimeInterval) async {
-        do {
-            try await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
-        } catch {
-            // Sleep errors are rare but possible on task cancellation
-            // No action needed as caller will handle cancellation
-        }
+        try? await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
     }
 }

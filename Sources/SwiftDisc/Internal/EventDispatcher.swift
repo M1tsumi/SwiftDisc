@@ -13,8 +13,7 @@ actor EventDispatcher {
         // MARK: Messages
         case .messageCreate(let msg):
             await client.cache.upsert(user: msg.author)
-            let isDM = msg.guild_id == nil
-            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: isDM ? 1 : 0))
+            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
             await client.cache.add(message: msg)
             if let cb = await client.onMessage { await cb(msg) }
             if let router = await client.commands { await router.handleIfCommand(message: msg, client: client) }
@@ -78,15 +77,12 @@ actor EventDispatcher {
 
         // MARK: Roles
         case .guildRoleCreate(let ev):
-            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleCreate { await cb(ev) }
 
         case .guildRoleUpdate(let ev):
-            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleUpdate { await cb(ev) }
 
         case .guildRoleDelete(let ev):
-            await client.cache.removeRole(id: ev.role_id, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleDelete { await cb(ev) }
 
         // MARK: Emojis / Stickers (no callback – stream-only)
