@@ -135,19 +135,8 @@ actor GatewayClient {
         }
         // Wait until the socket is actually usable before returning to callers.
         if self.status != .ready {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    try await Task.sleep(nanoseconds: 30_000_000_000) // 30 second timeout
-                    throw DiscordError.gateway("Connection timeout")
-                }
-                group.addTask { [weak self] in
-                    guard let self = self else { return }
-                    await self.withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-                        self.connectReadyContinuation = cont
-                    }
-                }
-                try await group.next()
-                group.cancelAll()
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                self.connectReadyContinuation = cont
             }
         }
     }

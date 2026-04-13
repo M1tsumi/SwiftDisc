@@ -2,9 +2,19 @@ import Foundation
 
 public struct DiscordConfiguration: Sendable {
     // Default URLs are static constants so startup never depends on force-unwrapped strings.
-    public static let defaultApiBaseURL: URL = URL(string: "https://discord.com/api")!
+    public static let defaultApiBaseURL: URL = {
+        guard let url = URL(string: "https://discord.com/api") else {
+            preconditionFailure("Invalid default API base URL: https://discord.com/api")
+        }
+        return url
+    }()
 
-    public static let defaultGatewayBaseURL: URL = URL(string: "wss://gateway.discord.gg")!
+    public static let defaultGatewayBaseURL: URL = {
+        guard let url = URL(string: "wss://gateway.discord.gg") else {
+            preconditionFailure("Invalid default gateway base URL: wss://gateway.discord.gg")
+        }
+        return url
+    }()
 
     public var apiBaseURL: URL
     public var apiVersion: Int
