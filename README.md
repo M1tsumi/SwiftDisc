@@ -98,7 +98,7 @@ struct SlashBot {
         let client = DiscordClient(token: token)
 
         let slash = SlashCommandRouter()
-        await slash.register("ping") { ctx in
+        slash.register("ping") { ctx in
             try await ctx.client.createInteractionResponse(
                 interactionId: ctx.interaction.id,
                 token: ctx.interaction.token,
@@ -106,11 +106,16 @@ struct SlashBot {
             )
         }
 
-        await client.useSlashCommands(slash)
+        client.useSlashCommands(slash)
 
-        try? await client.loginAndConnect(intents: [.guilds])
-        let events = await client.events
-        for await _ in events { }
+        do {
+            try await client.loginAndConnect(intents: [.guilds])
+            let events = await client.events
+            for await _ in events { }
+        } catch {
+            print("Failed to login and connect: \(error)")
+            exit(1)
+        }
     }
 }
 ```

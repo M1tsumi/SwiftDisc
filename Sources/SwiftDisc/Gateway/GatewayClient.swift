@@ -155,7 +155,7 @@ actor GatewayClient {
                 }
                 lastFrameData = data
                 // Track the latest sequence number for heartbeats and resume.
-                if let seqBox = try? dec.decode([String: Int].self, from: data), let seqNum = seqBox["s"] {
+                if let seqBox = try? dec.decode(GatewaySeqBox.self, from: data), let seqNum = seqBox.s {
                     self.seq = seqNum
                 }
                 // Decode opcode first, then dispatch by event name when needed.
@@ -369,7 +369,7 @@ actor GatewayClient {
                                 eventSink(.autoModerationActionExecution(ev))
                             }
                         } else if t == "GUILD_AUDIT_LOG_ENTRY_CREATE" {
-                            if let payload = try? dec.decode(GatewayPayload<AuditLogEntry>.self, from: data), let ev = payload.d {
+                            if let payload = try? dec.decode(GatewayPayload<GuildAuditLogEntryCreate>.self, from: data), let ev = payload.d {
                                 eventSink(.guildAuditLogEntryCreate(ev))
                             }
                         } else if t == "WEBHOOKS_UPDATE" {
@@ -513,6 +513,13 @@ actor GatewayClient {
                 continue
             }
         }
+        // Reconnect exhausted: transition to terminal failure state
+        allowReconnect = false
+        status = .disconnected
+        if let cont = connectReadyContinuation {
+            connectReadyContinuation = nil
+            cont.resume()
+        }
     }
 
     func close() async {
@@ -556,4 +563,8 @@ actor GatewayClient {
 private struct GatewayOpBox: Codable {
     let op: GatewayOpcode
     let t: String?
+}
+
+private struct GatewaySeqBox: Codable {
+    let s: Int?
 }
