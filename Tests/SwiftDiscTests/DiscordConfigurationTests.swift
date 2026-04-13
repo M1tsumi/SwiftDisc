@@ -11,4 +11,9 @@ final class DiscordConfigurationTests: XCTestCase {
         let config = DiscordConfiguration(enableGatewayDecodeDiagnostics: true)
         XCTAssertTrue(config.enableGatewayDecodeDiagnostics)
     }
+
+    func testRateLimitObserverDefaultsToNil() {
+        let config = DiscordConfiguration()
+        XCTAssertNil(config.onRateLimit)
+    }
 }

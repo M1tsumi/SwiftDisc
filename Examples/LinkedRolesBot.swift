@@ -3,14 +3,16 @@ import Foundation
 
 @main
 struct LinkedRolesBot {
+    /// Starts an example bot that configures and updates linked-role metadata.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
         
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            
-            for await event in client.events {
+
+            let events = await client.events
+            for await event in events {
                 switch event {
                 case .ready(let info):
                     print("Logged in as \(info.user.username)")

@@ -76,7 +76,7 @@ public actor ViewManager {
                         try? await client.editMessage(channelId: channelId, messageId: messageId, components: disabled)
                     }
                 } catch {
-                    // ignore errors on cleanup
+                    print("[ViewManager] Failed to disable components for view '\(id)' (msg:\(messageId)): \(error)")
                 }
             }
         }
@@ -128,7 +128,9 @@ public actor ViewManager {
                         let regex = try NSRegularExpression(pattern: pattern)
                         let range = NSRange(location: 0, length: customId.utf16.count)
                         if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { await handler(interaction, client) } }
-                    } catch { }
+                    } catch {
+                        print("[ViewManager] Invalid regex '\(pattern)' for view '\(vid)': \(error)")
+                    }
                 }
                 if matched {
                     if view.oneShot { oneShotToRemove.append(vid) }
@@ -142,7 +144,7 @@ public actor ViewManager {
         }
     }
     
-    // Helper: disable interactive components (buttons/selects) in a component tree
+    // Disable interactive components (buttons/selects) throughout a component tree.
     private func disableComponents(_ comps: [MessageComponent]) -> [MessageComponent] {
         return comps.map { comp in
             switch comp {
@@ -163,6 +165,8 @@ public actor ViewManager {
                 return .checkboxGroup(cg)
             case .checkbox(let cb):
                 return .checkbox(cb)
+            case .fileUpload(let fu):
+                return .fileUpload(fu)
             }
         }
     }

@@ -125,7 +125,7 @@ public struct MessagePayload: Sendable {
     public func files(_ fs: [FileAttachment]) -> Self { var c = self; c.files = fs; return c }
 }
 
-// MARK: - DiscordClient send / edit convenience
+// MARK: - DiscordClient send and edit API
 
 public extension DiscordClient {
     /// Send a `MessagePayload` to a channel, automatically choosing between

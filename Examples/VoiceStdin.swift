@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct VoiceStdinExample {
+    /// Starts a voice example bot that streams framed Opus audio from stdin.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let guildId = GuildID("YOUR_GUILD_ID")

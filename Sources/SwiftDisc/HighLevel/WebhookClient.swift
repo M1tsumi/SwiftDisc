@@ -196,7 +196,7 @@ public struct WebhookClient: Sendable {
         }
     }
 
-    // MARK: - Private helpers
+    // MARK: - Private utilities
 
     private func buildMultipart(jsonBody: Data, files: [FileAttachment], boundary: String) -> Data {
         var body = Data()
@@ -231,7 +231,7 @@ public enum WebhookError: Error, Sendable {
     case httpError(Int, String?)
 }
 
-// MARK: - String → Data helper (private)
+// MARK: - String to Data utility (private)
 
 private extension String {
     var utf8Data: Data { Data(utf8) }

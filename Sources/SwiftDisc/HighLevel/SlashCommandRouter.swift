@@ -57,7 +57,7 @@ public actor SlashCommandRouter {
             return interaction.data?.resolved?.members?[UserID(rawId)]
         }
 
-        // MARK: - Permission helpers
+        // MARK: - Permission utilities
 
         /// Returns `true` if the invoking member has the given raw permission bit set.
         ///

@@ -125,7 +125,9 @@ final class VoiceClient: @unchecked Sendable {
                 startReceiverIfPossible(guildId: guildId)
             }
         } catch {
-            // For now, swallow; TODO: surface via logging callback
+            if configuration.enableVoiceExperimental {
+                print("Voice handshake failed for guild \(guildId): \(error)")
+            }
         }
     }
 

@@ -24,7 +24,7 @@ public actor Cache {
 
     /// Background task that prunes expired TTL entries every 60 seconds.
     /// Only started when at least one TTL is configured.
-    nonisolated(unsafe) private var evictionTask: Task<Void, Never>?
+    private var evictionTask: Task<Void, Never>?
 
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
@@ -33,7 +33,9 @@ public actor Cache {
             || configuration.channelTTL != nil
             || configuration.guildTTL != nil
         if hasTTL {
-            self.evictionTask = Task { await self.evictionLoop() }
+            Task { [weak self] in
+                await self?.startEvictionTaskIfNeeded()
+            }
         }
     }
 
@@ -139,6 +141,13 @@ public actor Cache {
     }
 
     // MARK: - Private
+
+    private func startEvictionTaskIfNeeded() {
+        guard evictionTask == nil else { return }
+        evictionTask = Task { [weak self] in
+            await self?.evictionLoop()
+        }
+    }
 
     private func evictionLoop() async {
         while !Task.isCancelled {

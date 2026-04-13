@@ -3,6 +3,7 @@ import SwiftDisc
 
 @main
 struct ThreadsAndScheduledEventsBot {
+    /// Starts an event-listener bot for thread and scheduled-event gateway payloads.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
@@ -13,7 +14,8 @@ struct ThreadsAndScheduledEventsBot {
             return
         }
         print("Listening for thread and scheduled event updates…")
-        for await ev in client.events {
+        let events = await client.events
+        for await ev in events {
             switch ev {
             case .threadCreate(let ch):
                 print("[THREAD_CREATE] #\(ch.name ?? "?") id=\(ch.id)")

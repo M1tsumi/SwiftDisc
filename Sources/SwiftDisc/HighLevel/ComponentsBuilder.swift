@@ -1,20 +1,31 @@
 import Foundation
 
 public struct ButtonBuilder {
-    public enum Style: Int { case primary = 1, secondary = 2, success = 3, danger = 4, link = 5 }
+    public enum Style: Int {
+        case primary = 1
+        case secondary = 2
+        case success = 3
+        case danger = 4
+        case link = 5
+        /// Premium button style (style 10). Requires sku_id for premium subscription gating.
+        /// Introduced for Discord Premium Apps monetization.
+        case premium = 10
+    }
     private var style: Int = Style.primary.rawValue
     private var label: String?
     private var customId: String?
     private var url: String?
+    private var skuId: SKUID?
     private var disabled: Bool?
     public init() {}
     public func style(_ s: Style) -> ButtonBuilder { var c = self; c.style = s.rawValue; return c }
     public func label(_ t: String) -> ButtonBuilder { var c = self; c.label = t; return c }
     public func customId(_ id: String) -> ButtonBuilder { var c = self; c.customId = id; return c }
     public func url(_ u: String) -> ButtonBuilder { var c = self; c.url = u; return c }
+    public func skuId(_ id: SKUID) -> ButtonBuilder { var c = self; c.skuId = id; return c }
     public func disabled(_ d: Bool = true) -> ButtonBuilder { var c = self; c.disabled = d; return c }
     public func build() -> MessageComponent {
-        MessageComponent.button(.init(style: style, label: label, custom_id: customId, url: url, disabled: disabled))
+        MessageComponent.button(.init(style: style, label: label, custom_id: customId, url: url, disabled: disabled, sku_id: skuId))
     }
 }
 
@@ -69,6 +80,89 @@ public struct TextInputBuilder {
         return .textInput(.init(custom_id: customId, style: style, label: label, min_length: minLength, max_length: maxLength, required: required, value: value, placeholder: placeholder))
     }
     public enum ValidationError: Error { case invalidLength, missingLabel, missingCustomId }
+}
+
+// MARK: - Modal Component Builders (added 2026)
+
+public struct LabelBuilder {
+    private var label: String = ""
+    private var description: String?
+    private var components: [MessageComponent]?
+    public init() {}
+    public func label(_ t: String) -> LabelBuilder { var c = self; c.label = t; return c }
+    public func description(_ d: String) -> LabelBuilder { var c = self; c.description = d; return c }
+    public func components(_ comps: [MessageComponent]) -> LabelBuilder { var c = self; c.components = comps; return c }
+    public func build() -> MessageComponent {
+        .label(.init(label: label, description: description, components: components))
+    }
+}
+
+public struct RadioGroupBuilder {
+    private var customId: String = ""
+    private var options: [MessageComponent.RadioGroup.RadioOption] = []
+    private var required: Bool?
+    public init() {}
+    public func customId(_ id: String) -> RadioGroupBuilder { var c = self; c.customId = id; return c }
+    public func option(label: String, value: String, description: String? = nil, isDefault: Bool? = nil) -> RadioGroupBuilder {
+        var c = self
+        c.options.append(.init(label: label, value: value, description: description, isDefault: isDefault))
+        return c
+    }
+    public func required(_ r: Bool = true) -> RadioGroupBuilder { var c = self; c.required = r; return c }
+    public func build() -> MessageComponent {
+        .radioGroup(.init(custom_id: customId, options: options, required: required))
+    }
+}
+
+public struct CheckboxGroupBuilder {
+    private var customId: String = ""
+    private var options: [MessageComponent.CheckboxGroup.CheckboxOption] = []
+    private var minValues: Int?
+    private var maxValues: Int?
+    public init() {}
+    public func customId(_ id: String) -> CheckboxGroupBuilder { var c = self; c.customId = id; return c }
+    public func option(label: String, value: String, description: String? = nil, isDefault: Bool? = nil) -> CheckboxGroupBuilder {
+        var c = self
+        c.options.append(.init(label: label, value: value, description: description, isDefault: isDefault))
+        return c
+    }
+    public func minValues(_ v: Int) -> CheckboxGroupBuilder { var c = self; c.minValues = v; return c }
+    public func maxValues(_ v: Int) -> CheckboxGroupBuilder { var c = self; c.maxValues = v; return c }
+    public func build() -> MessageComponent {
+        .checkboxGroup(.init(custom_id: customId, options: options, minValues: minValues, maxValues: maxValues))
+    }
+}
+
+public struct CheckboxBuilder {
+    private var customId: String = ""
+    private var required: Bool?
+    private var isDefault: Bool?
+    public init() {}
+    public func customId(_ id: String) -> CheckboxBuilder { var c = self; c.customId = id; return c }
+    public func required(_ r: Bool = true) -> CheckboxBuilder { var c = self; c.required = r; return c }
+    public func `default`(_ d: Bool = true) -> CheckboxBuilder { var c = self; c.isDefault = d; return c }
+    public func build() -> MessageComponent {
+        .checkbox(.init(custom_id: customId, required: required, isDefault: isDefault))
+    }
+}
+
+public struct FileUploadBuilder {
+    private var customId: String = ""
+    private var label: String = ""
+    private var minLength: Int?
+    private var maxLength: Int?
+    private var required: Bool?
+    private var placeholder: String?
+    public init() {}
+    public func customId(_ id: String) -> FileUploadBuilder { var c = self; c.customId = id; return c }
+    public func label(_ t: String) -> FileUploadBuilder { var c = self; c.label = t; return c }
+    public func minLength(_ v: Int) -> FileUploadBuilder { var c = self; c.minLength = v; return c }
+    public func maxLength(_ v: Int) -> FileUploadBuilder { var c = self; c.maxLength = v; return c }
+    public func required(_ r: Bool = true) -> FileUploadBuilder { var c = self; c.required = r; return c }
+    public func placeholder(_ p: String) -> FileUploadBuilder { var c = self; c.placeholder = p; return c }
+    public func build() -> MessageComponent {
+        .fileUpload(.init(custom_id: customId, label: label, min_length: minLength, max_length: maxLength, required: required, placeholder: placeholder))
+    }
 }
 
 public struct ActionRowBuilder {

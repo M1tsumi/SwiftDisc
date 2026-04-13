@@ -58,6 +58,7 @@ public extension DiscordClient {
                             after = page.last?.user?.id
                         } else { break }
                     } catch {
+                        print("[Collectors] Failed to fetch guild members for guild \(guildId): \(error)")
                         continuation.finish()
                         return
                     }
@@ -67,7 +68,7 @@ public extension DiscordClient {
         }
     }
 
-    // MARK: - Typed Event Stream Helpers
+    // MARK: - Typed event streams
 
     /// A filtered `AsyncStream` that yields only incoming `Message` objects.
     ///

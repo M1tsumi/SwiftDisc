@@ -5,12 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-04-08
+
+### Overview
+SwiftDisc 2.1.0 improves debugging and onboarding and hardens internal lifecycle
+behavior. This release improves error clarity, adds rate-limit observability,
+and refreshes contributor workflows with cleaner docs and reusable test fixtures.
+
+### Added — Developer Experience
+- **Clear `DiscordError` descriptions** — common REST, gateway, and validation
+  failures now produce messages that are easier to read and act on.
+- **Rate-limit observability** — `DiscordConfiguration.onRateLimit` can observe
+  REST bucket updates and waits through a lightweight `RateLimitEvent` snapshot.
+- **Shared test fixtures** — reusable helpers for `User`, `Message`, and
+  interaction payloads reduce repeated JSON boilerplate in tests.
+- **Contributor guide** — a top-level `CONTRIBUTING.md` documents workflow,
+  build/test commands, and PR expectations.
+
+### Changed
+- **`DiscordConfiguration` docs** now explain the voice and gateway diagnostic
+  toggles more clearly.
+- **Documentation defaults** now use `DISCORD_BOT_TOKEN` consistently across the
+  README onboarding flow and examples.
+- **README roadmap** now frames the release as a reliability and developer
+  experience update instead of a v2.0.0 carryover.
+- **README header branding** restores the SwiftDisc SVG hero in the top section.
+- **Internal actor ownership** was tightened by removing a few `nonisolated(unsafe)`
+  patterns in the client, cache, and sharding manager.
+
+### Fixed
+- **Gateway URL construction** uses `URLComponents` for safe query parameter handling, preventing malformed URLs when `gatewayBaseURL` contains trailing slashes
+- **Gateway reconnection loop** now has a maximum attempt limit (10) to prevent infinite retry loops
+
 ## [2.0.0] - 2026-03-02
 
 ### Overview
 SwiftDisc 2.0.0 is a major release delivering a complete Swift 6 strict-concurrency
 migration, typed throws throughout the REST layer, 32 new gateway event callbacks,
-a fully expanded Guild model, critical bug fixes, and high-impact developer-experience
+a fully expanded Guild model, critical bug fixes, and developer-experience
 improvements including `message.reply()`, `client.sendDM()`, typed slash-option
 accessors, `EmbedBuilder.timestamp(Date)`, a public `CooldownManager`, filtered
 event-stream helpers, and a background cache-eviction task.

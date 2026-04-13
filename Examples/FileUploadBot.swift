@@ -3,11 +3,12 @@ import SwiftDisc
 
 @main
 struct FileUploadBot {
+    /// Starts an example bot that uploads a local file with optional embed content.
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token, configuration: .init(maxUploadBytes: 150 * 1024 * 1024)) // override guardrail if needed
 
-        client.onReady = { ready in
+        await client.setOnReady { ready in
             print("Logged in as: \(ready.user.username)")
         }
 
@@ -31,7 +32,12 @@ struct FileUploadBot {
             }
         }
 
-        try? await client.loginAndConnect(intents: [.guilds])
-        for await _ in client.events { _ = () }
+        do {
+            try await client.loginAndConnect(intents: [.guilds])
+            let events = await client.events
+            for await _ in events { _ = () }
+        } catch {
+            print("Failed to login/connect: \(error)")
+        }
     }
 }

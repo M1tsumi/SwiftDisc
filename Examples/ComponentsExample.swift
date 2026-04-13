@@ -3,8 +3,9 @@ import SwiftDisc
 
 @main
 struct ComponentsExample {
+    /// Starts an example bot that sends a message with typed component builders.
     static func main() async {
-        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? ""
+        let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
         let client = DiscordClient(token: token)
 
         // Build an embed
@@ -39,6 +40,12 @@ struct ComponentsExample {
         }
 
         // Start client to receive events etc.
-        try? await client.start()
+        do {
+            try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
+        } catch {
+            print("Client failed to start: \(error)")
+        }
     }
 }

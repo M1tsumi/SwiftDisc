@@ -11,11 +11,17 @@ final class HTTPClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
-    private let rateLimiter = RateLimiter()
+    private let rateLimiter: RateLimiter
+
+    deinit {
+        // Explicit shutdown avoids libcurl worker-thread crashes during Linux test teardown.
+        session.invalidateAndCancel()
+    }
 
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
         self.configuration = configuration
+        self.rateLimiter = RateLimiter(onRateLimit: configuration.onRateLimit)
         let config = URLSessionConfiguration.ephemeral
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30
@@ -24,7 +30,8 @@ final class HTTPClient: @unchecked Sendable {
         var headers: [AnyHashable: Any] = [
             "Authorization": "Bot \(token)",
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "User-Agent": "DiscordBot (SwiftDisc, \(DiscordConfiguration.version), https://github.com/M1tsumi/SwiftDisc)"
         ]
         if let existing = config.httpAdditionalHeaders {
             for (k, v) in existing { headers[k] = v }
@@ -82,23 +89,23 @@ final class HTTPClient: @unchecked Sendable {
 
     func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: POST \(path)") }
         return try await request(method: "POST", path: path, body: data)
     }
 
     func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PATCH \(path)") }
         return try await request(method: "PATCH", path: path, body: data)
     }
 
     func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error) }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PUT \(path)") }
         return try await request(method: "PUT", path: path, body: data)
     }
 
-    // Convenience: PUT with no body and expecting no content (204)
+    // Use this for endpoints that accept an empty PUT and return 204 No Content.
     func put(path: String) async throws(DiscordError) {
         let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none)
     }
@@ -134,35 +141,35 @@ final class HTTPClient: @unchecked Sendable {
                 let (data, resp) = try await session.data(for: req)
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
 
-                // propagate rate limit header updates
+                // Feed response headers back into the limiter so the next request can wait correctly.
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
 
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
                 }
 
-                // 429 rate limit
+                // Discord asked us to slow down. Wait and retry.
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
                     await rateLimiter.backoff(after: retryAfter)
                     if attempt < maxAttempts { continue }
                 }
 
-                // 5xx transient errors with small backoff
+                // Transient server errors are retried with bounded exponential backoff.
                 if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
                     let backoff = min(2.0 * pow(2.0, Double(attempt - 1)), 8.0)
                     await rateLimiter.backoff(after: backoff)
                     continue
                 }
 
-                // Detailed API error decoding
+                // Prefer Discord's structured error body so callers get useful messages and codes.
                 if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
                     throw DiscordError.api(message: apiErr.message, code: apiErr.code)
                 }
                 let message = String(data: data, encoding: .utf8) ?? ""
                 throw DiscordError.http(http.statusCode, message)
             } catch let de as DiscordError {
-                // Re-throw typed DiscordErrors without wrapping them
+                // Keep existing DiscordError values intact instead of wrapping and losing context.
                 throw de
             } catch {
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
@@ -176,7 +183,7 @@ final class HTTPClient: @unchecked Sendable {
         }
     }
 
-    // MARK: - Multipart Support
+    // MARK: - Multipart support
     private func makeBoundary() -> String { "Boundary-" + UUID().uuidString }
 
     private func guessMimeType(filename: String) -> String {
@@ -221,7 +228,7 @@ final class HTTPClient: @unchecked Sendable {
                 append("--\(boundary)\r\n")
                 append("Content-Disposition: form-data; name=\"attachments\"\r\n")
                 append("Content-Type: application/json\r\n\r\n")
-                // Provide matching attachment descriptors with id index
+                // Attachment descriptors must use the same index as files[idx].
                 struct Desc: Encodable { let id: Int; let description: String }
                 let descObj = [Desc(id: idx, description: desc)]
                 if let data = try? JSONEncoder().encode(descObj) { body.append(data) }
@@ -247,7 +254,7 @@ final class HTTPClient: @unchecked Sendable {
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
-            // Guardrails: file size limit
+            // Fail fast on oversized uploads before building the multipart body.
             for file in files {
                 if file.data.count > configuration.maxUploadBytes {
                     throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
@@ -263,7 +270,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: POST \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
@@ -308,7 +315,7 @@ final class HTTPClient: @unchecked Sendable {
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
             req.httpMethod = "PATCH"
-            // Guardrails: file size limit
+            // Fail fast on oversized uploads before building the multipart body.
             for file in files ?? [] {
                 if file.data.count > configuration.maxUploadBytes {
                     throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
@@ -325,7 +332,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: PATCH \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
@@ -357,7 +364,7 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     private func makeRouteKey(method: String, path: String) -> String {
-        // Approximate Discord route buckets by replacing numeric IDs with :id
+        // Normalize resource IDs to keep related routes in the same limiter bucket.
         let pattern = #"/([0-9]{5,})"#
         let replaced: String
         if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
@@ -371,7 +378,7 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
-        // Prefer Retry-After header, fallback to JSON body 'retry_after'
+        // Retry-After header is preferred; some payloads also include retry_after in JSON.
         for (k, v) in headers {
             if String(describing: k).lowercased() == "retry-after" {
                 if let secs = Double(String(describing: v)) { return secs }

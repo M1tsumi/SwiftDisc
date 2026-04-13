@@ -3,35 +3,49 @@ import Foundation
 
 @main
 struct SlashBotMain {
+    /// Starts a slash-command bot with sample ping and echo commands.
     static func main() async {
-        let token = ProcessInfo.processInfo.environment["DISCORD_TOKEN"] ?? "YOUR_BOT_TOKEN"
+        let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
         let client = DiscordClient(token: token)
 
         // Register slash commands on startup (global example)
         Task {
-            _ = try? await client.createGlobalCommand(name: "ping", description: "Replies with Pong!")
-            let echoOption = DiscordClient.ApplicationCommandOption(type: .string, name: "text", description: "Text to echo", required: false)
-            _ = try? await client.createGlobalCommand(name: "echo", description: "Echo back text", options: [echoOption])
+            do {
+                try await client.createGlobalCommand(name: "ping", description: "Replies with Pong!")
+                let echoOption = DiscordClient.ApplicationCommandOption(type: .string, name: "text", description: "Text to echo", required: false)
+                try await client.createGlobalCommand(name: "echo", description: "Echo back text", options: [echoOption])
+            } catch {
+                print("Failed to create global commands: \(error)")
+            }
         }
 
         // Wire slash router
         let slash = SlashCommandRouter()
-        slash.register("ping") { ctx in
-            try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: "Pong!")
+        await slash.register("ping") { ctx in
+            do {
+                try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: "Pong!")
+            } catch {
+                print("Slash command 'ping' handler failed: \(error)")
+            }
         }
-        slash.register("echo") { ctx in
+        await slash.register("echo") { ctx in
             let text = ctx.option("text") ?? "(no text)"
-            try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: text)
+            do {
+                try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: text)
+            } catch {
+                print("Slash command 'echo' handler failed: \(error)")
+            }
         }
-        client.useSlashCommands(slash)
+        await client.useSlashCommands(slash)
 
-        client.onReady = { info in
+        await client.setOnReady { info in
             print("✅ Connected as: \(info.user.username)")
         }
 
         do {
             try await client.loginAndConnect(intents: [.guilds])
-            for await _ in client.events { /* keep alive */ }
+            let events = await client.events
+            for await _ in events { /* keep alive */ }
         } catch {
             print("❌ Error: \(error)")
         }

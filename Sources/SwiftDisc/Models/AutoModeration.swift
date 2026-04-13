@@ -1,6 +1,25 @@
 import Foundation
 
 public struct AutoModerationRule: Codable, Hashable, Sendable {
+    /// Auto Moderation trigger types for rule configuration.
+    public enum TriggerType: Int, Sendable {
+        case keyword = 1
+        case spam = 3
+        case keywordPreset = 4
+        case mentionSpam = 5
+        /// Member profile trigger type. Checks if a member's profile contains disallowed keywords.
+        /// Introduced for member profile moderation.
+        case memberProfile = 6
+    }
+
+    /// Auto Moderation action types for rule responses.
+    public enum ActionType: Int, Sendable {
+        case blockMessage = 1
+        case sendAlert = 2
+        case timeout = 3
+        case blockMemberInteraction = 4
+    }
+
     public struct TriggerMetadata: Codable, Hashable, Sendable {
         public let keyword_filter: [String]?
         public let presets: [Int]?

@@ -72,17 +72,17 @@ public struct Guild: Codable, Hashable, Sendable {
     public let approximate_member_count: Int?
     public let approximate_presence_count: Int?
 
-    // MARK: - GUILD_CREATE only
-    /// ISO 8601 timestamp when the bot joined the guild. Present in GUILD_CREATE only.
+    // MARK: - GUILD_CREATE-only fields
+    /// ISO 8601 timestamp for when the bot joined. Present only in GUILD_CREATE payloads.
     public let joined_at: String?
-    /// Member list. Present in GUILD_CREATE only.
+    /// Member list included by the gateway. Not present in standard REST guild responses.
     public let members: [GuildMember]?
-    /// Channel list. Present in GUILD_CREATE only.
+    /// Channel list included by the gateway. Not present in standard REST guild responses.
     public let channels: [Channel]?
-    /// Active thread list. Present in GUILD_CREATE only.
+    /// Active threads included by the gateway. Not present in standard REST guild responses.
     public let threads: [Channel]?
 
-    // MARK: - Convenience initializer (tests, cache building)
+    // MARK: - Initializer for tests and cache seeding
     public init(
         id: GuildID,
         name: String,

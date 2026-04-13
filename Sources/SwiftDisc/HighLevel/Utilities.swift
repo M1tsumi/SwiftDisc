@@ -1,10 +1,10 @@
 import Foundation
 
-/// A collection of static utility helpers for common bot development tasks.
+/// A collection of static utilities for common bot development tasks.
 public enum BotUtils {
     /// Splits a long string into Discord-safe message chunks.
     ///
-    /// Discord enforces a 2000-character message limit. This helper splits content
+    /// Discord enforces a 2000-character message limit. This function splits content
     /// on newline boundaries to avoid cutting words mid-line while keeping each
     /// chunk within the specified `maxLength`.
     ///

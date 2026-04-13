@@ -29,7 +29,7 @@ actor GatewayClient {
         case reconnecting
     }
 
-    // Public: request guild members (OP 8)
+    // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
         let enc = JSONEncoder()
@@ -58,7 +58,7 @@ actor GatewayClient {
         }
     }
 
-    // VOICE_STATE_UPDATE (op 4)
+    // Sends VOICE_STATE_UPDATE (OP 4) to join, move, or leave voice channels.
     func updateVoiceState(guildId: GuildID, channelId: ChannelID?, selfMute: Bool, selfDeaf: Bool) async {
         struct VoiceStateUpdateData: Codable {
             let guild_id: GuildID
@@ -73,14 +73,21 @@ actor GatewayClient {
     }
 
     func connect(intents: GatewayIntents, shard: (index: Int, total: Int)? = nil, eventSink: @escaping @Sendable (DiscordEvent) -> Void) async throws {
-        guard let url = URL(string: "\(configuration.gatewayBaseURL.absoluteString)?v=\(configuration.apiVersion)&encoding=json") else {
+        guard var components = URLComponents(url: configuration.gatewayBaseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
+        components.queryItems = [
+            URLQueryItem(name: "v", value: String(configuration.apiVersion)),
+            URLQueryItem(name: "encoding", value: "json")
+        ]
+        guard let url = components.url else {
+            throw DiscordError.gateway("Failed to construct gateway URL")
+        }
 
-        // Select a WebSocket adapter appropriate for the current platform.
-        // URLSessionWebSocketTask is available on Apple platforms and Linux (via FoundationNetworking),
-        // and on modern Windows Swift toolchains. Fall back to an
-        // UnavailableWebSocketAdapter on unsupported platforms so builds succeed.
+        // Pick the best adapter for the current platform.
+        // URLSessionWebSocketTask is available on Apple platforms, Linux (FoundationNetworking),
+        // and modern Windows toolchains. Unsupported targets use the unavailable adapter so
+        // the package still compiles with clear runtime behavior.
         #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Windows)
         let socket: WebSocketClient = URLSessionWebSocketAdapter(url: url)
         #else
@@ -92,7 +99,7 @@ actor GatewayClient {
         self.lastShard = shard
         self.status = .connecting
 
-        // Receive initial HELLO frame from the gateway
+        // The first frame must be HELLO because it carries the heartbeat interval.
         guard case let .string(helloText) = try await socket.receive() else {
             throw DiscordError.gateway("Expected HELLO string frame")
         }
@@ -101,10 +108,10 @@ actor GatewayClient {
         guard hello.op == .hello, let d = hello.d else { throw DiscordError.gateway("Invalid HELLO payload") }
         heartbeatIntervalMs = d.heartbeat_interval
 
-        // Start heartbeat loop based on negotiated interval
+        // Start heartbeats using the interval negotiated by Discord.
         startHeartbeat()
 
-        // Send Resume when resuming a session, otherwise Identify
+        // Resume when we have a saved session, otherwise perform a fresh identify.
         let enc = JSONEncoder()
         if let sessionId, let seq {
             self.status = .resuming
@@ -122,11 +129,11 @@ actor GatewayClient {
             try await socket.send(.string(String(decoding: data, as: UTF8.self)))
         }
 
-        // Start read loop for gateway messages
+        // Read loop stays detached so connect() can return once READY/RESUMED arrives.
         Task.detached { [weak self] in
             await self?.readLoop(eventSink: eventSink)
         }
-        // Wait for READY or RESUMED before returning
+        // Wait until the socket is actually usable before returning to callers.
         if self.status != .ready {
             await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                 self.connectReadyContinuation = cont
@@ -147,18 +154,18 @@ actor GatewayClient {
                 case .data(let d): data = d
                 }
                 lastFrameData = data
-                // capture seq
-                if let s = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let seqNum = s["s"] as? Int {
+                // Track the latest sequence number for heartbeats and resume.
+                if let seqBox = try? dec.decode([String: Int].self, from: data), let seqNum = seqBox["s"] {
                     self.seq = seqNum
                 }
-                // Decode opcode first
+                // Decode opcode first, then dispatch by event name when needed.
                 if let opBox = try? dec.decode(GatewayOpBox.self, from: data) {
                     switch opBox.op {
                     case .dispatch:
                         guard let t = opBox.t else { continue }
                         if t == "READY" {
                             if let payload = try? dec.decode(GatewayPayload<ReadyEvent>.self, from: data), let ready = payload.d {
-                                // capture session id for resume
+                                // Save session ID so reconnects can try RESUME.
                                 self.sessionId = ready.session_id ?? self.sessionId
                                 self.status = .ready
                                 eventSink(.ready(ready))
@@ -168,11 +175,11 @@ actor GatewayClient {
                                 }
                             }
                         } else if t == "RESUMED" {
-                            // Successful resume
+                            // RESUME accepted; keep the same session.
                             self.status = .ready
                             self.resumeSuccessCount += 1
                             self.lastResumeSuccessAt = Date()
-                            // No specific event emitted for RESUMED in our public API
+                            // We do not expose a dedicated RESUMED event in the public API.
                             if let cont = self.connectReadyContinuation {
                                 self.connectReadyContinuation = nil
                                 cont.resume()
@@ -364,8 +371,6 @@ actor GatewayClient {
                         } else if t == "GUILD_AUDIT_LOG_ENTRY_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<AuditLogEntry>.self, from: data), let ev = payload.d {
                                 eventSink(.guildAuditLogEntryCreate(ev))
-                            } else if let payload = try? dec.decode(GatewayPayload<GuildAuditLogEntryCreate>.self, from: data), let ev = payload.d {
-                                eventSink(.guildAuditLogEntryCreate(ev.entry))
                             }
                         } else if t == "WEBHOOKS_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<WebhooksUpdate>.self, from: data), let ev = payload.d {
@@ -416,7 +421,7 @@ actor GatewayClient {
                                 eventSink(.inviteDelete(ev))
                             }
                         } else {
-                            // Fallback: emit raw event for anything not modeled yet
+                            // Unknown events are forwarded as raw payloads so callers still get visibility.
                             eventSink(.raw(t, data))
                         }
                     case .heartbeatAck:
@@ -424,7 +429,7 @@ actor GatewayClient {
                         lastHeartbeatAckAt = Date()
                         break
                     case .invalidSession:
-                        // Resume failed; clear session to force new identify next connect
+                        // Resume was rejected. Clear session state so next connect uses IDENTIFY.
                         self.resumeFailureCount += 1
                         self.sessionId = nil
                         self.seq = nil
@@ -438,7 +443,7 @@ actor GatewayClient {
                     }
                 }
             } catch let error as DecodingError {
-                // Non-fatal: skip malformed frame and continue
+                // Malformed payloads are logged and skipped so one bad frame does not kill the socket.
                 logDecodeDiagnostic("Top-level gateway frame decoding error: \(error)", data: lastFrameData)
                 continue
             } catch {
@@ -458,11 +463,11 @@ actor GatewayClient {
 
     private func runHeartbeatLoop() async {
         let intervalNs = UInt64(heartbeatIntervalMs) * 1_000_000
-        // Initial jitter before first heartbeat per Discord guidance
+        // Discord recommends jitter before the first heartbeat to avoid thundering herd reconnects.
         let jitterNs = UInt64.random(in: 0..<UInt64(heartbeatIntervalMs)) * 1_000_000
         try? await Task.sleep(nanoseconds: jitterNs)
         while !Task.isCancelled {
-            // If previous heartbeat wasn't ACKed, reconnect
+            // Missing ACK usually means a stale socket; reconnect early.
             if awaitingHeartbeatAck {
                 await attemptReconnect()
                 break
@@ -478,13 +483,13 @@ actor GatewayClient {
                 await attemptReconnect()
                 break
             }
-            // Wait full interval before next heartbeat and ACK check
+            // Sleep for one interval, then verify the previous heartbeat was acknowledged.
             try? await Task.sleep(nanoseconds: intervalNs)
         }
     }
 
     private func attemptReconnect() async {
-        // Basic reconnect: close existing socket and perform a fresh connect
+        // Reconnect strategy: close current socket, then retry with bounded exponential backoff.
         if !allowReconnect { return }
         await socket?.close()
         socket = nil
@@ -496,7 +501,8 @@ actor GatewayClient {
         guard let sink = lastEventSink else { return }
         var delay: UInt64 = 500_000_000
         var attemptCount = 0
-        while allowReconnect {
+        let maxAttempts = 10
+        while allowReconnect && attemptCount < maxAttempts {
             attemptCount += 1
             try? await Task.sleep(nanoseconds: delay)
             do {
@@ -517,7 +523,7 @@ actor GatewayClient {
         status = .disconnected
     }
 
-    // Presence update
+    // Sends a gateway presence update payload for status/activity changes.
     func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
         guard let socket = self.socket else { return }
         let p = PresenceUpdatePayload(d: .init(since: since, activities: activities, status: status, afk: afk))
@@ -527,7 +533,7 @@ actor GatewayClient {
         }
     }
 
-    // MARK: - Health accessors
+    // MARK: - Health and telemetry accessors
     func heartbeatLatency() -> TimeInterval? {
         guard let sent = lastHeartbeatSentAt, let ack = lastHeartbeatAckAt else { return nil }
         return ack.timeIntervalSince(sent)
@@ -545,7 +551,7 @@ actor GatewayClient {
   func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
 }
 
-// MARK: - Lightweight decoding helpers
+// MARK: - Lightweight decode utilities
 
 private struct GatewayOpBox: Codable {
     let op: GatewayOpcode
