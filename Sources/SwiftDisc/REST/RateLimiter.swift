@@ -42,7 +42,7 @@ actor RateLimiter {
                     catch { throw DiscordError.cancelled }
                 }
                 // After reset, clear remaining; let next response headers set correct values
-                buckets[routeKey]?.remaining = nil
+                buckets[routeKey, default: BucketState()].remaining = nil
             }
         }
     }
