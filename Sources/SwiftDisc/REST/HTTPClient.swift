@@ -88,19 +88,19 @@ final class HTTPClient: @unchecked Sendable {
 
     func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "POST \(path)") }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: POST \(path)") }
         return try await request(method: "POST", path: path, body: data)
     }
 
     func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "PATCH \(path)") }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PATCH \(path)") }
         return try await request(method: "PATCH", path: path, body: data)
     }
 
     func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
         let data: Data
-        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "PUT \(path)") }
+        do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PUT \(path)") }
         return try await request(method: "PUT", path: path, body: data)
     }
 
@@ -144,7 +144,7 @@ final class HTTPClient: @unchecked Sendable {
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
 
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: path) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
                 }
 
                 // Discord asked us to slow down. Wait and retry.
@@ -269,7 +269,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: path) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
@@ -331,7 +331,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: path) }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
