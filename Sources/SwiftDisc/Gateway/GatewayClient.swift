@@ -381,8 +381,6 @@ actor GatewayClient {
                         } else if t == "GUILD_AUDIT_LOG_ENTRY_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<AuditLogEntry>.self, from: data), let ev = payload.d {
                                 eventSink(.guildAuditLogEntryCreate(ev))
-                            } else if let payload = try? dec.decode(GatewayPayload<GuildAuditLogEntryCreate>.self, from: data), let ev = payload.d {
-                                eventSink(.guildAuditLogEntryCreate(ev.entry))
                             }
                         } else if t == "WEBHOOKS_UPDATE" {
                             if let payload = try? dec.decode(GatewayPayload<WebhooksUpdate>.self, from: data), let ev = payload.d {
