@@ -36,8 +36,7 @@ and refreshes contributor workflows with cleaner docs and reusable test fixtures
 ### Fixed
 - **Gateway URL construction** uses `URLComponents` for safe query parameter handling, preventing malformed URLs when `gatewayBaseURL` contains trailing slashes
 - **Gateway reconnection loop** now has a maximum attempt limit (10) to prevent infinite retry loops
-- **Gateway connection continuation** now has a 30-second timeout with proper error propagation to prevent indefinite blocking
-- **Static URL initializers** removed `fatalError` and use force unwrap (safe for hardcoded URLs)
+- **Static URL initializers** use `preconditionFailure` for better error messages if URL construction fails
 - **JSON parsing** now consistently uses `JSONDecoder` instead of `JSONSerialization` for seq number extraction
 - **Duplicate decoding** removed for `GUILD_AUDIT_LOG_ENTRY_CREATE` event
 - **Rate limiter bucket modification** now ensures bucket exists before updating remaining count
