@@ -78,12 +78,15 @@ actor EventDispatcher {
 
         // MARK: Roles
         case .guildRoleCreate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleCreate { await cb(ev) }
 
         case .guildRoleUpdate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleUpdate { await cb(ev) }
 
         case .guildRoleDelete(let ev):
+            await client.cache.removeRole(id: ev.role_id, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleDelete { await cb(ev) }
 
         // MARK: Emojis / Stickers (no callback – stream-only)
