@@ -270,7 +270,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: POST \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
@@ -332,7 +332,7 @@ final class HTTPClient: @unchecked Sendable {
                 guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
                 if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
+                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: PATCH \(path)") }
                 }
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
