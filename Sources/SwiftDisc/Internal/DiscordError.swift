@@ -2,7 +2,7 @@ import Foundation
 
 /// All errors thrown by SwiftDisc REST and gateway operations.
 /// Declared `Sendable` so errors can be safely passed across actor/task boundaries.
-public enum DiscordError: Error, Sendable, Equatable {
+public enum DiscordError: Error, Sendable {
     /// A non-2xx HTTP response with status code and raw body.
     case http(Int, String, debugContext: String? = nil)
     /// A 4xx/5xx response whose body decoded to Discord's `{message, code}` error shape.
@@ -67,30 +67,5 @@ extension DiscordError: CustomStringConvertible, LocalizedError {
 
     public var errorDescription: String? {
         description
-    }
-
-    public static func == (lhs: DiscordError, rhs: DiscordError) -> Bool {
-        switch (lhs, rhs) {
-        case (.http(let l1, let l2, let l3), .http(let r1, let r2, let r3)):
-            return l1 == r1 && l2 == r2 && l3 == r3
-        case (.api(let l1, let l2, let l3), .api(let r1, let r2, let r3)):
-            return l1 == r1 && l2 == r2 && l3 == r3
-        case (.decoding(let l1, let l2), .decoding(let r1, let r2)):
-            return "\(l1)" == "\(r1)" && l2 == r2
-        case (.encoding(let l1, let l2), .encoding(let r1, let r2)):
-            return "\(l1)" == "\(r1)" && l2 == r2
-        case (.network(let l1, let l2), .network(let r1, let r2)):
-            return "\(l1)" == "\(r1)" && l2 == r2
-        case (.gateway(let l1, let l2), .gateway(let r1, let r2)):
-            return l1 == r1 && l2 == r2
-        case (.cancelled, .cancelled):
-            return true
-        case (.validation(let l1, let l2), .validation(let r1, let r2)):
-            return l1 == r1 && l2 == r2
-        case (.unavailable, .unavailable):
-            return true
-        default:
-            return false
-        }
     }
 }

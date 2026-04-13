@@ -68,7 +68,7 @@ public actor AutocompleteRouter {
             )
         } catch {
             // Only log non-cancelled errors to avoid noise during typing
-            guard (error as? DiscordError) != .cancelled else { return }
+            if case DiscordError.cancelled = error { return }
             print("[AutocompleteRouter] Failed for '\(ctx.path)' | '\(opt)': \(error)")
         }
     }
