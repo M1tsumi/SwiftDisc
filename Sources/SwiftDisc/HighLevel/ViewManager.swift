@@ -45,14 +45,6 @@ public actor ViewManager {
     
     /// Register a view and schedule expiration if a timeout is set.
     public func register(_ view: View, client: DiscordClient) {
-        // Validate regex patterns at registration time to fail fast
-        for (pattern, matchType, _) in view.patterns {
-            if matchType == .regex {
-                _ = try? NSRegularExpression(pattern: pattern)
-                // If pattern is invalid, we'll silently skip it (same behavior as runtime)
-                // but this at least validates the pattern can be compiled
-            }
-        }
         views[view.id] = view
         if let t = view.timeout {
             let id = view.id
