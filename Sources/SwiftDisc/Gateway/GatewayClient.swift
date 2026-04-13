@@ -140,8 +140,9 @@ actor GatewayClient {
                     try await Task.sleep(nanoseconds: 30_000_000_000) // 30 second timeout
                     throw DiscordError.gateway("Connection timeout")
                 }
-                group.addTask {
-                    await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                group.addTask { [weak self] in
+                    guard let self = self else { return }
+                    await self.withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                         self.connectReadyContinuation = cont
                     }
                 }
