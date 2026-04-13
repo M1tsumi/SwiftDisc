@@ -165,7 +165,7 @@ actor GatewayClient {
                 }
                 lastFrameData = data
                 // Track the latest sequence number for heartbeats and resume.
-                if let s = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let seqNum = s["s"] as? Int {
+                if let seqBox = try? dec.decode([String: Int].self, from: data), let seqNum = seqBox["s"] {
                     self.seq = seqNum
                 }
                 // Decode opcode first, then dispatch by event name when needed.
