@@ -503,7 +503,8 @@ actor GatewayClient {
         guard let sink = lastEventSink else { return }
         var delay: UInt64 = 500_000_000
         var attemptCount = 0
-        while allowReconnect {
+        let maxAttempts = 10
+        while allowReconnect && attemptCount < maxAttempts {
             attemptCount += 1
             try? await Task.sleep(nanoseconds: delay)
             do {
