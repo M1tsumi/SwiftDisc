@@ -1,5 +1,16 @@
 import Foundation
 
+/// Voice encryption modes supported by Discord's voice gateway.
+/// Note: Only xsalsa20_poly1305 is currently implemented in SwiftDisc via Secretbox.
+/// Other modes (aead_aes256_gcm_rtpsize, aead_xchacha20_poly1305_rtpsize, aead_aes256_gcm)
+/// require additional encryption implementation and are reserved for future support.
+public enum VoiceEncryptionMode: String, Sendable {
+    case xsalsa20_poly1305 = "xsalsa20_poly1305"
+    case aead_aes256_gcm_rtpsize = "aead_aes256_gcm_rtpsize"
+    case aead_xchacha20_poly1305_rtpsize = "aead_xchacha20_poly1305_rtpsize"
+    case aead_aes256_gcm = "aead_aes256_gcm"
+}
+
 final class VoiceGateway: @unchecked Sendable {
     struct Hello: Codable { let heartbeat_interval: Int }
     struct Ready: Codable { let ssrc: UInt32; let port: UInt16; let modes: [String] }
@@ -45,11 +56,11 @@ final class VoiceGateway: @unchecked Sendable {
         self.modes = ready.d.modes
     }
 
-    func selectProtocol(ip: String, port: UInt16, mode: String = "xsalsa20_poly1305") async throws {
+    func selectProtocol(ip: String, port: UInt16, mode: VoiceEncryptionMode = .xsalsa20_poly1305) async throws {
         guard let ws else { throw DiscordError.gateway("Voice socket not connected") }
         struct SelectData: Codable { let address: String; let port: UInt16; let mode: String }
         struct Select: Codable { let protocol_: String; let data: SelectData; enum CodingKeys: String, CodingKey { case protocol_ = "protocol"; case data } }
-        let payload = Payload(op: .selectProtocol, d: Select(protocol_: "udp", data: SelectData(address: ip, port: port, mode: mode)))
+        let payload = Payload(op: .selectProtocol, d: Select(protocol_: "udp", data: SelectData(address: ip, port: port, mode: mode.rawValue)))
         try await ws.send(.string(String(decoding: try JSONEncoder().encode(payload), as: UTF8.self)))
 
         // Await SessionDescription to obtain the voice encryption key
