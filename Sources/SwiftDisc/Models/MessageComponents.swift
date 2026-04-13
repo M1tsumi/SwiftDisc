@@ -64,12 +64,16 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         public let custom_id: String?
         public let url: String?
         public let disabled: Bool?
-        public init(style: Int, label: String? = nil, custom_id: String? = nil, url: String? = nil, disabled: Bool? = nil) {
+        /// SKU ID for premium button style (style 10). Required when using PREMIUM_REQUIRED button style.
+        /// Introduced for Discord Premium Apps monetization.
+        public let sku_id: SKUID?
+        public init(style: Int, label: String? = nil, custom_id: String? = nil, url: String? = nil, disabled: Bool? = nil, sku_id: SKUID? = nil) {
             self.style = style
             self.label = label
             self.custom_id = custom_id
             self.url = url
             self.disabled = disabled
+            self.sku_id = sku_id
         }
     }
 
