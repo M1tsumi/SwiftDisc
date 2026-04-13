@@ -835,6 +835,20 @@ public actor DiscordClient {
         try await http.get(path: "/channels/\(channelId)/messages?limit=\(limit)")
     }
 
+    // Searches messages within a guild. Requires READ_MESSAGE_HISTORY and MESSAGE_CONTENT intents.
+    public func searchGuildMessages(guildId: GuildID, query: String? = nil, authorId: UserID? = nil, minId: MessageID? = nil, maxId: MessageID? = nil, has: String? = nil, limit: Int? = nil, offset: Int? = nil) async throws -> [Message] {
+        var queryParams: [String] = []
+        if let q = query { queryParams.append("content=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)") }
+        if let aid = authorId { queryParams.append("author_id=\(aid)") }
+        if let mid = minId { queryParams.append("min_id=\(mid)") }
+        if let mid = maxId { queryParams.append("max_id=\(mid)") }
+        if let h = has { queryParams.append("has=\(h)") }
+        if let l = limit { queryParams.append("limit=\(l)") }
+        if let o = offset { queryParams.append("offset=\(o)") }
+        let queryString = queryParams.isEmpty ? "" : "?\(queryParams.joined(separator: "&"))"
+        return try await http.get(path: "/guilds/\(guildId)/messages/search\(queryString)")
+    }
+
     // MARK: - Message Reactions
 
     /// Typed emoji reference for reaction methods.
