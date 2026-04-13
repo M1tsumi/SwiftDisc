@@ -30,7 +30,8 @@ final class HTTPClient: @unchecked Sendable {
         var headers: [AnyHashable: Any] = [
             "Authorization": "Bot \(token)",
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "User-Agent": "DiscordBot (SwiftDisc, \(DiscordConfiguration.version), https://github.com/M1tsumi/SwiftDisc)"
         ]
         if let existing = config.httpAdditionalHeaders {
             for (k, v) in existing { headers[k] = v }
