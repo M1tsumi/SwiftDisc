@@ -120,14 +120,14 @@ public actor ViewManager {
             for (pattern, matchType, handler) in view.patterns {
                 switch matchType {
                 case .exact:
-                    if pattern == customId { matched = true; Task { await handler(interaction, client) } }
+                    if pattern == customId { matched = true; Task { try? await handler(interaction, client) } }
                 case .prefix:
-                    if customId.hasPrefix(pattern) { matched = true; Task { await handler(interaction, client) } }
+                    if customId.hasPrefix(pattern) { matched = true; Task { try? await handler(interaction, client) } }
                 case .regex:
                     do {
                         let regex = try NSRegularExpression(pattern: pattern)
                         let range = NSRange(location: 0, length: customId.utf16.count)
-                        if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { await handler(interaction, client) } }
+                        if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { try? await handler(interaction, client) } }
                     } catch { /* invalid regex; treat as non-match */ }
                 }
                 if matched {
