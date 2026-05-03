@@ -60,7 +60,7 @@ public actor CommandRouter {
         /// Returns `true` if the member has the specified role.
         public func memberHasRole(_ roleId: RoleID) -> Bool {
             guard let roles = message.member?.roles else { return false }
-            return roles.contains(roleId.rawValue)
+            return roles.contains(roleId)
         }
     }
 

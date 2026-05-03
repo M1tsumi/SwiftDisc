@@ -45,7 +45,8 @@ public enum Converters {
     public static func snowflakeToTimestamp<T>(_ id: Snowflake<T>) -> Date {
         // Discord epoch: first second of 2015 (1420070400000)
         let discordEpoch: UInt64 = 1420070400000
-        let timestamp = (id.rawValue >> 22) + discordEpoch
+        guard let raw = UInt64(id.rawValue) else { return Date(timeIntervalSince1970: 0) }
+        let timestamp = (raw >> 22) + discordEpoch
         return Date(timeIntervalSince1970: TimeInterval(timestamp) / 1000.0)
     }
     

@@ -55,7 +55,7 @@ public struct ActivityBuilder {
         let assets = (largeImage == nil && largeText == nil && smallImage == nil && smallText == nil) ? nil : PresenceUpdatePayload.Activity.Assets(large_image: largeImage, large_text: largeText, small_image: smallImage, small_text: smallText)
         let party = (partyId == nil && partySize == nil) ? nil : PresenceUpdatePayload.Activity.Party(id: partyId, size: partySize)
         let secrets = (secretJoin == nil && secretSpectate == nil && secretMatch == nil) ? nil : PresenceUpdatePayload.Activity.Secrets(join: secretJoin, spectate: secretSpectate, match: secretMatch)
-        return PresenceUpdatePayload.Activity(name: name, type: type, state: state, details: details, timestamps: ts, assets: assets, buttons: buttons, party: party, secrets: secrets, url: url)
+        return PresenceUpdatePayload.Activity(name: name, type: type, state: state, details: details, timestamps: ts, assets: assets, buttons: buttons, party: party, secrets: secrets)
     }
 }
 

@@ -630,11 +630,11 @@ public actor DiscordClient {
 
     // Presence updates for status and activity changes.
     public func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
-        await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
+        try? await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
     }
 
     public func setStatus(_ status: String) async {
-        await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
+        try? await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
     }
 
     public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
@@ -649,7 +649,7 @@ public actor DiscordClient {
             party: nil,
             secrets: nil
         )
-        await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
+        try? await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
     }
 
 

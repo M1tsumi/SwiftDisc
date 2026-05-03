@@ -93,7 +93,7 @@ public struct ChannelSelectMenuBuilder {
     public func defaultChannels(_ ids: [ChannelID]) -> ChannelSelectMenuBuilder { var c = self; c.defaultChannelIds = ids; return c }
     public func disabled(_ d: Bool = true) -> ChannelSelectMenuBuilder { var c = self; c.disabled = d; return c }
     public func build() -> MessageComponent {
-        MessageComponent.channelSelect(.init(custom_id: customId, placeholder: placeholder, channel_types: channelTypes, default_channel_ids: defaultChannelIds, disabled: disabled))
+        MessageComponent.channelSelect(.init(custom_id: customId, placeholder: placeholder, channel_types: channelTypes, default_values: defaultChannelIds?.map { .init(id: $0.rawValue, type: .channel) }, disabled: disabled))
     }
 }
 

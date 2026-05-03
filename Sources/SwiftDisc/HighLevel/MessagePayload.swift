@@ -167,9 +167,7 @@ public extension DiscordClient {
                 tts: payload.tts,
                 flags: payload.flags,
                 files: files,
-                poll: payload.poll,
-                threadName: payload.threadName,
-                threadId: payload.threadId
+                poll: payload.poll
             )
         }
         return try await sendMessage(
@@ -182,9 +180,7 @@ public extension DiscordClient {
             tts: payload.tts,
             flags: payload.flags,
             stickerIds: payload.stickerIds,
-            poll: payload.poll,
-            threadName: payload.threadName,
-            threadId: payload.threadId
+            poll: payload.poll
         )
     }
 
@@ -206,9 +202,7 @@ public extension DiscordClient {
             messageId: messageId,
             content: payload.content,
             embeds: payload.embeds,
-            components: payload.components,
-            stickerIds: payload.stickerIds,
-            poll: payload.poll
+            components: payload.components
         )
     }
 

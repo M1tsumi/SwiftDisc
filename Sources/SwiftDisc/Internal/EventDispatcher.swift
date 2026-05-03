@@ -16,7 +16,7 @@ actor EventDispatcher {
             await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
             await client.cache.add(message: msg)
             if let cb = await client.onMessage { await cb(msg) }
-            if let router = await client.commands { await router.handleIfCommand(message: msg, client: client) }
+            if let router = await client.commands { await router.handle(msg, client: client) }
 
         case .messageUpdate(let msg):
             await client.cache.upsert(user: msg.author)
@@ -129,7 +129,6 @@ actor EventDispatcher {
             break
 
         case .threadMembersUpdate(let ev):
-            for thread in ev.threads { await client.cache.upsert(channel: thread) }
             if let cb = await client.onThreadMembersUpdate { await cb(ev) }
 
         case .threadListSync(let ev):
@@ -231,6 +230,9 @@ actor EventDispatcher {
 
         // MARK: Raw / Other
         case .raw:
+            break
+
+        case .sessionInvalidated:
             break
         }
 

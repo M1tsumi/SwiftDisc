@@ -177,7 +177,7 @@ public enum MessageValidation {
     public static func validatePollAnswers(_ answers: [String]) throws {
         let count = answers.count
         guard count >= 2 else {
-            throw ValidationError.missingRequiredField("Poll must have at least 2 answers")
+            throw ValidationError.missingRequiredField(field: "Poll must have at least 2 answers")
         }
         guard count <= maxPollAnswers else {
             throw ValidationError.tooManyPollAnswers(count: count, max: maxPollAnswers)

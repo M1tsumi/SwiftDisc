@@ -91,8 +91,9 @@ public actor CooldownManager {
     private func startAutoCleanup() {
         cleanupTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(autoCleanupInterval * 1_000_000_000))
-                await self?.purgeExpired()
+                guard let self else { break }
+                try? await Task.sleep(nanoseconds: UInt64(self.autoCleanupInterval * 1_000_000_000))
+                await self.purgeExpired()
             }
         }
     }
