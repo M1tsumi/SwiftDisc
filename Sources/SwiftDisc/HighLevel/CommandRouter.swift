@@ -3,6 +3,11 @@ import Foundation
 /// Routes prefix-based text commands. Declared as an `actor` so handler
 /// registration and dispatch are data-race free across concurrent tasks.
 public actor CommandRouter {
+    private var commands: [String: HandlerWrapper] = [:]
+    private var aliases: [String: String] = [:]
+    private var middleware: [Middleware] = []
+    private var prefix: String
+
     /// The async, Sendable handler type invoked when a command matches.
     public typealias Handler = @Sendable (Context) async throws -> Void
 
@@ -19,17 +24,20 @@ public actor CommandRouter {
     ///     try await next(ctx)
     /// }
     /// ```
-    public typealias Middleware = @Sendable (Context, @escaping Handler) async throws -> Void
+    public typealias Middleware = @Sendable (Context, next: @Sendable (Context) async throws -> Void) async throws -> Void
 
     /// Per-invocation context provided to every command handler.
     public struct Context: Sendable {
-        public let client: DiscordClient
         public let message: Message
+        public let client: DiscordClient
         public let args: [String]
-        public init(client: DiscordClient, message: Message, args: [String]) {
-            self.client = client
+        public let command: String
+
+        public init(message: Message, client: DiscordClient, args: [String], command: String) {
             self.message = message
+            self.client = client
             self.args = args
+            self.command = command
         }
 
         // MARK: - Permission utilities
@@ -51,84 +59,169 @@ public actor CommandRouter {
 
         /// Returns `true` if the member has the specified role.
         public func memberHasRole(_ roleId: RoleID) -> Bool {
-            message.member?.roles.contains(roleId) ?? false
+            guard let roles = message.member?.roles else { return false }
+            return roles.contains(roleId.rawValue)
         }
     }
 
-    /// Metadata exposed via `listCommands()`.
-    public struct CommandMeta: Sendable {
-        public let name: String
-        public let description: String
-    }
-
-    private var prefix: String
-    private var handlers: [String: Handler] = [:]
-    private var metadata: [String: CommandMeta] = [:]
-    private var middlewares: [Middleware] = []
-    /// Optional error handler invoked when a command handler throws.
-    public var onError: (@Sendable (Error, Context) -> Void)?
-
-    public init(prefix: String = "!") {
+    public init(prefix: String) {
         self.prefix = prefix
     }
 
-    /// Update the command prefix at runtime.
-    public func use(prefix: String) {
-        self.prefix = prefix
+    /// Register a command handler with an optional description.
+    public func register(name: String, description: String? = nil, _ handler: @escaping Handler) {
+        commands[name] = HandlerWrapper(handler: handler, description: description)
+    }
+    
+    /// Register an alias for an existing command.
+    /// - Parameters:
+    ///   - alias: The alias to register
+    ///   - command: The command name this alias points to
+    public func registerAlias(alias: String, command: String) {
+        aliases[alias] = command
+    }
+    
+    /// Register multiple aliases for an existing command.
+    /// - Parameters:
+    ///   - aliases: Array of alias names
+    ///   - command: The command name these aliases point to
+    public func registerAliases(aliases: [String], command: String) {
+        for alias in aliases {
+            self.aliases[alias] = command
+        }
+    }
+    
+    /// Unregister a command by name.
+    public func unregister(name: String) {
+        commands.removeValue(forKey: name)
+        // Also remove any aliases pointing to this command
+        aliases = aliases.filter { $0.value != name }
+    }
+    
+    /// Remove a specific alias.
+    public func removeAlias(alias: String) {
+        aliases.removeValue(forKey: alias)
     }
 
-    /// Register a middleware to run before every command handler.
-    ///
-    /// Middlewares execute in registration order. Each middleware **must** call
-    /// `next(ctx)` to proceed to the next middleware (or the final handler).
-    /// Omitting the call acts as an early-exit / guard.
+    /// Add middleware that runs before the command handler.
     public func use(_ middleware: @escaping Middleware) {
-        middlewares.append(middleware)
+        self.middleware.append(middleware)
     }
-
-    /// Register a command name (case-insensitive) with a handler.
-    public func register(_ name: String, description: String = "", handler: @escaping Handler) {
-        let key = name.lowercased()
-        handlers[key] = handler
-        metadata[key] = CommandMeta(name: name, description: description)
-    }
-
-    /// Check whether a message is a command and dispatch it.
-    public func handleIfCommand(message: Message, client: DiscordClient) async {
-        guard let content = message.content, !content.isEmpty else { return }
-        guard content.hasPrefix(prefix) else { return }
-        let noPrefix = String(content.dropFirst(prefix.count))
-        let parts = noPrefix.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
-        guard let cmd = parts.first?.lowercased() else { return }
-        let args = Array(parts.dropFirst())
-        guard let handler = handlers[cmd] else { return }
-        let ctx = Context(client: client, message: message, args: args)
-        do {
-            // Build the middleware chain from back to front so the first registered
-            // middleware is the outermost wrapper.
-            var chain: Handler = handler
-            for mw in middlewares.reversed() {
-                let next = chain
-                let m = mw
-                chain = { @Sendable ctx in try await m(ctx, next) }
+    
+    /// Built-in middleware: require a specific permission bit.
+    /// If the user doesn't have the permission, sends an error message and stops execution.
+    public static func requirePermission(_ permission: UInt64, errorMessage: String = "🚫 You don't have permission to use this command.") -> Middleware {
+        return { ctx, next in
+            if ctx.hasPermission(permission) {
+                try await next(ctx)
+            } else {
+                try await ctx.client.sendMessage(
+                    channelId: ctx.message.channel_id,
+                    content: errorMessage,
+                    messageReference: MessageReference(message_id: ctx.message.id, channel_id: ctx.message.channel_id)
+                )
             }
-            try await chain(ctx)
+        }
+    }
+    
+    /// Built-in middleware: require administrator permission.
+    public static func requireAdmin(errorMessage: String = "🚫 Only administrators can use this command.") -> Middleware {
+        return requirePermission(PermissionsUtil.administrator, errorMessage: errorMessage)
+    }
+    
+    /// Built-in middleware: require the user to have a specific role.
+    public static func requireRole(_ roleId: RoleID, errorMessage: String = "🚫 You don't have the required role to use this command.") -> Middleware {
+        return { ctx, next in
+            if ctx.memberHasRole(roleId) {
+                try await next(ctx)
+            } else {
+                try await ctx.client.sendMessage(
+                    channelId: ctx.message.channel_id,
+                    content: errorMessage,
+                    messageReference: MessageReference(message_id: ctx.message.id, channel_id: ctx.message.channel_id)
+                )
+            }
+        }
+    }
+    
+    /// Built-in middleware: require the command to be used in a guild (not DMs).
+    public static func requireGuild(errorMessage: String = "🚫 This command can only be used in a server.") -> Middleware {
+        return { ctx, next in
+            if ctx.message.guild_id != nil {
+                try await next(ctx)
+            } else {
+                try await ctx.client.sendMessage(
+                    channelId: ctx.message.channel_id,
+                    content: errorMessage
+                )
+            }
+        }
+    }
+
+    /// Process a message and route it to the appropriate handler if it matches the prefix.
+    public func handle(_ message: Message, client: DiscordClient) async {
+        guard let content = message.content, content.hasPrefix(prefix) else { return }
+        let parts = content.dropFirst(prefix.count).split(separator: " ", maxSplits: 1, omittingEmptySubsequences: false)
+        guard let cmdName = parts.first.map(String.init) else { return }
+        let args = parts.count > 1 ? String(parts[1]).split(separator: " ").map(String.init) : []
+        
+        // Resolve alias if applicable
+        let commandName = aliases[cmdName] ?? cmdName
+        
+        guard let wrapper = commands[commandName] else { return }
+        let context = Context(message: message, client: client, args: args, command: commandName)
+
+        do {
+            try await executeMiddleware(context, handler: wrapper.handler, at: 0)
         } catch {
-            if let onError { onError(error, ctx) }
+            // Error handling could be extended with a dedicated error handler
+            print("[CommandRouter] Error in command '\(commandName)': \(error)")
         }
     }
 
-    /// Return all registered commands sorted alphabetically.
-    public func listCommands() -> [CommandMeta] {
-        metadata.values.sorted { $0.name < $1.name }
+    /// List all registered commands and their descriptions.
+    public func listCommands() -> [(name: String, description: String?)] {
+        return commands.map { (name: $0.key, description: $0.value.description) }
+    }
+    
+    /// List all registered aliases.
+    public func listAliases() -> [(alias: String, command: String)] {
+        return aliases.map { (alias: $0.key, command: $0.value) }
+    }
+    
+    /// Generate help text for all commands.
+    public func generateHelp() -> String {
+        let commandList = listCommands().sorted { $0.name < $1.name }
+        var output = "**Commands:**\n"
+        for cmd in commandList {
+            if let desc = cmd.description {
+                output += "`\(prefix)\(cmd.name)` - \(desc)\n"
+            } else {
+                output += "`\(prefix)\(cmd.name)`\n"
+            }
+        }
+        let aliasList = listAliases().sorted { $0.alias < $1.alias }
+        if !aliasList.isEmpty {
+            output += "\n**Aliases:**\n"
+            for alias in aliasList {
+                output += "`\(prefix)\(alias.alias)` → `\(prefix)\(alias.command)`\n"
+            }
+        }
+        return output
     }
 
-    /// Generate a human-readable help string listing all commands.
-    public func helpText(header: String = "Available commands:") -> String {
-        let lines = listCommands().map { meta in
-            if meta.description.isEmpty { return "\(prefix)\(meta.name)" }
-            return "\(prefix)\(meta.name) — \(meta.description)"
+    private func executeMiddleware(_ context: Context, handler: Handler, at index: Int) async throws {
+        if index < middleware.count {
+            try await middleware[index](context) { ctx in
+                try await executeMiddleware(ctx, handler: handler, at: index + 1)
+            }
+        } else {
+            try await handler(context)
         }
-        return ([header] + lines).joined(separator: "\n")
+    }
+
+    private struct HandlerWrapper {
+        let handler: Handler
+        let description: String?
     }
 }

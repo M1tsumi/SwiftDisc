@@ -17,6 +17,7 @@ public struct ActivityBuilder {
     private var secretJoin: String?
     private var secretSpectate: String?
     private var secretMatch: String?
+    private var url: String?
 
     public init(name: String) { self.name = name }
 
@@ -45,13 +46,16 @@ public struct ActivityBuilder {
     public func party(id: String? = nil, size: [Int]? = nil) -> ActivityBuilder { var c = self; c.partyId = id; c.partySize = size; return c }
 
     public func secrets(join: String? = nil, spectate: String? = nil, match: String? = nil) -> ActivityBuilder { var c = self; c.secretJoin = join; c.secretSpectate = spectate; c.secretMatch = match; return c }
+    
+    /// Set the streaming URL (required when type is 1/streaming).
+    public func url(_ u: String) -> ActivityBuilder { var c = self; c.url = u; return c }
 
     public func build() -> PresenceUpdatePayload.Activity {
         let ts = (start == nil && end == nil) ? nil : PresenceUpdatePayload.Activity.Timestamps(start: start, end: end)
         let assets = (largeImage == nil && largeText == nil && smallImage == nil && smallText == nil) ? nil : PresenceUpdatePayload.Activity.Assets(large_image: largeImage, large_text: largeText, small_image: smallImage, small_text: smallText)
         let party = (partyId == nil && partySize == nil) ? nil : PresenceUpdatePayload.Activity.Party(id: partyId, size: partySize)
         let secrets = (secretJoin == nil && secretSpectate == nil && secretMatch == nil) ? nil : PresenceUpdatePayload.Activity.Secrets(join: secretJoin, spectate: secretSpectate, match: secretMatch)
-        return PresenceUpdatePayload.Activity(name: name, type: type, state: state, details: details, timestamps: ts, assets: assets, buttons: buttons, party: party, secrets: secrets)
+        return PresenceUpdatePayload.Activity(name: name, type: type, state: state, details: details, timestamps: ts, assets: assets, buttons: buttons, party: party, secrets: secrets, url: url)
     }
 }
 

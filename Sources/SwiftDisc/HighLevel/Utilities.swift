@@ -71,4 +71,117 @@ public enum BotUtils {
     public static func mentionsBot(_ content: String, botId: String) -> Bool {
         extractMentions(content).contains(botId)
     }
+    
+    /// Extracts role mentions from a message string.
+    ///
+    /// Parses `<@&roleID>` mention format.
+    ///
+    /// - Parameter content: The message text to scan.
+    /// - Returns: An array of role ID strings found in the content.
+    public static func extractRoleMentions(_ content: String) -> [String] {
+        let pattern = #"<@&([0-9]{5,})>"#
+        guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(location: 0, length: content.utf16.count)
+        var ids: [String] = []
+        re.enumerateMatches(in: content, options: [], range: range) { m, _, _ in
+            if let m = m, m.numberOfRanges >= 2, let r = Range(m.range(at: 1), in: content) {
+                ids.append(String(content[r]))
+            }
+        }
+        return ids
+    }
+    
+    /// Extracts channel mentions from a message string.
+    ///
+    /// Parses `<#channelID>` mention format.
+    ///
+    /// - Parameter content: The message text to scan.
+    /// - Returns: An array of channel ID strings found in the content.
+    public static func extractChannelMentions(_ content: String) -> [String] {
+        let pattern = #"<#([0-9]{5,})>"#
+        guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(location: 0, length: content.utf16.count)
+        var ids: [String] = []
+        re.enumerateMatches(in: content, options: [], range: range) { m, _, _ in
+            if let m = m, m.numberOfRanges >= 2, let r = Range(m.range(at: 1), in: content) {
+                ids.append(String(content[r]))
+            }
+        }
+        return ids
+    }
+    
+    /// Removes all Discord mentions from a string.
+    ///
+    /// - Parameter content: The message text to sanitize.
+    /// - Returns: The content with all mentions removed.
+    public static func stripMentions(_ content: String) -> String {
+        var result = content
+        result = result.replacingOccurrences(of: #"<@!?[0-9]{5,}>"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"<@&[0-9]{5,}>"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"<#[0-9]{5,}>"#, with: "", options: .regularExpression)
+        return result
+    }
+    
+    /// Truncates a string to a maximum length with an ellipsis if needed.
+    ///
+    /// - Parameters:
+    ///   - text: The text to truncate.
+    ///   - maxLength: Maximum length before truncation.
+    ///   - suffix: String to append when truncated (defaults to "...").
+    /// - Returns: The truncated string.
+    public static func truncate(_ text: String, maxLength: Int, suffix: String = "...") -> String {
+        if text.count <= maxLength { return text }
+        let truncated = String(text.prefix(maxLength - suffix.count))
+        return truncated + suffix
+    }
+    
+    /// Escapes Discord markdown formatting in a string.
+    ///
+    /// - Parameter text: The text to escape.
+    /// - Returns: The text with markdown characters escaped.
+    public static func escapeMarkdown(_ text: String) -> String {
+        var result = text
+        let specialChars = ["\\", "*", "_", "~", "|", "`", ">", ":", "@"]
+        for char in specialChars {
+            result = result.replacingOccurrences(of: char, with: "\\\(char)")
+        }
+        return result
+    }
+    
+    /// Formats a relative timestamp in a human-readable way.
+    ///
+    /// - Parameters:
+    ///   - date: The date to format.
+    ///   - relativeTo: The reference date (defaults to now).
+    /// - Returns: A string like "2 hours ago" or "in 3 days".
+    public static func formatRelativeTime(_ date: Date, relativeTo: Date = Date()) -> String {
+        let interval = date.timeIntervalSince(relativeTo)
+        let absInterval = abs(interval)
+        
+        if absInterval < 60 {
+            return interval < 0 ? "just now" : "just now"
+        } else if absInterval < 3600 {
+            let minutes = Int(absInterval / 60)
+            return interval < 0 ? "\(minutes)m ago" : "in \(minutes)m"
+        } else if absInterval < 86400 {
+            let hours = Int(absInterval / 3600)
+            return interval < 0 ? "\(hours)h ago" : "in \(hours)h"
+        } else if absInterval < 604800 {
+            let days = Int(absInterval / 86400)
+            return interval < 0 ? "\(days)d ago" : "in \(days)d"
+        } else {
+            let weeks = Int(absInterval / 604800)
+            return interval < 0 ? "\(weeks)w ago" : "in \(weeks)w"
+        }
+    }
+    
+    /// Generates a random string of specified length.
+    ///
+    /// - Parameters:
+    ///   - length: The length of the random string.
+    ///   - charset: Characters to use (defaults to alphanumeric).
+    /// - Returns: A random string.
+    public static func randomString(length: Int, charset: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") -> String {
+        return String((0..<length).map { _ in charset.randomElement()! })
+    }
 }

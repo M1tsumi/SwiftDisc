@@ -25,6 +25,9 @@ public struct MessagePayload: Sendable {
     public var flags: Int?
     public var stickerIds: [StickerID]?
     public var files: [FileAttachment]?
+    public var poll: Poll?
+    public var threadName: String?
+    public var threadId: ChannelID?
 
     public init() {}
 
@@ -123,6 +126,22 @@ public struct MessagePayload: Sendable {
 
     /// Set the full list of file attachments (replaces any previously added files).
     public func files(_ fs: [FileAttachment]) -> Self { var c = self; c.files = fs; return c }
+    
+    // MARK: - Polls
+    
+    /// Attach a poll to the message.
+    /// - Parameter poll: The poll to attach
+    public func poll(_ poll: Poll) -> Self { var c = self; c.poll = poll; return c }
+    
+    // MARK: - Threads
+    
+    /// Create a thread from this message with the given name.
+    /// - Parameter name: The thread name
+    public func thread(_ name: String) -> Self { var c = self; c.threadName = name; return c }
+    
+    /// Create a thread in an existing thread channel.
+    /// - Parameter threadId: The parent thread ID
+    public func inThread(_ threadId: ChannelID) -> Self { var c = self; c.threadId = threadId; return c }
 }
 
 // MARK: - DiscordClient send and edit API
@@ -147,7 +166,10 @@ public extension DiscordClient {
                 components: payload.components,
                 tts: payload.tts,
                 flags: payload.flags,
-                files: files
+                files: files,
+                poll: payload.poll,
+                threadName: payload.threadName,
+                threadId: payload.threadId
             )
         }
         return try await sendMessage(
@@ -159,7 +181,10 @@ public extension DiscordClient {
             messageReference: payload.messageReference,
             tts: payload.tts,
             flags: payload.flags,
-            stickerIds: payload.stickerIds
+            stickerIds: payload.stickerIds,
+            poll: payload.poll,
+            threadName: payload.threadName,
+            threadId: payload.threadId
         )
     }
 
@@ -181,7 +206,9 @@ public extension DiscordClient {
             messageId: messageId,
             content: payload.content,
             embeds: payload.embeds,
-            components: payload.components
+            components: payload.components,
+            stickerIds: payload.stickerIds,
+            poll: payload.poll
         )
     }
 
