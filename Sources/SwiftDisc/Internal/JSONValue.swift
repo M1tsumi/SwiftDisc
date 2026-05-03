@@ -32,6 +32,56 @@ public enum JSONValue: Codable, Hashable, Sendable {
         }
     }
 
+    /// Returns an Int value if the JSONValue is an int, or nil otherwise.
+    public var intValue: Int? {
+        if case .int(let i) = self { return i }
+        return nil
+    }
+
+    /// Returns a Double value if the JSONValue is a number or int, or nil otherwise.
+    public var doubleValue: Double? {
+        switch self {
+        case .number(let n): return n
+        case .int(let i): return Double(i)
+        default: return nil
+        }
+    }
+
+    /// Returns a Bool value if the JSONValue is a bool, or nil otherwise.
+    public var boolValue: Bool? {
+        if case .bool(let b) = self { return b }
+        return nil
+    }
+
+    /// Returns the array if the JSONValue is an array, or nil otherwise.
+    public var arrayValue: [JSONValue]? {
+        if case .array(let a) = self { return a }
+        return nil
+    }
+
+    /// Returns the object dictionary if the JSONValue is an object, or nil otherwise.
+    public var objectValue: [String: JSONValue]? {
+        if case .object(let o) = self { return o }
+        return nil
+    }
+
+    /// Returns true if the JSONValue is null.
+    public var isNull: Bool {
+        if case .null = self { return true }
+        return false
+    }
+
+    /// Subscript access for object values. Returns nil if not an object or key not found.
+    public subscript(key: String) -> JSONValue? {
+        objectValue?[key]
+    }
+
+    /// Subscript access for array values. Returns nil if not an array or index out of bounds.
+    public subscript(index: Int) -> JSONValue? {
+        guard index >= 0, let array = arrayValue, index < array.count else { return nil }
+        return array[index]
+    }
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {

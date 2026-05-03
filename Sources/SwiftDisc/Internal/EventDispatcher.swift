@@ -77,16 +77,22 @@ actor EventDispatcher {
 
         // MARK: Roles
         case .guildRoleCreate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleCreate { await cb(ev) }
 
         case .guildRoleUpdate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleUpdate { await cb(ev) }
 
         case .guildRoleDelete(let ev):
+            await client.cache.removeRole(id: ev.role_id, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleDelete { await cb(ev) }
 
         // MARK: Emojis / Stickers (no callback – stream-only)
-        case .guildEmojisUpdate, .guildStickersUpdate:
+        case .guildEmojisUpdate(let ev):
+            await client.cache.upsert(emojis: ev.emojis, guildId: ev.guild_id)
+
+        case .guildStickersUpdate:
             break
 
         // MARK: Channels
@@ -115,8 +121,23 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: ch.id)
             if let cb = await client.onThreadDelete { await cb(ch) }
 
-        case .threadMemberUpdate, .threadMembersUpdate:
+        case .threadMemberUpdate:
             break
+
+        case .threadMembersUpdate(let ev):
+            for thread in ev.threads { await client.cache.upsert(channel: thread) }
+            if let cb = await client.onThreadMembersUpdate { await cb(ev) }
+
+        case .threadListSync(let ev):
+            for thread in ev.threads { await client.cache.upsert(channel: thread) }
+
+        // MARK: Application Commands
+        case .applicationCommandPermissionsUpdate(let ev):
+            if let cb = await client.onApplicationCommandPermissionsUpdate { await cb(ev) }
+
+        // MARK: Channel Info
+        case .channelInfo(let channel):
+            await client.cache.upsert(channel: channel)
 
         // MARK: Interactions
         case .interactionCreate(let interaction):

@@ -5,9 +5,11 @@ public actor Cache {
         public var userTTL: TimeInterval?
         public var channelTTL: TimeInterval?
         public var guildTTL: TimeInterval?
+        public var roleTTL: TimeInterval?
+        public var emojiTTL: TimeInterval?
         public var maxMessagesPerChannel: Int
-        public init(userTTL: TimeInterval? = nil, channelTTL: TimeInterval? = nil, guildTTL: TimeInterval? = nil, maxMessagesPerChannel: Int = 50) {
-            self.userTTL = userTTL; self.channelTTL = channelTTL; self.guildTTL = guildTTL; self.maxMessagesPerChannel = maxMessagesPerChannel
+        public init(userTTL: TimeInterval? = nil, channelTTL: TimeInterval? = nil, guildTTL: TimeInterval? = nil, roleTTL: TimeInterval? = nil, emojiTTL: TimeInterval? = nil, maxMessagesPerChannel: Int = 50) {
+            self.userTTL = userTTL; self.channelTTL = channelTTL; self.guildTTL = guildTTL; self.roleTTL = roleTTL; self.emojiTTL = emojiTTL; self.maxMessagesPerChannel = maxMessagesPerChannel
         }
     }
 
@@ -19,7 +21,7 @@ public actor Cache {
     private var channelsTimed: [ChannelID: TimedValue<Channel>] = [:]
     private var guildsTimed: [GuildID: TimedValue<Guild>] = [:]
     private var rolesByGuild: [GuildID: [RoleID: TimedValue<Role>]] = [:]
-    private var emojisByGuild: [GuildID: [Emoji]] = [:]
+    private var emojisByGuild: [GuildID: TimedValue<[Emoji]>] = [:]
     public private(set) var recentMessagesByChannel: [ChannelID: [Message]] = [:]
 
     /// Background task that prunes expired TTL entries every 60 seconds.
@@ -32,6 +34,8 @@ public actor Cache {
         let hasTTL = configuration.userTTL != nil
             || configuration.channelTTL != nil
             || configuration.guildTTL != nil
+            || configuration.roleTTL != nil
+            || configuration.emojiTTL != nil
         if hasTTL {
             Task { [weak self] in
                 await self?.startEvictionTaskIfNeeded()
@@ -73,29 +77,33 @@ public actor Cache {
 
     /// Retrieve a single role.
     public func getRole(id: RoleID, guildId: GuildID) -> Role? {
-        rolesByGuild[guildId]?[id]?.value
+        pruneIfNeeded()
+        return rolesByGuild[guildId]?[id]?.value
     }
 
     /// Retrieve all cached roles for a guild.
     public func getRoles(guildId: GuildID) -> [Role] {
-        (rolesByGuild[guildId] ?? [:]).values.map(\.value)
+        pruneIfNeeded()
+        return (rolesByGuild[guildId] ?? [:]).values.map(\.value)
     }
 
     // MARK: - Emojis
 
     /// Replace the emoji list for a guild.
     public func upsert(emojis: [Emoji], guildId: GuildID) {
-        emojisByGuild[guildId] = emojis
+        emojisByGuild[guildId] = TimedValue(value: emojis, storedAt: Date())
     }
 
     /// Retrieve all cached emojis for a guild.
     public func getEmojis(guildId: GuildID) -> [Emoji] {
-        emojisByGuild[guildId] ?? []
+        pruneIfNeeded()
+        return emojisByGuild[guildId]?.value ?? []
     }
 
     /// Retrieve a single custom emoji by ID from a guild.
     public func getEmoji(id: EmojiID, guildId: GuildID) -> Emoji? {
-        emojisByGuild[guildId]?.first { $0.id == id }
+        pruneIfNeeded()
+        return emojisByGuild[guildId]?.value.first { $0.id == id }
     }
 
     public func add(message: Message) {
@@ -131,6 +139,14 @@ public actor Cache {
         }
         if let ttl = configuration.guildTTL {
             guildsTimed = guildsTimed.filter { now.timeIntervalSince($0.value.storedAt) < ttl }
+        }
+        if let ttl = configuration.roleTTL {
+            for guildId in rolesByGuild.keys {
+                rolesByGuild[guildId] = rolesByGuild[guildId]?.filter { now.timeIntervalSince($0.value.storedAt) < ttl }
+            }
+        }
+        if let ttl = configuration.emojiTTL {
+            emojisByGuild = emojisByGuild.filter { now.timeIntervalSince($0.value.storedAt) < ttl }
         }
     }
 
