@@ -82,7 +82,10 @@ public actor ShardingGatewayManager {
 
     private struct GatewayBotCache {
         var info: GatewayBotInfo
+        var gatewayUrl: String
         var fetchedAt: Date
+        var urlExpiresAt: Date
+        var sessionExpiresAt: Date
     }
     private var cachedGatewayBot: GatewayBotCache?
 
@@ -183,12 +186,13 @@ public actor ShardingGatewayManager {
 
     public func connect() async throws {
         // Prepare unified events
-        var localCont: AsyncStream<ShardedEvent>.Continuation!
         self.eventStream = AsyncStream<ShardedEvent> { continuation in
-            continuation.onTermination = { _ in }
-            localCont = continuation
+            continuation.onTermination = { @Sendable _ in
+                // Clean up resources when stream terminates
+                self.isShuttingDown = true
+            }
+            self.eventContinuation = continuation
         }
-        self.eventContinuation = localCont
 
         // Determine shard count and identify concurrency
         let (totalShards, maxConcurrency) = try await fetchShardPlan()
@@ -326,13 +330,30 @@ public actor ShardingGatewayManager {
 
     private func gatewayBotInfo(forceRefresh: Bool = false) async throws -> GatewayBotInfo {
         if !forceRefresh, let cached = cachedGatewayBot {
-            if Date().timeIntervalSince(cached.fetchedAt) < 24 * 3600 { return cached.info }
+            // Check both URL cache (24 hours) and session limit cache (reset_after)
+            if Date() < cached.urlExpiresAt {
+                // Session limits might have expired, refresh them
+                if Date() >= cached.sessionExpiresAt {
+                    let http = HTTPClient(token: token, configuration: httpConfiguration)
+                    struct Info: Decodable { let url: String; let shards: Int; let session_start_limit: GatewayBotInfo.SessionStartLimit }
+                    let info: Info = try await http.get(path: "/gateway/bot")
+                    let converted = GatewayBotInfo(url: cached.gatewayUrl, shards: info.shards, session_start_limit: .init(total: info.session_start_limit.total, remaining: info.session_start_limit.remaining, reset_after: info.session_start_limit.reset_after, max_concurrency: info.session_start_limit.max_concurrency))
+                    let sessionExpiresAt = Date().addingTimeInterval(Double(info.session_start_limit.reset_after) / 1000.0 + 5.0)
+                    cachedGatewayBot = .init(info: converted, gatewayUrl: cached.gatewayUrl, fetchedAt: Date(), urlExpiresAt: cached.urlExpiresAt, sessionExpiresAt: sessionExpiresAt)
+                    return converted
+                }
+                return cached.info
+            }
         }
         let http = HTTPClient(token: token, configuration: httpConfiguration)
         struct Info: Decodable { let url: String; let shards: Int; let session_start_limit: GatewayBotInfo.SessionStartLimit }
         let info: Info = try await http.get(path: "/gateway/bot")
         let converted = GatewayBotInfo(url: info.url, shards: info.shards, session_start_limit: .init(total: info.session_start_limit.total, remaining: info.session_start_limit.remaining, reset_after: info.session_start_limit.reset_after, max_concurrency: info.session_start_limit.max_concurrency))
-        cachedGatewayBot = .init(info: converted, fetchedAt: Date())
+        // Cache gateway URL for 24 hours (rarely changes)
+        let urlExpiresAt = Date().addingTimeInterval(24 * 3600)
+        // Use reset_after to determine session limit cache expiration (with 5 second buffer)
+        let sessionExpiresAt = Date().addingTimeInterval(Double(info.session_start_limit.reset_after) / 1000.0 + 5.0)
+        cachedGatewayBot = .init(info: converted, gatewayUrl: info.url, fetchedAt: Date(), urlExpiresAt: urlExpiresAt, sessionExpiresAt: sessionExpiresAt)
         return converted
     }
 
@@ -359,8 +380,12 @@ public actor ShardingGatewayManager {
                 log(.info, "Shard \(shardId) connected successfully")
                 // Apply per-shard presence if configured
                 if let presence = await presenceForShard(shardId, total: totalShards) {
-                    await handle.client.setPresence(status: presence.status, activities: presence.activities, afk: presence.afk, since: presence.since)
-                    log(.debug, "Applied presence to shard \(shardId)")
+                    do {
+                        try await handle.client.setPresence(status: presence.status, activities: presence.activities, afk: presence.afk, since: presence.since)
+                        log(.debug, "Applied presence to shard \(shardId)")
+                    } catch {
+                        log(.warning, "Failed to apply presence to shard \(shardId): \(error)")
+                    }
                 }
                 return
             } catch {

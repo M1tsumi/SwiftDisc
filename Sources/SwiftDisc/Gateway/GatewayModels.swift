@@ -12,17 +12,11 @@ public struct ThreadMembersUpdate: Codable, Hashable, Sendable {
     public let removed_member_ids: [UserID]?
 }
 
-public struct VoiceState: Codable, Hashable, Sendable {
-    public let guild_id: GuildID?
-    public let channel_id: ChannelID?
-    public let user_id: UserID
-    public let session_id: String
-}
-
-public struct VoiceServerUpdate: Codable, Hashable, Sendable {
-    public let token: String
+public struct ThreadListSync: Codable, Hashable, Sendable {
     public let guild_id: GuildID
-    public let endpoint: String?
+    public let channel_ids: [ChannelID]
+    public let threads: [Channel]
+    public let members: [ThreadMember]
 }
 
 public enum GatewayOpcode: Int, Codable, Sendable {
@@ -30,13 +24,13 @@ public enum GatewayOpcode: Int, Codable, Sendable {
     case heartbeat = 1
     case presenceUpdate = 3
     case identify = 2
-    case voiceStateUpdate = 4
     case resume = 6
     case reconnect = 7
     case requestGuildMembers = 8
     case invalidSession = 9
     case hello = 10
     case heartbeatAck = 11
+    case rateLimited = 12
 }
 
 public struct GatewayPayload<D: Codable>: Codable {
@@ -64,8 +58,6 @@ public enum DiscordEvent: Hashable, Sendable {
     case channelUpdate(Channel)
     case channelDelete(Channel)
     case interactionCreate(Interaction)
-    case voiceStateUpdate(VoiceState)
-    case voiceServerUpdate(VoiceServerUpdate)
     case guildMemberAdd(GuildMemberAdd)
     case guildMemberRemove(GuildMemberRemove)
     case guildMemberUpdate(GuildMemberUpdate)
@@ -92,6 +84,11 @@ public enum DiscordEvent: Hashable, Sendable {
     case threadDelete(Channel)
     case threadMemberUpdate(ThreadMember)
     case threadMembersUpdate(ThreadMembersUpdate)
+    case threadListSync(ThreadListSync)
+    // Application Commands
+    case applicationCommandPermissionsUpdate(ApplicationCommandPermissionsUpdate)
+    // Channel Info
+    case channelInfo(Channel)
     // Scheduled Events
     case guildScheduledEventCreate(GuildScheduledEvent)
     case guildScheduledEventUpdate(GuildScheduledEvent)
@@ -116,6 +113,8 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementCreate(Entitlement)
     case entitlementUpdate(Entitlement)
     case entitlementDelete(Entitlement)
+    // Session events
+    case sessionInvalidated
 }
 
 public struct MessageDelete: Codable, Hashable, Sendable {
@@ -162,7 +161,7 @@ public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
 
 public struct ReadyEvent: Codable, Hashable, Sendable {
     public let user: User
-    public let session_id: String?
+    public let session_id: String
 }
 
 // Note: Guild model lives in Sources/SwiftDisc/Models/Guild.swift
@@ -483,3 +482,18 @@ public struct SoundboardSound: Codable, Hashable, Sendable {
 // MARK: - Entitlements
 
 // Entitlement model in Models/Monetization.swift
+
+// MARK: - Application Commands
+
+public struct ApplicationCommandPermissionsUpdate: Codable, Hashable, Sendable {
+    public let id: CommandID
+    public let application_id: ApplicationID
+    public let guild_id: GuildID
+    public let permissions: [ApplicationCommandPermissions]
+}
+
+public struct ApplicationCommandPermissions: Codable, Hashable, Sendable {
+    public let id: CommandID
+    public let type: Int
+    public let permissions: String
+}

@@ -21,8 +21,19 @@ public struct DiscordConfiguration: Sendable {
     public var enableGatewayDecodeDiagnostics: Bool
     /// Called whenever the REST limiter updates bucket state or enters a wait.
     public var onRateLimit: RateLimitHandler?
+    /// Gateway transport compression: none, zlib-stream, or zstd-stream
+    public enum GatewayCompression: Sendable {
+        case none
+        case zlibStream
+        case zstdStream
+    }
+    public var gatewayCompression: GatewayCompression
+    /// Enable payload compression in Identify payload
+    public var gatewayPayloadCompression: Bool
+    /// Large threshold for guild member count (default 50)
+    public var gatewayLargeThreshold: Int?
 
-    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableVoiceExperimental: Bool = false, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil) {
+    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableVoiceExperimental: Bool = false, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil) {
         self.apiBaseURL = apiBaseURL
         self.apiVersion = apiVersion
         self.gatewayBaseURL = gatewayBaseURL
@@ -30,6 +41,9 @@ public struct DiscordConfiguration: Sendable {
         self.enableVoiceExperimental = enableVoiceExperimental
         self.enableGatewayDecodeDiagnostics = enableGatewayDecodeDiagnostics
         self.onRateLimit = onRateLimit
+        self.gatewayCompression = gatewayCompression
+        self.gatewayPayloadCompression = gatewayPayloadCompression
+        self.gatewayLargeThreshold = gatewayLargeThreshold
     }
 
     var restBase: URL { apiBaseURL.appendingPathComponent("v\(apiVersion)") }
