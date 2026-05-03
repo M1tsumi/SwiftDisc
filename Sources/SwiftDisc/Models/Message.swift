@@ -57,10 +57,16 @@ public struct ChannelMention: Codable, Hashable, Sendable {
 }
 
 public struct MessageReference: Codable, Hashable, Sendable {
-    public let message_id: MessageID? = nil
-    public let channel_id: ChannelID? = nil
-    public let guild_id: GuildID? = nil
-    public let fail_if_not_exists: Bool? = nil
+    public let message_id: MessageID?
+    public let channel_id: ChannelID?
+    public let guild_id: GuildID?
+    public let fail_if_not_exists: Bool?
+    public init(message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+        self.message_id = message_id
+        self.channel_id = channel_id
+        self.guild_id = guild_id
+        self.fail_if_not_exists = fail_if_not_exists
+    }
 }
 
 public struct MessageActivity: Codable, Hashable, Sendable {

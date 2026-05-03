@@ -166,8 +166,8 @@ public extension DiscordClient {
                 components: payload.components,
                 tts: payload.tts,
                 flags: payload.flags,
-                files: files,
-                poll: payload.poll
+                poll: payload.poll,
+                files: files
             )
         }
         return try await sendMessage(
