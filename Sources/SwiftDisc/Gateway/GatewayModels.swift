@@ -486,14 +486,14 @@ public struct SoundboardSound: Codable, Hashable, Sendable {
 // MARK: - Application Commands
 
 public struct ApplicationCommandPermissionsUpdate: Codable, Hashable, Sendable {
-    public let id: CommandID
+    public let id: ApplicationCommandID
     public let application_id: ApplicationID
     public let guild_id: GuildID
     public let permissions: [ApplicationCommandPermissions]
 }
 
 public struct ApplicationCommandPermissions: Codable, Hashable, Sendable {
-    public let id: CommandID
+    public let id: ApplicationCommandID
     public let type: Int
     public let permissions: String
 }

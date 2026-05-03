@@ -32,7 +32,7 @@ public struct WebhookClient: Sendable {
     }()
     
     // Rate limiter: Discord allows 5 webhook executions per second per webhook
-    private static let rateLimiter = RateLimiter()
+    private static let rateLimiter = WebhookRateLimiter()
 
     // MARK: - Init
 
@@ -60,7 +60,7 @@ public struct WebhookClient: Sendable {
         
         let idParts = idStr.split(separator: "-").joined()
         guard let idVal = UInt64(idParts) else { return nil }
-        self.id = WebhookID(idVal)
+        self.id = WebhookID(String(idVal))
         self.token = token
     }
 
@@ -262,7 +262,7 @@ public struct WebhookClient: Sendable {
 
 /// Simple rate limiter for webhook requests.
 /// Discord allows 5 webhook executions per second per webhook.
-private actor RateLimiter {
+private actor WebhookRateLimiter {
     private var timestamps: [Date] = []
     private let maxRequests: Int = 5
     private let window: TimeInterval = 1.0 // 1 second window

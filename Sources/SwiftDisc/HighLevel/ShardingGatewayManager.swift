@@ -136,6 +136,10 @@ public actor ShardingGatewayManager {
     private var guildsByShard: [Int: Set<String>] = [:]
     private var isShuttingDown: Bool = false
 
+    private func setShuttingDown() {
+        isShuttingDown = true
+    }
+
     public func shards() async -> [ShardHandle] { shardHandles }
     public func shard(id: Int) async -> ShardHandle? { shardHandles.first { $0.id == id } }
 
@@ -187,9 +191,9 @@ public actor ShardingGatewayManager {
     public func connect() async throws {
         // Prepare unified events
         self.eventStream = AsyncStream<ShardedEvent> { continuation in
-            continuation.onTermination = { @Sendable _ in
+            continuation.onTermination = { _ in
                 // Clean up resources when stream terminates
-                self.isShuttingDown = true
+                Task { await self.setShuttingDown() }
             }
             self.eventContinuation = continuation
         }

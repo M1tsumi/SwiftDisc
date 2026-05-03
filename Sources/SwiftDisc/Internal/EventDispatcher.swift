@@ -108,6 +108,10 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: channel.id)
             if let cb = await client.onChannelDelete { await cb(channel) }
 
+        // MARK: Voice
+        // Voice events are not currently modeled in DiscordEvent enum
+        // These are handled via raw events if needed
+
         // MARK: Threads
         case .threadCreate(let ch):
             await client.cache.upsert(channel: ch)

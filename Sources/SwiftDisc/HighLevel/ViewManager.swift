@@ -73,7 +73,7 @@ public actor ViewManager {
                     let msg = try await client.getMessage(channelId: channelId, messageId: messageId)
                     if let comps = msg.components {
                         let disabled = disableComponents(comps)
-                        try? await client.editMessage(channelId: channelId, messageId: messageId, components: disabled)
+                        _ = try? await client.editMessage(channelId: channelId, messageId: messageId, components: disabled)
                     }
                 } catch {
                     print("[ViewManager] Failed to disable components for view '\(id)' (msg:\(messageId)): \(error)")
@@ -155,6 +155,14 @@ public actor ViewManager {
                 return .button(.init(style: btn.style, label: btn.label, custom_id: btn.custom_id, url: btn.url, disabled: true))
             case .select(let sel):
                 return .select(.init(custom_id: sel.custom_id, options: sel.options, placeholder: sel.placeholder, min_values: sel.min_values, max_values: sel.max_values, disabled: true))
+            case .userSelect(let us):
+                return .userSelect(.init(custom_id: us.custom_id, placeholder: us.placeholder, min_values: us.min_values, max_values: us.max_values, disabled: true, default_values: us.default_values))
+            case .roleSelect(let rs):
+                return .roleSelect(.init(custom_id: rs.custom_id, placeholder: rs.placeholder, min_values: rs.min_values, max_values: rs.max_values, disabled: true, default_values: rs.default_values))
+            case .mentionableSelect(let ms):
+                return .mentionableSelect(.init(custom_id: ms.custom_id, placeholder: ms.placeholder, min_values: ms.min_values, max_values: ms.max_values, disabled: true, default_values: ms.default_values))
+            case .channelSelect(let cs):
+                return .channelSelect(.init(custom_id: cs.custom_id, placeholder: cs.placeholder, min_values: cs.min_values, max_values: cs.max_values, disabled: true, channel_types: cs.channel_types, default_values: cs.default_values))
             case .textInput(let ti):
                 return .textInput(ti)
             case .label(let l):

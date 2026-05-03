@@ -24,7 +24,7 @@ public actor CommandRouter {
     ///     try await next(ctx)
     /// }
     /// ```
-    public typealias Middleware = @Sendable (Context, next: @Sendable (Context) async throws -> Void) async throws -> Void
+    public typealias Middleware = @Sendable (Context, _ next: @Sendable (Context) async throws -> Void) async throws -> Void
 
     /// Per-invocation context provided to every command handler.
     public struct Context: Sendable {

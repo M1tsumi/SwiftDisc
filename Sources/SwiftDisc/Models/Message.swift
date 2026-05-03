@@ -151,17 +151,6 @@ public struct PartialEmoji: Codable, Hashable, Sendable {
     public let animated: Bool?
 }
 
-public struct StickerItem: Codable, Hashable, Sendable {
-    public let id: StickerID
-    public let name: String
-    public let format_type: Int
-    public let description: String?
-    public let tags: String?
-    public let type: Int?
-    public let available: Bool?
-    public let guild_id: GuildID?
-}
-
 // MARK: - Reply API
 
 public extension Message {

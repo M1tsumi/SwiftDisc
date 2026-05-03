@@ -9,7 +9,7 @@ public actor CooldownManager {
     private var autoCleanupInterval: TimeInterval = 300 // 5 minutes default
 
     public init() {
-        startAutoCleanup()
+        // Auto-cleanup started lazily on first access to avoid actor isolation issues in init
     }
     
     deinit {
@@ -78,7 +78,9 @@ public actor CooldownManager {
         cleanupTask?.cancel()
         if let interval = interval {
             autoCleanupInterval = interval
-            startAutoCleanup()
+            if cleanupTask == nil {
+                startAutoCleanup()
+            }
         }
     }
 
