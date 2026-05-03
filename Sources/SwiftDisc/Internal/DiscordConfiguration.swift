@@ -14,8 +14,6 @@ public struct DiscordConfiguration: Sendable {
     public var gatewayBaseURL: URL
     public var maxUploadBytes: Int // Per-file upload limit used before sending multipart requests.
     public typealias RateLimitHandler = @Sendable (RateLimitEvent) -> Void
-    /// Enables voice features. Keep this off unless your bot joins voice channels.
-    public var enableVoiceExperimental: Bool
     /// Enables extra gateway decode logs with opcode/event context.
     /// Turn this on when payloads drift and you need to see what failed to decode.
     public var enableGatewayDecodeDiagnostics: Bool
@@ -33,12 +31,11 @@ public struct DiscordConfiguration: Sendable {
     /// Large threshold for guild member count (default 50)
     public var gatewayLargeThreshold: Int?
 
-    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableVoiceExperimental: Bool = false, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil) {
+    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil) {
         self.apiBaseURL = apiBaseURL
         self.apiVersion = apiVersion
         self.gatewayBaseURL = gatewayBaseURL
         self.maxUploadBytes = maxUploadBytes
-        self.enableVoiceExperimental = enableVoiceExperimental
         self.enableGatewayDecodeDiagnostics = enableGatewayDecodeDiagnostics
         self.onRateLimit = onRateLimit
         self.gatewayCompression = gatewayCompression

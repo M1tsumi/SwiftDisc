@@ -151,13 +151,6 @@ actor EventDispatcher {
                 await s.handle(interaction: interaction, client: client)
             }
 
-        // MARK: Voice
-        case .voiceStateUpdate(let state):
-            await client._internalOnVoiceStateUpdate(state)
-            if let cb = await client.onVoiceStateUpdate { await cb(state) }
-
-        case .voiceServerUpdate(let vsu):
-            await client._internalOnVoiceServerUpdate(vsu)
 
         // MARK: Presence & Typing
         case .typingStart(let ev):

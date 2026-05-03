@@ -11,7 +11,6 @@ public actor DiscordClient {
     private let gateway: GatewayClient
     private let configuration: DiscordConfiguration
     private let dispatcher = EventDispatcher()
-    private let voiceClient: VoiceClient?
     private var currentUserId: UserID?
 
     private let eventStream: AsyncStream<DiscordEvent>
@@ -62,6 +61,7 @@ public actor DiscordClient {
     public var onThreadCreate: (@Sendable (Channel) async -> Void)?
     public var onThreadUpdate: (@Sendable (Channel) async -> Void)?
     public var onThreadDelete: (@Sendable (Channel) async -> Void)?
+    public var onThreadMembersUpdate: (@Sendable (ThreadMembersUpdate) async -> Void)?
 
     // -- Roles --
     public var onGuildRoleCreate: (@Sendable (GuildRoleCreate) async -> Void)?
@@ -75,11 +75,11 @@ public actor DiscordClient {
 
     // -- Interactions --
     public var onInteractionCreate: (@Sendable (Interaction) async -> Void)?
+    public var onApplicationCommandPermissionsUpdate: (@Sendable (ApplicationCommandPermissionsUpdate) async -> Void)?
 
     // -- Presence & Typing --
     public var onTypingStart: (@Sendable (TypingStart) async -> Void)?
     public var onPresenceUpdate: (@Sendable (PresenceUpdate) async -> Void)?
-    public var onVoiceStateUpdate: (@Sendable (VoiceState) async -> Void)?
 
     // -- Scheduled Events --
     public var onGuildScheduledEventCreate: (@Sendable (GuildScheduledEvent) async -> Void)?
@@ -119,24 +119,12 @@ public actor DiscordClient {
     public var autocomplete: AutocompleteRouter?
     public func useAutocomplete(_ router: AutocompleteRouter) { self.autocomplete = router }
 
-    public var onVoiceFrame: (@Sendable (VoiceFrame) async -> Void)?
 
     public init(token: String, configuration: DiscordConfiguration = .init()) {
         self.token = token
         self.http = HTTPClient(token: token, configuration: configuration)
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration
-        if configuration.enableVoiceExperimental {
-            self.voiceClient = VoiceClient(
-                token: token,
-                configuration: configuration,
-                sendVoiceStateUpdate: { [weak gateway] (guildId, channelId, selfMute, selfDeaf) async in
-                    await gateway?.updateVoiceState(guildId: guildId, channelId: channelId, selfMute: selfMute, selfDeaf: selfDeaf)
-                }
-            )
-        } else {
-            self.voiceClient = nil
-        }
 
         var localContinuation: AsyncStream<DiscordEvent>.Continuation!
         self.eventStream = AsyncStream<DiscordEvent> { continuation in
@@ -564,16 +552,6 @@ public actor DiscordClient {
     
 
     public func loginAndConnect(intents: GatewayIntents) async throws {
-        if let vc = self.voiceClient {
-            vc.setOnFrame { [weak self] frame in
-                guard let self else { return }
-                Task { [frame] in
-                    if let cb = await self.onVoiceFrame {
-                        await cb(frame)
-                    }
-                }
-            }
-        }
         try await gateway.connect(intents: intents, shard: nil, eventSink: { [weak self] event in
             guard let self = self else { return }
             Task { await self.dispatcher.process(event: event, client: self) }
@@ -582,16 +560,6 @@ public actor DiscordClient {
 
     // Connects this client as a specific shard index.
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
-        if let vc = self.voiceClient {
-            vc.setOnFrame { [weak self] frame in
-                guard let self else { return }
-                Task { [frame] in
-                    if let cb = await self.onVoiceFrame {
-                        await cb(frame)
-                    }
-                }
-            }
-        }
         try await gateway.connect(intents: intents, shard: (index, total), eventSink: { [weak self] event in
             guard let self = self else { return }
             Task { await self.dispatcher.process(event: event, client: self) }
@@ -684,49 +652,12 @@ public actor DiscordClient {
         await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
     }
 
-    // MARK: - REST: Voice State (HTTP, no Gateway needed)
-
-    /// Fetch the current bot user's voice state in a guild.
-    /// `GET /guilds/{guild.id}/voice-states/@me` — Added 2025-08-05.
-    public func getCurrentUserVoiceState(guildId: GuildID) async throws -> VoiceState {
-        try await http.get(path: "/guilds/\(guildId)/voice-states/@me")
-    }
-
-    /// Fetch another user's voice state in a guild.
-    /// `GET /guilds/{guild.id}/voice-states/{user.id}` — Added 2025-08-05.
-    public func getUserVoiceState(guildId: GuildID, userId: UserID) async throws -> VoiceState {
-        try await http.get(path: "/guilds/\(guildId)/voice-states/\(userId)")
-    }
-
-    public func joinVoice(guildId: GuildID, channelId: ChannelID, selfMute: Bool = false, selfDeaf: Bool = false) async throws {
-        guard let voiceClient else { throw VoiceError.disabled }
-        try await voiceClient.joinVoiceChannel(guildId: guildId, channelId: channelId, selfMute: selfMute, selfDeaf: selfDeaf)
-    }
-
-    public func leaveVoice(guildId: GuildID) async throws {
-        guard let voiceClient else { throw VoiceError.disabled }
-        try await voiceClient.leaveVoiceChannel(guildId: guildId)
-    }
-
-    public func playVoiceOpus(guildId: GuildID, data: Data) async throws {
-        guard let voiceClient else { throw VoiceError.disabled }
-        try await voiceClient.playOpusFrames(guildId: guildId, pcmOrOpusData: data)
-    }
 
     // MARK: - Internal voice wiring used by EventDispatcher
     func _internalSetCurrentUserId(_ id: UserID) async {
         self.currentUserId = id
     }
 
-    func _internalOnVoiceStateUpdate(_ state: VoiceState) async {
-        guard let voiceClient else { return }
-        await voiceClient.onVoiceStateUpdate(state)
-    }
-
-    func _internalOnVoiceServerUpdate(_ vsu: VoiceServerUpdate) async {
-        guard let voiceClient, let userId = self.currentUserId else { return }
-        await voiceClient.onVoiceServerUpdate(vsu, botUserId: userId)
-    }
 
     // MARK: - Internal event emission used by EventDispatcher
     func _internalEmitEvent(_ event: DiscordEvent) {

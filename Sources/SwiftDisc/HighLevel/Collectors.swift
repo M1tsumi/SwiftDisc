@@ -241,22 +241,6 @@ public extension DiscordClient {
         }
     }
     
-    /// A filtered `AsyncStream` that yields voice state update events.
-    func voiceStateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<VoiceState> {
-        AsyncStream { continuation in
-            Task {
-                do {
-                    for await event in self.events {
-                        if case .voiceStateUpdate(let vs) = event { continuation.yield(vs) }
-                    }
-                    continuation.finish()
-                } catch {
-                    onError(error)
-                    continuation.finish()
-                }
-            }
-        }
-    }
     
     /// A filtered `AsyncStream` that yields guild role create events.
     func roleCreateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleCreate> {
