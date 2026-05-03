@@ -24,8 +24,7 @@ actor RateLimiter {
             if greset > now {
                 let delay = greset.timeIntervalSince(now)
                 onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: true, remaining: nil, limit: nil, resetAt: greset, waitedForSeconds: delay))
-                do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
-                catch { throw DiscordError.cancelled }
+                try await backoff(after: delay)
             } else {
                 globalResetAt = nil
             }
@@ -38,8 +37,7 @@ actor RateLimiter {
                 if resetAt > now {
                     let delay = resetAt.timeIntervalSince(now)
                     onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: false, remaining: remaining, limit: limit, resetAt: resetAt, waitedForSeconds: delay))
-                    do { try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000)) }
-                    catch { throw DiscordError.cancelled }
+                    try await backoff(after: delay)
                 }
                 // After reset, clear remaining; let next response headers set correct values
                 buckets[routeKey]?.remaining = nil
@@ -48,13 +46,11 @@ actor RateLimiter {
     }
 
     func updateFromHeaders(routeKey: String, headers: [AnyHashable: Any]) {
+        // Convert headers to lowercase dictionary for efficient lookup
+        let lowercasedHeaders = Dictionary(uniqueKeysWithValues: headers.map { (String(describing: $0.key).lowercased(), $0.value) })
+        
         func header(_ key: String) -> String? {
-            for (k, v) in headers {
-                if String(describing: k).lowercased() == key.lowercased() {
-                    return String(describing: v)
-                }
-            }
-            return nil
+            lowercasedHeaders[key.lowercased()].map { String(describing: $0) }
         }
 
         // Global rate limit
@@ -79,7 +75,42 @@ actor RateLimiter {
         onRateLimit?(RateLimitEvent(routeKey: routeKey, isGlobal: false, remaining: state.remaining, limit: state.limit, resetAt: state.resetAt))
     }
 
-    func backoff(after seconds: TimeInterval) async {
-        try? await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
+    func backoff(after seconds: TimeInterval) async throws(DiscordError) {
+        do {
+            try await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
+        } catch {
+            throw DiscordError.cancelled
+        }
+    }
+
+    // MARK: - State monitoring
+    func getBucketState(routeKey: String) -> BucketState? {
+        buckets[routeKey]
+    }
+
+    func getAllBucketStates() -> [String: BucketState] {
+        buckets
+    }
+
+    func getGlobalResetAt() -> Date? {
+        globalResetAt
+    }
+
+    // MARK: - Reset/Clear methods
+    func clearBucket(routeKey: String) {
+        buckets.removeValue(forKey: routeKey)
+    }
+
+    func clearAllBuckets() {
+        buckets.removeAll()
+    }
+
+    func resetGlobalRateLimit() {
+        globalResetAt = nil
+    }
+
+    func resetAll() {
+        buckets.removeAll()
+        globalResetAt = nil
     }
 }

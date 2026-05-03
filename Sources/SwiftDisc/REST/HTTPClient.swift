@@ -5,13 +5,14 @@ import FoundationNetworking
 
 private struct APIErrorBody: Decodable { let message: String; let code: Int? }
 
-#if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+#if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
 final class HTTPClient: @unchecked Sendable {
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
     private let rateLimiter: RateLimiter
+    private static let routeKeyRegex = try? NSRegularExpression(pattern: #"/([0-9]{5,})"#, options: [])
 
     deinit {
         // Explicit shutdown avoids libcurl worker-thread crashes during Linux test teardown.
@@ -40,146 +41,102 @@ final class HTTPClient: @unchecked Sendable {
         self.session = URLSession(configuration: config)
     }
 
-    func get<T: Decodable>(path: String) async throws(DiscordError) -> T {
-        try await request(method: "GET", path: path, body: Optional<Data>.none)
+    func get<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+        try await request(method: "GET", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
     /// Fetch raw response bytes without JSON decoding. Useful for non-JSON endpoints (e.g. CSV).
-    func getRaw(path: String) async throws(DiscordError) -> Data {
+    func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> Data {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "GET", path: trimmed)
-        var attempt = 0; let maxAttempts = 4
-        while true {
-            attempt += 1
-            try await rateLimiter.waitTurn(routeKey: routeKey)
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
+            url = buildURLWithQuery(url: url, query: query)
             var req = URLRequest(url: url)
             req.httpMethod = "GET"
-            do {
-                let (data, resp) = try await session.data(for: req)
-                guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
-                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
-                if (200..<300).contains(http.statusCode) { return data }
-                if http.statusCode == 429 {
-                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
-                    await rateLimiter.backoff(after: retryAfter)
-                    if attempt < maxAttempts { continue }
-                }
-                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
-                    await rateLimiter.backoff(after: min(2.0 * pow(2.0, Double(attempt - 1)), 8.0))
-                    continue
-                }
-                if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
-                    throw DiscordError.api(message: apiErr.message, code: apiErr.code)
-                }
-                throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
-            } catch let de as DiscordError {
-                throw de
-            } catch {
-                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
-                if attempt < maxAttempts {
-                    await rateLimiter.backoff(after: min(0.5 * pow(2.0, Double(attempt - 1)), 4.0))
-                    continue
-                }
-                throw DiscordError.network(error)
-            }
+            applyCustomHeaders(req: &req, headers: headers)
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
         }
+        if (200..<300).contains(http.statusCode) { return data }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
-    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func post<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: POST \(path)") }
-        return try await request(method: "POST", path: path, body: data)
+        return try await request(method: "POST", path: path, body: data, query: query, headers: headers)
     }
 
-    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func patch<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PATCH \(path)") }
-        return try await request(method: "PATCH", path: path, body: data)
+        return try await request(method: "PATCH", path: path, body: data, query: query, headers: headers)
     }
 
-    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func put<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PUT \(path)") }
-        return try await request(method: "PUT", path: path, body: data)
+        return try await request(method: "PUT", path: path, body: data, query: query, headers: headers)
     }
 
     // Use this for endpoints that accept an empty PUT and return 204 No Content.
-    func put(path: String) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none)
+    func put(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) {
+        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
-    func delete<T: Decodable>(path: String) async throws(DiscordError) -> T {
-        try await request(method: "DELETE", path: path, body: Optional<Data>.none)
+    func delete<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+        try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
-    func delete(path: String) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none)
+    func delete(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) {
+        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
     private struct EmptyResponse: Decodable {}
 
-    private func request<T: Decodable>(method: String, path: String, body: Data?) async throws(DiscordError) -> T {
+    private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: method, path: trimmed)
-
-        var attempt = 0
-        let maxAttempts = 4
-
-        while true {
-            attempt += 1
-            try await rateLimiter.waitTurn(routeKey: routeKey)
-
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
+            url = buildURLWithQuery(url: url, query: query)
             var req = URLRequest(url: url)
             req.httpMethod = method
             req.httpBody = body
+            applyCustomHeaders(req: &req, headers: headers)
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
+        }
+        if (200..<300).contains(http.statusCode) {
+            do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
+        }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+    }
 
-            do {
-                let (data, resp) = try await session.data(for: req)
-                guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+    // MARK: - Query parameter support
+    private func buildURLWithQuery(url: URL, query: [String: String]?) -> URL {
+        guard let query = query, !query.isEmpty else { return url }
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
+        return components?.url ?? url
+    }
 
-                // Feed response headers back into the limiter so the next request can wait correctly.
-                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
-
-                if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: \(method) \(path)") }
-                }
-
-                // Discord asked us to slow down. Wait and retry.
-                if http.statusCode == 429 {
-                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
-                    await rateLimiter.backoff(after: retryAfter)
-                    if attempt < maxAttempts { continue }
-                }
-
-                // Transient server errors are retried with bounded exponential backoff.
-                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
-                    let backoff = min(2.0 * pow(2.0, Double(attempt - 1)), 8.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-
-                // Prefer Discord's structured error body so callers get useful messages and codes.
-                if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
-                    throw DiscordError.api(message: apiErr.message, code: apiErr.code)
-                }
-                let message = String(data: data, encoding: .utf8) ?? ""
-                throw DiscordError.http(http.statusCode, message)
-            } catch let de as DiscordError {
-                // Keep existing DiscordError values intact instead of wrapping and losing context.
-                throw de
-            } catch {
-                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
-                if attempt < maxAttempts {
-                    let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-                throw DiscordError.network(error)
-            }
+    // MARK: - Custom headers support
+    private func applyCustomHeaders(req: inout URLRequest, headers: [String: String]?) {
+        guard let headers = headers else { return }
+        for (key, value) in headers {
+            req.setValue(value, forHTTPHeaderField: key)
         }
     }
 
@@ -243,131 +200,97 @@ final class HTTPClient: @unchecked Sendable {
     func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "POST", path: trimmed)
-
-        var attempt = 0
-        let maxAttempts = 4
-        while true {
-            attempt += 1
-            try await rateLimiter.waitTurn(routeKey: routeKey)
-
+        for file in files {
+            if file.data.count > configuration.maxUploadBytes {
+                throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
+            }
+        }
+        let boundary = makeBoundary()
+        let jsonData = try? jsonBody.map { try JSONEncoder().encode($0) }
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
-            // Fail fast on oversized uploads before building the multipart body.
-            for file in files {
-                if file.data.count > configuration.maxUploadBytes {
-                    throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
-                }
-            }
-            let boundary = makeBoundary()
-            let jsonData = try? jsonBody.map { try JSONEncoder().encode($0) }
             req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files, boundary: boundary)
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-            do {
-                let (data, resp) = try await session.data(for: req)
-                guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
-                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
-                if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: POST \(path)") }
-                }
-                if http.statusCode == 429 {
-                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
-                    await rateLimiter.backoff(after: retryAfter)
-                    if attempt < maxAttempts { continue }
-                }
-                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
-                    let backoff = min(2.0 * pow(2.0, Double(attempt - 1)), 8.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-                if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
-                    throw DiscordError.api(message: apiErr.message, code: apiErr.code)
-                }
-                let message = String(data: data, encoding: .utf8) ?? ""
-                throw DiscordError.http(http.statusCode, message)
-            } catch let de as DiscordError {
-                throw de
-            } catch {
-                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
-                if attempt < maxAttempts {
-                    let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-                throw DiscordError.network(error)
-            }
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
         }
+        if (200..<300).contains(http.statusCode) {
+            do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: POST \(path)") }
+        }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
     func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "PATCH", path: trimmed)
-
-        var attempt = 0
-        let maxAttempts = 4
-        while true {
-            attempt += 1
-            try await rateLimiter.waitTurn(routeKey: routeKey)
-
+        for file in files ?? [] {
+            if file.data.count > configuration.maxUploadBytes {
+                throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
+            }
+        }
+        let boundary = makeBoundary()
+        let jsonData = try? jsonBody.map { try JSONEncoder().encode($0) }
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
             req.httpMethod = "PATCH"
-            // Fail fast on oversized uploads before building the multipart body.
-            for file in files ?? [] {
-                if file.data.count > configuration.maxUploadBytes {
-                    throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
-                }
-            }
-            let boundary = makeBoundary()
-            let jsonData = try? jsonBody.map { try JSONEncoder().encode($0) }
-            let body = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files ?? [], boundary: boundary)
-            req.httpBody = body
+            req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files ?? [], boundary: boundary)
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
+        }
+        if (200..<300).contains(http.statusCode) {
+            do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: PATCH \(path)") }
+        }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+    }
 
-            do {
-                let (data, resp) = try await session.data(for: req)
-                guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
-                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
-                if (200..<300).contains(http.statusCode) {
-                    do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: PATCH \(path)") }
-                }
-                if http.statusCode == 429 {
-                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
-                    await rateLimiter.backoff(after: retryAfter)
-                    if attempt < maxAttempts { continue }
-                }
-                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
-                    let backoff = min(2.0 * pow(2.0, Double(attempt - 1)), 8.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-                if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
-                    throw DiscordError.api(message: apiErr.message, code: apiErr.code)
-                }
-                let message = String(data: data, encoding: .utf8) ?? ""
-                throw DiscordError.http(http.statusCode, message)
-            } catch let de as DiscordError {
-                throw de
-            } catch {
-                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
-                if attempt < maxAttempts {
-                    let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
-                    await rateLimiter.backoff(after: backoff)
-                    continue
-                }
-                throw DiscordError.network(error)
+    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let routeKey = makeRouteKey(method: "DELETE", path: trimmed)
+        for file in files ?? [] {
+            if file.data.count > configuration.maxUploadBytes {
+                throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
             }
         }
+        let boundary = makeBoundary()
+        let jsonData = try? jsonBody.map { try JSONEncoder().encode($0) }
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+            var url = configuration.restBase
+            url.appendPathComponent(trimmed)
+            var req = URLRequest(url: url)
+            req.httpMethod = "DELETE"
+            req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files ?? [], boundary: boundary)
+            req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
+        }
+        if (200..<300).contains(http.statusCode) {
+            do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: DELETE \(path)") }
+        }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
     private func makeRouteKey(method: String, path: String) -> String {
         // Normalize resource IDs to keep related routes in the same limiter bucket.
-        let pattern = #"/([0-9]{5,})"#
         let replaced: String
-        if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+        if let regex = Self.routeKeyRegex {
             let range = NSRange(location: 0, length: path.utf16.count)
             replaced = regex.stringByReplacingMatches(in: 
                 path, options: [], range: range, withTemplate: "/:id")
@@ -378,15 +301,64 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
-        // Retry-After header is preferred; some payloads also include retry_after in JSON.
-        for (k, v) in headers {
-            if String(describing: k).lowercased() == "retry-after" {
-                if let secs = Double(String(describing: v)) { return secs }
-            }
+        // Check Retry-After header first (more efficient single lookup)
+        if let retryAfterValue = headers["Retry-After"] ?? headers["retry-after"] {
+            if let secs = Double(String(describing: retryAfterValue)) { return secs }
         }
+        // Fallback to JSON body
         struct RL: Decodable { let retry_after: Double? }
         if let rl = try? JSONDecoder().decode(RL.self, from: data), let s = rl.retry_after { return s }
         return 1.0
+    }
+
+    private func executeWithRetry<T>(routeKey: String, maxAttempts: Int = 4, _ request: () async throws(DiscordError) -> (data: Data, http: HTTPURLResponse)) async throws(DiscordError) -> (data: Data, http: HTTPURLResponse) {
+        var attempt = 0
+        while true {
+            attempt += 1
+            try await rateLimiter.waitTurn(routeKey: routeKey)
+            
+            do {
+                let (data, http) = try await request()
+                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
+                
+                // Handle 429 rate limit errors
+                if http.statusCode == 429 {
+                    let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
+                    try await rateLimiter.backoff(after: retryAfter)
+                    if attempt < maxAttempts { continue }
+                    if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+                        throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+                    }
+                    throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+                }
+                
+                // Handle 5xx server errors with exponential backoff
+                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
+                    let backoff = min(2.0 * pow(2.0, Double(attempt - 1)), 8.0)
+                    try await rateLimiter.backoff(after: backoff)
+                    continue
+                }
+                
+                return (data, http)
+            } catch let de as DiscordError {
+                if (de as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
+                if attempt < maxAttempts {
+                    let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
+                    try await rateLimiter.backoff(after: backoff)
+                    continue
+                }
+                throw de
+            } catch {
+                // Handle non-DiscordError network errors
+                if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
+                if attempt < maxAttempts {
+                    let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
+                    try await rateLimiter.backoff(after: backoff)
+                    continue
+                }
+                throw DiscordError.network(error)
+            }
+        }
     }
 }
 
@@ -434,6 +406,10 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
+    }
+
+    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
