@@ -190,11 +190,18 @@ public enum MessageComponent: Codable, Hashable, Sendable {
 
     public struct DefaultSelectValue: Codable, Hashable, Sendable {
         public let id: String
-        public let type: String
-        public init(id: String, type: String) {
+        public let type: DefaultSelectValueType
+        public init(id: String, type: DefaultSelectValueType) {
             self.id = id
             self.type = type
         }
+    }
+
+    public enum DefaultSelectValueType: String, Codable, Hashable, Sendable {
+        case user
+        case role
+        case channel
+        case mentionable
     }
 
     public struct TextInput: Codable, Hashable, Sendable {

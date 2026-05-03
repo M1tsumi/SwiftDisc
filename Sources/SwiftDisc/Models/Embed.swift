@@ -18,7 +18,7 @@ public struct Embed: Codable, Hashable, Sendable {
     public let provider: Provider?
     public let timestamp: String?
 
-    public struct Image: Codable, Hashable, Sendable { public let url: String; public let proxy_url: String?; public let height: Int?; public let width: Int? }
+    public struct Image: Codable, Hashable, Sendable { public let url: String?; public let proxy_url: String?; public let height: Int?; public let width: Int? }
     public struct Provider: Codable, Hashable, Sendable { public let name: String?; public let url: String? }
 
     public init(title: String? = nil, description: String? = nil, url: String? = nil, color: Int? = nil, footer: Footer? = nil, author: Author? = nil, fields: [Field]? = nil, thumbnail: Image? = nil, image: Image? = nil, video: Video? = nil, provider: Provider? = nil, timestamp: String? = nil) {
