@@ -135,8 +135,8 @@ actor GatewayClient {
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
-        Task.detached { [weak self] in
-            await self?.readLoop(eventSink: eventSink)
+        Task.detached {
+            await self.readLoop(eventSink: eventSink)
         }
         // Wait until the socket is actually usable before returning to callers.
         // Use a single atomic check to avoid race condition with readLoop setting status.
@@ -473,8 +473,7 @@ actor GatewayClient {
 
     private func startHeartbeat() {
         heartbeatTask?.cancel()
-        heartbeatTask = Task { [weak self] in
-            guard let self else { return }
+        heartbeatTask = Task {
             await self.runHeartbeatLoop()
         }
     }

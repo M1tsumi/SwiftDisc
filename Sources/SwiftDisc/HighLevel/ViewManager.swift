@@ -48,7 +48,7 @@ public actor ViewManager {
         views[view.id] = view
         if let t = view.timeout {
             let id = view.id
-            let task = Task.detached { [weak client] in
+            let task = Task.detached {
                 try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                 await self.expireView(id: id, client: client)
             }
@@ -90,8 +90,7 @@ public actor ViewManager {
         Task {
             // do not start twice
             if await listeningTask != nil { return }
-            let task = Task.detached { [weak client] in
-                guard let client else { return }
+            let task = Task.detached {
                 let eventStream = await client.events
                 for await event in eventStream {
                     switch event {

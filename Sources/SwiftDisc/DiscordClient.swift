@@ -552,17 +552,15 @@ public actor DiscordClient {
     
 
     public func loginAndConnect(intents: GatewayIntents) async throws {
-        try await gateway.connect(intents: intents, shard: nil, eventSink: { [weak self] event in
-            guard let self = self else { return }
-            Task { await self.dispatcher.process(event: event, client: self) }
+        try await gateway.connect(intents: intents, shard: nil, eventSink: { event in
+            Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
     // Connects this client as a specific shard index.
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
-        try await gateway.connect(intents: intents, shard: (index, total), eventSink: { [weak self] event in
-            guard let self = self else { return }
-            Task { await self.dispatcher.process(event: event, client: self) }
+        try await gateway.connect(intents: intents, shard: (index, total), eventSink: { event in
+            Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
@@ -630,11 +628,11 @@ public actor DiscordClient {
 
     // Presence updates for status and activity changes.
     public func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
-        try? await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
+        await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
     }
 
     public func setStatus(_ status: String) async {
-        try? await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
+        await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
     }
 
     public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
@@ -645,11 +643,10 @@ public actor DiscordClient {
             details: details,
             timestamps: nil,
             assets: nil,
-            buttons: buttons,
             party: nil,
             secrets: nil
         )
-        try? await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
+        await gateway.setPresence(status: "online", activities: [act], afk: false, since: nil)
     }
 
 

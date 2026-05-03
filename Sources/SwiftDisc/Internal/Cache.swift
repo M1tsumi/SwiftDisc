@@ -37,8 +37,8 @@ public actor Cache {
             || configuration.roleTTL != nil
             || configuration.emojiTTL != nil
         if hasTTL {
-            Task { [weak self] in
-                await self?.startEvictionTaskIfNeeded()
+            Task {
+                await self.startEvictionTaskIfNeeded()
             }
         }
     }
@@ -160,8 +160,8 @@ public actor Cache {
 
     private func startEvictionTaskIfNeeded() {
         guard evictionTask == nil else { return }
-        evictionTask = Task { [weak self] in
-            await self?.evictionLoop()
+        evictionTask = Task {
+            await self.evictionLoop()
         }
     }
 
