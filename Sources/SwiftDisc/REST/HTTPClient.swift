@@ -311,7 +311,7 @@ final class HTTPClient: @unchecked Sendable {
         return 1.0
     }
 
-    private func executeWithRetry<T>(routeKey: String, maxAttempts: Int = 4, _ request: () async throws(DiscordError) -> (data: Data, http: HTTPURLResponse)) async throws(DiscordError) -> (data: Data, http: HTTPURLResponse) {
+    private func executeWithRetry(routeKey: String, maxAttempts: Int = 4, _ request: () async throws(DiscordError) -> (data: Data, http: HTTPURLResponse)) async throws(DiscordError) -> (data: Data, http: HTTPURLResponse) {
         var attempt = 0
         while true {
             attempt += 1
