@@ -36,6 +36,7 @@ public struct Channel: Codable, Hashable, Sendable {
     public let default_thread_emoji: DefaultReaction?
     public let newly_created: Bool?
     public let permission_overwrites: [PermissionOverwrite]?
+    public let last_pin_timestamp: String?
 
     public init(
         id: ChannelID,
@@ -72,7 +73,8 @@ public struct Channel: Codable, Hashable, Sendable {
         default_forum_layout: Int? = nil,
         default_thread_emoji: DefaultReaction? = nil,
         newly_created: Bool? = nil,
-        permission_overwrites: [PermissionOverwrite]? = nil
+        permission_overwrites: [PermissionOverwrite]? = nil,
+        last_pin_timestamp: String? = nil
     ) {
         self.id = id
         self.type = type
@@ -109,6 +111,7 @@ public struct Channel: Codable, Hashable, Sendable {
         self.default_thread_emoji = default_thread_emoji
         self.newly_created = newly_created
         self.permission_overwrites = permission_overwrites
+        self.last_pin_timestamp = last_pin_timestamp
     }
 }
 

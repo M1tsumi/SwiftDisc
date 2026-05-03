@@ -4,6 +4,10 @@ public enum MessageComponent: Codable, Hashable, Sendable {
     case actionRow(ActionRow)
     case button(Button)
     case select(SelectMenu)
+    case userSelect(UserSelectMenu)
+    case roleSelect(RoleSelectMenu)
+    case mentionableSelect(MentionableSelectMenu)
+    case channelSelect(ChannelSelectMenu)
     case textInput(TextInput)
     /// Label layout component for modals (type 21). Introduced 2026-02-12 alongside new modal components.
     case label(Label)
@@ -23,6 +27,10 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         case 1: self = .actionRow(try ActionRow(from: decoder))
         case 2: self = .button(try Button(from: decoder))
         case 3: self = .select(try SelectMenu(from: decoder))
+        case 5: self = .userSelect(try UserSelectMenu(from: decoder))
+        case 6: self = .roleSelect(try RoleSelectMenu(from: decoder))
+        case 7: self = .mentionableSelect(try MentionableSelectMenu(from: decoder))
+        case 8: self = .channelSelect(try ChannelSelectMenu(from: decoder))
         case 4: self = .textInput(try TextInput(from: decoder))
         case 21: self = .label(try Label(from: decoder))
         case 22: self = .radioGroup(try RadioGroup(from: decoder))
@@ -40,6 +48,10 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         case .actionRow(let row): try row.encode(to: encoder)
         case .button(let btn): try btn.encode(to: encoder)
         case .select(let sel): try sel.encode(to: encoder)
+        case .userSelect(let us): try us.encode(to: encoder)
+        case .roleSelect(let rs): try rs.encode(to: encoder)
+        case .mentionableSelect(let ms): try ms.encode(to: encoder)
+        case .channelSelect(let cs): try cs.encode(to: encoder)
         case .textInput(let ti): try ti.encode(to: encoder)
         case .label(let l): try l.encode(to: encoder)
         case .radioGroup(let rg): try rg.encode(to: encoder)
@@ -99,6 +111,89 @@ public enum MessageComponent: Codable, Hashable, Sendable {
             self.min_values = min_values
             self.max_values = max_values
             self.disabled = disabled
+        }
+    }
+
+    public struct UserSelectMenu: Codable, Hashable, Sendable {
+        public let type: Int = 5
+        public let custom_id: String
+        public let placeholder: String?
+        public let min_values: Int?
+        public let max_values: Int?
+        public let disabled: Bool?
+        public let default_values: [DefaultSelectValue]?
+        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
+            self.custom_id = custom_id
+            self.placeholder = placeholder
+            self.min_values = min_values
+            self.max_values = max_values
+            self.disabled = disabled
+            self.default_values = default_values
+        }
+    }
+
+    public struct RoleSelectMenu: Codable, Hashable, Sendable {
+        public let type: Int = 6
+        public let custom_id: String
+        public let placeholder: String?
+        public let min_values: Int?
+        public let max_values: Int?
+        public let disabled: Bool?
+        public let default_values: [DefaultSelectValue]?
+        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
+            self.custom_id = custom_id
+            self.placeholder = placeholder
+            self.min_values = min_values
+            self.max_values = max_values
+            self.disabled = disabled
+            self.default_values = default_values
+        }
+    }
+
+    public struct MentionableSelectMenu: Codable, Hashable, Sendable {
+        public let type: Int = 7
+        public let custom_id: String
+        public let placeholder: String?
+        public let min_values: Int?
+        public let max_values: Int?
+        public let disabled: Bool?
+        public let default_values: [DefaultSelectValue]?
+        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
+            self.custom_id = custom_id
+            self.placeholder = placeholder
+            self.min_values = min_values
+            self.max_values = max_values
+            self.disabled = disabled
+            self.default_values = default_values
+        }
+    }
+
+    public struct ChannelSelectMenu: Codable, Hashable, Sendable {
+        public let type: Int = 8
+        public let custom_id: String
+        public let placeholder: String?
+        public let min_values: Int?
+        public let max_values: Int?
+        public let disabled: Bool?
+        public let channel_types: [Int]?
+        public let default_values: [DefaultSelectValue]?
+        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, channel_types: [Int]? = nil, default_values: [DefaultSelectValue]? = nil) {
+            self.custom_id = custom_id
+            self.placeholder = placeholder
+            self.min_values = min_values
+            self.max_values = max_values
+            self.disabled = disabled
+            self.channel_types = channel_types
+            self.default_values = default_values
+        }
+    }
+
+    public struct DefaultSelectValue: Codable, Hashable, Sendable {
+        public let id: String
+        public let type: String
+        public init(id: String, type: String) {
+            self.id = id
+            self.type = type
         }
     }
 

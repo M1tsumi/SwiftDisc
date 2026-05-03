@@ -14,4 +14,5 @@ public struct Attachment: Codable, Hashable, Sendable {
     // Voice message metadata
     public let duration_secs: Double?
     public let waveform: String?
+    public let flags: Int?
 }
