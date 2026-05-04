@@ -243,7 +243,8 @@ public struct RequestGuildMembers: Codable, Hashable, Sendable {
     }
 }
 
-public struct Presence: Codable, Hashable, Sendable {}
+public struct Presence: Codable, Hashable, Sendable {
+}
 
 public struct GuildMembersChunk: Codable, Hashable, Sendable {
     public let guild_id: GuildID

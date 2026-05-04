@@ -101,7 +101,8 @@ final class HTTPClient: @unchecked Sendable {
         let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
-    private struct EmptyResponse: Decodable, Sendable {}
+    private struct EmptyResponse: Decodable, Sendable {
+    }
 
     private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
