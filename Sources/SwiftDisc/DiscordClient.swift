@@ -553,7 +553,9 @@ public actor DiscordClient {
 
     // Opens a direct-message channel with the target user.
     public func createDM(recipientId: UserID) async throws -> Channel {
-        struct Body: Encodable, Sendable { let recipient_id: UserID }
+        struct Body: Encodable, Sendable {
+            let recipient_id: UserID
+        }
         return try await http.post(path: "/users/@me/channels", body: Body(recipient_id: recipientId))
     }
 
