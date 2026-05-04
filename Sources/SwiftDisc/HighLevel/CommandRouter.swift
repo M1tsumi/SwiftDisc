@@ -212,7 +212,7 @@ public actor CommandRouter {
 
     private func executeMiddleware(_ context: Context, handler: Handler, at index: Int) async throws {
         if index < middleware.count {
-            try await middleware[index](context) { ctx in
+            try await middleware[index](context) { @Sendable ctx in
                 try await executeMiddleware(ctx, handler: handler, at: index + 1)
             }
         } else {
