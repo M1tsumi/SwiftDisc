@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ButtonBuilder {
+public struct ButtonBuilder: Sendable {
     public enum Style: Int {
         case primary = 1
         case secondary = 2
@@ -29,7 +29,7 @@ public struct ButtonBuilder {
     }
 }
 
-public struct SelectMenuBuilder {
+public struct SelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.SelectMenu.Option] = []
     private var placeholder: String?
@@ -54,7 +54,7 @@ public struct SelectMenuBuilder {
 
 // MARK: - String Select Menu Builder (Discord's newer select menu type)
 
-public struct StringSelectMenuBuilder {
+public struct StringSelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.SelectMenu.Option] = []
     private var placeholder: String?
@@ -79,7 +79,7 @@ public struct StringSelectMenuBuilder {
 
 // MARK: - Channel Select Menu Builder
 
-public struct ChannelSelectMenuBuilder {
+public struct ChannelSelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var placeholder: String?
     private var channelTypes: [Int]?
@@ -97,7 +97,7 @@ public struct ChannelSelectMenuBuilder {
     }
 }
 
-public struct TextInputBuilder {
+public struct TextInputBuilder: Sendable {
     private var customId: String = ""
     private var style: MessageComponent.TextInput.Style = .short
     private var label: String = ""
@@ -131,7 +131,7 @@ public struct TextInputBuilder {
 
 // MARK: - Modal Component Builders (added 2026)
 
-public struct LabelBuilder {
+public struct LabelBuilder: Sendable {
     private var label: String = ""
     private var description: String?
     private var components: [MessageComponent]?
@@ -144,7 +144,7 @@ public struct LabelBuilder {
     }
 }
 
-public struct RadioGroupBuilder {
+public struct RadioGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.RadioGroup.RadioOption] = []
     private var required: Bool?
@@ -161,7 +161,7 @@ public struct RadioGroupBuilder {
     }
 }
 
-public struct CheckboxGroupBuilder {
+public struct CheckboxGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.CheckboxGroup.CheckboxOption] = []
     private var minValues: Int?
@@ -180,7 +180,7 @@ public struct CheckboxGroupBuilder {
     }
 }
 
-public struct CheckboxBuilder {
+public struct CheckboxBuilder: Sendable {
     private var customId: String = ""
     private var required: Bool?
     private var isDefault: Bool?
@@ -193,7 +193,7 @@ public struct CheckboxBuilder {
     }
 }
 
-public struct FileUploadBuilder {
+public struct FileUploadBuilder: Sendable {
     private var customId: String = ""
     private var label: String = ""
     private var minLength: Int?
@@ -212,14 +212,14 @@ public struct FileUploadBuilder {
     }
 }
 
-public struct ActionRowBuilder {
+public struct ActionRowBuilder: Sendable {
     private var components: [MessageComponent] = []
     public init() {}
     public func add(_ component: MessageComponent) -> ActionRowBuilder { var c = self; c.components.append(component); return c }
     public func build() -> MessageComponent { .actionRow(.init(components: components)) }
 }
 
-public struct ComponentsBuilder {
+public struct ComponentsBuilder: Sendable {
     private var rows: [MessageComponent.ActionRow] = []
     public init() {}
     public mutating func row(_ configure: (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {

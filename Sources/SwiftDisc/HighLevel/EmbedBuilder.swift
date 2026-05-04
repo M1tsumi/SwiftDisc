@@ -14,7 +14,7 @@ import Foundation
 ///     .timestamp(Date())
 ///     .build()
 /// ```
-public struct EmbedBuilder {
+public struct EmbedBuilder: Sendable {
     private var title: String?
     private var description: String?
     private var url: String?

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ActivityBuilder {
+public struct ActivityBuilder: Sendable {
     private var name: String
     private var type: Int = 0 // 0 = playing, 2 = listening, 3 = watching, etc.
     private var state: String?
