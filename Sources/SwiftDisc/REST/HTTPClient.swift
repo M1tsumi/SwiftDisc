@@ -3,7 +3,10 @@ import Foundation
 import FoundationNetworking
 #endif
 
-private struct APIErrorBody: Decodable { let message: String; let code: Int? }
+private struct APIErrorBody: Decodable, Sendable {
+    let message: String
+    let code: Int?
+}
 
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
@@ -98,7 +101,7 @@ final class HTTPClient: @unchecked Sendable {
         let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
     }
 
-    private struct EmptyResponse: Decodable {}
+    private struct EmptyResponse: Decodable, Sendable {}
 
     private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -186,7 +189,10 @@ final class HTTPClient: @unchecked Sendable {
                 append("Content-Disposition: form-data; name=\"attachments\"\r\n")
                 append("Content-Type: application/json\r\n\r\n")
                 // Attachment descriptors must use the same index as files[idx].
-                struct Desc: Encodable { let id: Int; let description: String }
+                struct Desc: Encodable, Sendable {
+                    let id: Int
+                    let description: String
+                }
                 let descObj = [Desc(id: idx, description: desc)]
                 if let data = try? JSONEncoder().encode(descObj) { body.append(data) }
                 append(lineBreak)

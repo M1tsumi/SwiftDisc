@@ -1355,7 +1355,10 @@ public actor DiscordClient {
         public let name: String
         public let description: String
         public let required: Bool?
-        public struct Choice: Codable, Sendable { public let name: String; public let value: String }
+        public struct Choice: Codable, Sendable {
+            public let name: String
+            public let value: String
+        }
         public let choices: [Choice]?
         public init(type: ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil, choices: [Choice]? = nil) {
             self.type = type
@@ -1584,7 +1587,7 @@ public actor DiscordClient {
     // MARK: - REST: Community Invite Target Users (Added 2026-01-13)
 
     /// Response from the Get Target Users Job Status endpoint.
-    public struct InviteTargetUsersJobStatus: Codable {
+    public struct InviteTargetUsersJobStatus: Codable, Sendable {
         public let job_id: String
         public let status: String  // e.g. "pending", "complete", "failed"
         public let invite_code: String
@@ -2018,7 +2021,7 @@ public actor DiscordClient {
 
     /// Consume an entitlement (used for one-time items).
     public func consumeEntitlement(applicationId: ApplicationID, entitlementId: EntitlementID) async throws {
-        struct Empty: Codable {}
+        struct Empty: Codable, Sendable {}
         let _: Empty = try await http.post(path: "/applications/\(applicationId)/entitlements/\(entitlementId)/consume", body: Empty())
     }
 

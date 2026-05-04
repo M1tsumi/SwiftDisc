@@ -1,7 +1,7 @@
 import Foundation
 
 public actor Cache {
-    public struct Configuration {
+    public struct Configuration: Sendable {
         public var userTTL: TimeInterval?
         public var channelTTL: TimeInterval?
         public var guildTTL: TimeInterval?
@@ -15,7 +15,10 @@ public actor Cache {
 
     public var configuration: Configuration
 
-    private struct TimedValue<V> { let value: V; let storedAt: Date }
+    private struct TimedValue<V> {
+        let value: V
+        let storedAt: Date
+    }
 
     private var usersTimed: [UserID: TimedValue<User>] = [:]
     private var channelsTimed: [ChannelID: TimedValue<Channel>] = [:]

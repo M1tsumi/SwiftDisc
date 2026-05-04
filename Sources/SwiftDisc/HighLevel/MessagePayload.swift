@@ -218,7 +218,7 @@ public extension DiscordClient {
         let type: InteractionResponseType = deferred
             ? .deferredChannelMessageWithSource
             : .channelMessageWithSource
-        struct DataObj: Encodable {
+        struct DataObj: Encodable, Sendable {
             let content: String?
             let embeds: [Embed]?
             let components: [MessageComponent]?
@@ -226,7 +226,7 @@ public extension DiscordClient {
             let tts: Bool?
             let allowed_mentions: AllowedMentions?
         }
-        struct Body: Encodable { let type: Int; let data: DataObj }
+        struct Body: Encodable, Sendable { let type: Int; let data: DataObj }
         let data = DataObj(
             content: payload.content,
             embeds: payload.embeds,
@@ -235,7 +235,7 @@ public extension DiscordClient {
             tts: payload.tts,
             allowed_mentions: payload.allowedMentions
         )
-        struct Ack: Decodable {}
+        struct Ack: Decodable, Sendable {}
         let _: Ack = try await http.post(
             path: "/interactions/\(interaction.id)/\(interaction.token)/callback",
             body: Body(type: type.rawValue, data: data)

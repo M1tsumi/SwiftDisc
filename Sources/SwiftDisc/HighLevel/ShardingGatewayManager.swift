@@ -8,12 +8,12 @@ public struct ShardedEvent: Sendable {
 }
 
 public actor ShardingGatewayManager {
-    public struct Configuration {
-        public enum ShardCountStrategy {
+    public struct Configuration: Sendable {
+        public enum ShardCountStrategy: Sendable {
             case automatic
             case exact(Int)
         }
-        public struct PresenceConfig {
+        public struct PresenceConfig: Sendable {
             public let activities: [PresenceUpdatePayload.Activity]
             public let status: String
             public let afk: Bool
@@ -25,21 +25,21 @@ public actor ShardingGatewayManager {
                 self.since = since
             }
         }
-        public enum ConnectionDelay {
+        public enum ConnectionDelay: Sendable {
             case none
             case staggered(interval: TimeInterval)
         }
         public let shardCount: ShardCountStrategy
         public let identifyConcurrency: IdentifyConcurrency
-        public let makeIntents: ((Int, Int) -> GatewayIntents)?
-        public let makePresence: ((Int, Int) -> PresenceConfig)?
+        public let makeIntents: (@Sendable (Int, Int) -> GatewayIntents)?
+        public let makePresence: (@Sendable (Int, Int) -> PresenceConfig)?
         public let fallbackPresence: PresenceConfig?
         public let connectionDelay: ConnectionDelay
         public init(
             shardCount: ShardCountStrategy = .automatic,
             identifyConcurrency: IdentifyConcurrency = .respectDiscordLimits,
-            makeIntents: ((Int, Int) -> GatewayIntents)? = nil,
-            makePresence: ((Int, Int) -> PresenceConfig)? = nil,
+            makeIntents: (@Sendable (Int, Int) -> GatewayIntents)? = nil,
+            makePresence: (@Sendable (Int, Int) -> PresenceConfig)? = nil,
             fallbackPresence: PresenceConfig? = nil,
             connectionDelay: ConnectionDelay = .none
         ) {
@@ -52,9 +52,9 @@ public actor ShardingGatewayManager {
         }
     }
 
-    public enum IdentifyConcurrency { case respectDiscordLimits }
+    public enum IdentifyConcurrency: Sendable { case respectDiscordLimits }
 
-    public struct ShardStatusSnapshot {
+    public struct ShardStatusSnapshot: Sendable {
         public let shardId: Int
         public let status: String
         public let heartbeatLatencyMs: Int?
@@ -66,7 +66,7 @@ public actor ShardingGatewayManager {
         public let lastResumeAttemptAt: Date?
         public let lastResumeSuccessAt: Date?
     }
-    public struct ShardingHealth {
+    public struct ShardingHealth: Sendable {
         public let totalShards: Int
         public let readyShards: Int
         public let connectingShards: Int
@@ -90,7 +90,12 @@ public actor ShardingGatewayManager {
     private var cachedGatewayBot: GatewayBotCache?
 
     private struct GatewayBotInfo: Decodable {
-        struct SessionStartLimit: Decodable { let total: Int; let remaining: Int; let reset_after: Int; let max_concurrency: Int }
+        struct SessionStartLimit: Decodable, Sendable {
+            let total: Int
+            let remaining: Int
+            let reset_after: Int
+            let max_concurrency: Int
+        }
         let url: String
         let shards: Int
         let session_start_limit: SessionStartLimit
@@ -339,7 +344,11 @@ public actor ShardingGatewayManager {
                 // Session limits might have expired, refresh them
                 if Date() >= cached.sessionExpiresAt {
                     let http = HTTPClient(token: token, configuration: httpConfiguration)
-                    struct Info: Decodable { let url: String; let shards: Int; let session_start_limit: GatewayBotInfo.SessionStartLimit }
+                    struct Info: Decodable, Sendable {
+                        let url: String
+                        let shards: Int
+                        let session_start_limit: GatewayBotInfo.SessionStartLimit
+                    }
                     let info: Info = try await http.get(path: "/gateway/bot")
                     let converted = GatewayBotInfo(url: cached.gatewayUrl, shards: info.shards, session_start_limit: .init(total: info.session_start_limit.total, remaining: info.session_start_limit.remaining, reset_after: info.session_start_limit.reset_after, max_concurrency: info.session_start_limit.max_concurrency))
                     let sessionExpiresAt = Date().addingTimeInterval(Double(info.session_start_limit.reset_after) / 1000.0 + 5.0)
@@ -350,7 +359,11 @@ public actor ShardingGatewayManager {
             }
         }
         let http = HTTPClient(token: token, configuration: httpConfiguration)
-        struct Info: Decodable { let url: String; let shards: Int; let session_start_limit: GatewayBotInfo.SessionStartLimit }
+        struct Info: Decodable, Sendable {
+            let url: String
+            let shards: Int
+            let session_start_limit: GatewayBotInfo.SessionStartLimit
+        }
         let info: Info = try await http.get(path: "/gateway/bot")
         let converted = GatewayBotInfo(url: info.url, shards: info.shards, session_start_limit: .init(total: info.session_start_limit.total, remaining: info.session_start_limit.remaining, reset_after: info.session_start_limit.reset_after, max_concurrency: info.session_start_limit.max_concurrency))
         // Cache gateway URL for 24 hours (rarely changes)
@@ -383,12 +396,8 @@ public actor ShardingGatewayManager {
                 log(.info, "Shard \(shardId) connected successfully")
                 // Apply per-shard presence if configured
                 if let presence = await presenceForShard(shardId, total: totalShards) {
-                    do {
-                        try await handle.client.setPresence(status: presence.status, activities: presence.activities, afk: presence.afk, since: presence.since)
-                        log(.debug, "Applied presence to shard \(shardId)")
-                    } catch {
-                        log(.warning, "Failed to apply presence to shard \(shardId): \(error)")
-                    }
+                    await handle.client.setPresence(status: presence.status, activities: presence.activities, afk: presence.afk, since: presence.since)
+                    log(.debug, "Applied presence to shard \(shardId)")
                 }
                 return
             } catch {
