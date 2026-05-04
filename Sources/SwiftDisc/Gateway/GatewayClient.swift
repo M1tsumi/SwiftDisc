@@ -135,7 +135,7 @@ actor GatewayClient {
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
-        Task.detached {
+        Task.detached @Sendable {
             await self.readLoop(eventSink: eventSink)
         }
         // Wait until the socket is actually usable before returning to callers.

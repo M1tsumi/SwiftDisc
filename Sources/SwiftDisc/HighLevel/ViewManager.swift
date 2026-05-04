@@ -48,7 +48,7 @@ public actor ViewManager {
         views[view.id] = view
         if let t = view.timeout {
             let id = view.id
-            let task = Task.detached {
+            let task = Task.detached @Sendable {
                 try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                 await self.expireView(id: id, client: client)
             }
