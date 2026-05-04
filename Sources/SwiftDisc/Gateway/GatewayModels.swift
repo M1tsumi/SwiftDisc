@@ -311,11 +311,26 @@ public struct ResumePayload: Codable, Sendable {
 }
 
 public struct PresenceUpdatePayload: Codable, Sendable {
-    public struct Activity: Codable, Hashable, Sendable {
-        public struct Timestamps: Codable, Hashable, Sendable { public let start: Int64?; public let end: Int64? }
-        public struct Assets: Codable, Hashable, Sendable { public let large_image: String?; public let large_text: String?; public let small_image: String?; public let small_text: String? }
-        public struct Party: Codable, Hashable, Sendable { public let id: String?; public let size: [Int]? }
-        public struct Secrets: Codable, Hashable, Sendable { public let join: String?; public let spectate: String?; public let match: String? }
+    public struct Activity: Codable, Hashable, Sendable { 
+        public struct Timestamps: Codable, Hashable, Sendable { 
+            public let start: Int64?
+            public let end: Int64?
+        }
+        public struct Assets: Codable, Hashable, Sendable { 
+            public let large_image: String?
+            public let large_text: String?
+            public let small_image: String?
+            public let small_text: String?
+        }
+        public struct Party: Codable, Hashable, Sendable { 
+            public let id: String?
+            public let size: [Int]?
+        }
+        public struct Secrets: Codable, Hashable, Sendable { 
+            public let join: String?
+            public let spectate: String?
+            public let match: String?
+        }
         public let name: String
         public let type: Int
         public let state: String?

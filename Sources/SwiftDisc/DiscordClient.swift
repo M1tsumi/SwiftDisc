@@ -527,8 +527,25 @@ public actor DiscordClient {
     }
 
     // Typed request/response payloads for guild prune operations.
-    public struct PrunePayload: Codable, Sendable { public let days: Int; public let compute_prune_count: Bool?; public let include_roles: [RoleID]? }
-    public struct PruneResponse: Codable, Sendable { public let pruned: Int }
+    public struct PrunePayload: Codable, Sendable {
+        public let days: Int
+        public let compute_prune_count: Bool?
+        public let include_roles: [RoleID]?
+
+        public init(days: Int, compute_prune_count: Bool? = nil, include_roles: [RoleID]? = nil) {
+            self.days = days
+            self.compute_prune_count = compute_prune_count
+            self.include_roles = include_roles
+        }
+    }
+
+    public struct PruneResponse: Codable, Sendable {
+        public let pruned: Int
+
+        public init(pruned: Int) {
+            self.pruned = pruned
+        }
+    }
 
     public func getGuildPruneCount(guildId: GuildID, days: Int = 7) async throws -> Int {
         let resp: PruneResponse = try await http.get(path: "/guilds/\(guildId)/prune?days=\(days)")
@@ -604,16 +621,40 @@ public actor DiscordClient {
             let sticker_ids: [StickerID]?
             let attachments: [PartialAttachment]?
             let poll: Poll?
+
+            public init(
+                content: String? = nil,
+                embeds: [Embed]? = nil,
+                components: [MessageComponent]? = nil,
+                allowedMentions: AllowedMentions? = nil,
+                messageReference: MessageReference? = nil,
+                tts: Bool? = nil,
+                flags: Int? = nil,
+                stickerIds: [StickerID]? = nil,
+                attachments: [PartialAttachment]? = nil,
+                poll: Poll? = nil
+            ) {
+                self.content = content
+                self.embeds = embeds
+                self.components = components
+                self.allowed_mentions = allowedMentions
+                self.message_reference = messageReference
+                self.tts = tts
+                self.flags = flags
+                self.sticker_ids = stickerIds
+                self.attachments = attachments
+                self.poll = poll
+            }
         }
         let body = Body(
             content: content,
             embeds: embeds,
             components: components,
-            allowed_mentions: allowedMentions,
-            message_reference: messageReference,
+            allowedMentions: allowedMentions,
+            messageReference: messageReference,
             tts: tts,
             flags: flags,
-            sticker_ids: stickerIds,
+            stickerIds: stickerIds,
             attachments: attachments,
             poll: poll
         )
@@ -773,7 +814,7 @@ public actor DiscordClient {
         if let h = has { queryParams.append("has=\(h)") }
         if let l = limit { queryParams.append("limit=\(l)") }
         if let o = offset { queryParams.append("offset=\(o)") }
-        let queryString = queryParams.isEmpty ? "" : "?\(queryParams.joined(separator: "&"))"
+        let queryString = queryParams.isEmpty ? "" : "?" + queryParams.joined(separator: "&")
         return try await http.get(path: "/guilds/\(guildId)/messages/search\(queryString)")
     }
 
@@ -940,8 +981,61 @@ public actor DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/roles/\(roleId)")
     }
 
-    public struct RoleCreate: Codable, Sendable { public let name: String; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
-    public struct RoleUpdate: Codable, Sendable { public let name: String?; public let permissions: String?; public let color: Int?; public let hoist: Bool?; public let icon: String?; public let unicode_emoji: String?; public let mentionable: Bool? }
+    public struct RoleCreate: Codable, Sendable {
+        public let name: String
+        public let permissions: String?
+        public let color: Int?
+        public let hoist: Bool?
+        public let icon: String?
+        public let unicode_emoji: String?
+        public let mentionable: Bool?
+
+        public init(
+            name: String,
+            permissions: String? = nil,
+            color: Int? = nil,
+            hoist: Bool? = nil,
+            icon: String? = nil,
+            unicode_emoji: String? = nil,
+            mentionable: Bool? = nil
+        ) {
+            self.name = name
+            self.permissions = permissions
+            self.color = color
+            self.hoist = hoist
+            self.icon = icon
+            self.unicode_emoji = unicode_emoji
+            self.mentionable = mentionable
+        }
+    }
+
+    public struct RoleUpdate: Codable, Sendable {
+        public let name: String?
+        public let permissions: String?
+        public let color: Int?
+        public let hoist: Bool?
+        public let icon: String?
+        public let unicode_emoji: String?
+        public let mentionable: Bool?
+
+        public init(
+            name: String? = nil,
+            permissions: String? = nil,
+            color: Int? = nil,
+            hoist: Bool? = nil,
+            icon: String? = nil,
+            unicode_emoji: String? = nil,
+            mentionable: Bool? = nil
+        ) {
+            self.name = name
+            self.permissions = permissions
+            self.color = color
+            self.hoist = hoist
+            self.icon = icon
+            self.unicode_emoji = unicode_emoji
+            self.mentionable = mentionable
+        }
+    }
 
     public func modifyRole(guildId: GuildID, roleId: RoleID, payload: RoleUpdate) async throws -> Role {
         try await http.patch(path: "/guilds/\(guildId)/roles/\(roleId)", body: payload)
@@ -1623,8 +1717,8 @@ public actor DiscordClient {
         if let actionType { qs.append("action_type=\(actionType)") }
         if let before { qs.append("before=\(before)") }
         if let limit { qs.append("limit=\(limit)") }
-        if !qs.isEmpty { path += "?" + qs.joined(separator: "&") }
-        return try await http.get(path: path)
+        let q = qs.isEmpty ? "" : "?" + qs.joined(separator: "&")
+        return try await http.get(path: path + q)
     }
 
     // MARK: - REST: AutoModeration
@@ -1807,8 +1901,8 @@ public actor DiscordClient {
         if withMember { qs.append("with_member=true") }
         if let before { qs.append("before=\(before)") }
         if let after { qs.append("after=\(after)") }
-        if !qs.isEmpty { path += "?" + qs.joined(separator: "&") }
-        return try await http.get(path: path)
+        let q = qs.isEmpty ? "" : "?" + qs.joined(separator: "&")
+        return try await http.get(path: path + q)
     }
 
     // MARK: - REST: Stage Instances
