@@ -327,7 +327,8 @@ final class HTTPClient: @unchecked Sendable {
             
             do {
                 let (data, http) = try await request()
-                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: http.allHeaderFields)
+                let headerStrings = Dictionary(uniqueKeysWithValues: http.allHeaderFields.map { (String(describing: $0.key), String(describing: $0.value)) })
+                await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: headerStrings)
                 
                 // Handle 429 rate limit errors
                 if http.statusCode == 429 {

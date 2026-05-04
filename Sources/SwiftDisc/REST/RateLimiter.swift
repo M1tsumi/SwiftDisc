@@ -3,7 +3,7 @@ import Foundation
 actor RateLimiter {
     typealias RateLimitHandler = @Sendable (RateLimitEvent) -> Void
 
-    struct BucketState {
+    struct BucketState: Sendable {
         var resetAt: Date?
         var remaining: Int?
         var limit: Int?
@@ -45,12 +45,12 @@ actor RateLimiter {
         }
     }
 
-    func updateFromHeaders(routeKey: String, headers: [AnyHashable: Any]) {
+    func updateFromHeaders(routeKey: String, headers: [String: String]) {
         // Convert headers to lowercase dictionary for efficient lookup
-        let lowercasedHeaders = Dictionary(uniqueKeysWithValues: headers.map { (String(describing: $0.key).lowercased(), $0.value) })
+        let lowercasedHeaders = Dictionary(uniqueKeysWithValues: headers.map { ($0.key.lowercased(), $0.value) })
         
         func header(_ key: String) -> String? {
-            lowercasedHeaders[key.lowercased()].map { String(describing: $0) }
+            lowercasedHeaders[key.lowercased()]
         }
 
         // Global rate limit
