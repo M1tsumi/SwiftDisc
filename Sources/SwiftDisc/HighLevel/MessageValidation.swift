@@ -26,7 +26,7 @@ public enum MessageValidation {
     public static let maxPollQuestionLength = 300
 
     /// Errors that can occur during message validation.
-    public enum ValidationError: Error, LocalizedDescription {
+    public enum ValidationError: Error, LocalizedDescription, Sendable {
         case contentTooLong(length: Int, max: Int)
         case tooManyEmbeds(count: Int, max: Int)
         case tooManyActionRows(count: Int, max: Int)
@@ -192,6 +192,6 @@ public enum MessageValidation {
 }
 
 /// Protocol for types that can provide localized error descriptions.
-public protocol LocalizedDescription {
+public protocol LocalizedDescription: Sendable {
     var errorDescription: String? { get }
 }

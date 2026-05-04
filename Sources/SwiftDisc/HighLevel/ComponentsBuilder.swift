@@ -126,7 +126,7 @@ public struct TextInputBuilder: Sendable {
         try validate()
         return .textInput(.init(custom_id: customId, style: style, label: label, min_length: minLength, max_length: maxLength, required: required, value: value, placeholder: placeholder))
     }
-    public enum ValidationError: Error { case invalidLength, missingLabel, missingCustomId, maxLengthExceeded(max: Int) }
+    public enum ValidationError: Error, Sendable { case invalidLength, missingLabel, missingCustomId, maxLengthExceeded(max: Int) }
 }
 
 // MARK: - Modal Component Builders (added 2026)

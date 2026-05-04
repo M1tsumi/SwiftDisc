@@ -173,7 +173,7 @@ public struct EmbedBuilder: Sendable {
         return build()
     }
     
-    public enum ValidationError: Error, LocalizedDescription {
+    public enum ValidationError: Error, LocalizedDescription, Sendable {
         case titleTooLong(length: Int, max: Int)
         case descriptionTooLong(length: Int, max: Int)
         case tooManyFields(count: Int, max: Int)
