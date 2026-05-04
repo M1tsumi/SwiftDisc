@@ -368,7 +368,7 @@ public actor ShardingGatewayManager {
             attempt += 1
             do {
                 log(.info, "Shard \(shardId) connecting (attempt \(attempt))")
-                try await handle.client.connect(intents: intents, shard: (shardId, totalShards)) { event in
+                try await handle.client.connect(intents: intents, shard: (shardId, totalShards)) { @Sendable event in
                     Task @Sendable { [self] in
                         let latency = await handle.client.heartbeatLatency()
                         if case let .guildCreate(guild) = event {
