@@ -15,7 +15,7 @@ public actor Cache {
 
     public var configuration: Configuration
 
-    private struct TimedValue<V> {
+    private struct TimedValue<V>: Sendable {
         let value: V
         let storedAt: Date
     }

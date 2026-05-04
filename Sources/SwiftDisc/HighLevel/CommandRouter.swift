@@ -220,7 +220,7 @@ public actor CommandRouter {
         }
     }
 
-    private struct HandlerWrapper {
+    private struct HandlerWrapper: Sendable {
         let handler: Handler
         let description: String?
     }
