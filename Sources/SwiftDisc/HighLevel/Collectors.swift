@@ -10,7 +10,7 @@ public extension DiscordClient {
     ///   - filter: predicate to decide whether to yield a message
     ///   - onError: optional error handler called when the event stream encounters an error
     func createMessageCollector(channelId: ChannelID? = nil, timeout: TimeInterval? = nil, maxMessages: Int? = nil, filter: @escaping @Sendable (Message) -> Bool = { _ in true }, onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Message> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             var collected = 0
             let task = Task @Sendable {
                 do {
@@ -49,7 +49,7 @@ public extension DiscordClient {
     /// Stream guild members via the paginated `listGuildMembers` endpoint.
     /// This yields members lazily and avoids manual paging logic.
     func streamGuildMembers(guildId: GuildID, pageLimit: Int = 1000, onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMember> {
-        AsyncStream(GuildMember.self) { continuation in
+        AsyncStream(GuildMember.self) { @Sendable continuation in
             Task @Sendable {
                 var after: UserID? = nil
                 var lastSeen: String? = nil
@@ -86,7 +86,7 @@ public extension DiscordClient {
     /// }
     /// ```
     func messageEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Message> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -103,7 +103,7 @@ public extension DiscordClient {
 
     /// A filtered `AsyncStream` that yields every `MessageReactionAdd` event.
     func reactionAddEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<MessageReactionAdd> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -122,7 +122,7 @@ public extension DiscordClient {
     ///
     /// Useful for bots that handle interactions outside of `SlashCommandRouter`.
     func interactionEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Interaction> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -139,7 +139,7 @@ public extension DiscordClient {
 
     /// A filtered `AsyncStream` that yields `GuildMemberAdd` events.
     func memberAddEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMemberAdd> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -156,7 +156,7 @@ public extension DiscordClient {
 
     /// A filtered `AsyncStream` that yields `GuildMemberRemove` events.
     func memberRemoveEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMemberRemove> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -173,7 +173,7 @@ public extension DiscordClient {
 
     /// A filtered `AsyncStream` that yields `PresenceUpdate` events.
     func presenceUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<PresenceUpdate> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -192,7 +192,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields thread create events.
     func threadCreateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -209,7 +209,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields thread update events.
     func threadUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -226,7 +226,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields thread delete events.
     func threadDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -244,7 +244,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields guild role create events.
     func roleCreateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleCreate> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -261,7 +261,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields guild role update events.
     func roleUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleUpdate> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -278,7 +278,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields guild role delete events.
     func roleDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleDelete> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -295,7 +295,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields guild emoji update events.
     func emojiUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildEmojisUpdate> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -312,7 +312,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields typing start events.
     func typingStartEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<TypingStart> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -329,7 +329,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields message update events.
     func messageUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Message> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {
@@ -346,7 +346,7 @@ public extension DiscordClient {
     
     /// A filtered `AsyncStream` that yields message delete events.
     func messageDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<MessageDelete> {
-        AsyncStream { continuation in
+        AsyncStream { @Sendable continuation in
             Task @Sendable {
                 do {
                     for await event in self.events {

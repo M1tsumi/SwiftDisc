@@ -127,7 +127,7 @@ public actor DiscordClient {
         self.configuration = configuration
 
         var localContinuation: AsyncStream<DiscordEvent>.Continuation!
-        self.eventStream = AsyncStream<DiscordEvent> { continuation in
+        self.eventStream = AsyncStream<DiscordEvent> { @Sendable continuation in
             continuation.onTermination = { _ in }
             localContinuation = continuation
         }
@@ -814,7 +814,7 @@ public actor DiscordClient {
     /// Stream pinned messages for a channel using the paginated pins endpoint.
     /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
-        AsyncStream(Message.self) { continuation in
+        AsyncStream(Message.self) { @Sendable continuation in
             Task @Sendable {
                 var after: MessageID? = nil
                 var lastSeen: String? = nil

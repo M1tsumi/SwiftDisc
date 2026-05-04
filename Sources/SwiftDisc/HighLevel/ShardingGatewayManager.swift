@@ -195,7 +195,7 @@ public actor ShardingGatewayManager {
 
     public func connect() async throws {
         // Prepare unified events
-        self.eventStream = AsyncStream<ShardedEvent> { continuation in
+        self.eventStream = AsyncStream<ShardedEvent> { @Sendable continuation in
             continuation.onTermination = { _ in
                 // Clean up resources when stream terminates
                 Task @Sendable { await self.setShuttingDown() }
@@ -262,7 +262,7 @@ public actor ShardingGatewayManager {
             log(.warning, "events(for:) invalid shardId \(shardId). Valid range: 0..<\(total)")
             return AsyncStream { $0.finish() }
         }
-        return AsyncStream { continuation in
+        return AsyncStream { @Sendable continuation in
             Task @Sendable {
                 for await ev in self.events {
                     if ev.shardId == shardId { continuation.yield(ev) }
