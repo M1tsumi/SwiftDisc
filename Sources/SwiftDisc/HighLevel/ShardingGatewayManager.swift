@@ -114,7 +114,7 @@ public actor ShardingGatewayManager {
     public var events: AsyncStream<ShardedEvent> { eventStream }
 
     // Logging
-    private enum LogLevel: String { case info = "INFO", warning = "WARN", error = "ERROR", debug = "DEBUG" }
+    private enum LogLevel: String, Sendable { case info = "INFO", warning = "WARN", error = "ERROR", debug = "DEBUG" }
     private func log(_ level: LogLevel, _ message: @autoclosure () -> String) {
         let ts = ISO8601DateFormatter().string(from: Date())
         print("[SwiftDisc][\(level.rawValue)] \(ts) - \(message())")
