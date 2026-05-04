@@ -96,7 +96,7 @@ public struct WebhookClient: Sendable {
             throw WebhookError.invalidURL(urlStr)
         }
 
-        struct Body: Encodable {
+        struct Body: Encodable, Sendable {
             let content: String?
             let username: String?
             let avatar_url: String?
@@ -157,7 +157,7 @@ public struct WebhookClient: Sendable {
             throw WebhookError.invalidURL(urlStr)
         }
 
-        struct PatchBody: Encodable {
+        struct PatchBody: Encodable, Sendable {
             let content: String?
             let embeds: [Embed]?
             let components: [MessageComponent]?

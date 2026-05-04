@@ -80,7 +80,7 @@ public actor ShardingGatewayManager {
     private let httpConfiguration: DiscordConfiguration
     private let fallbackIntents: GatewayIntents
 
-    private struct GatewayBotCache {
+    private struct GatewayBotCache: Sendable {
         var info: GatewayBotInfo
         var gatewayUrl: String
         var fetchedAt: Date
@@ -89,7 +89,7 @@ public actor ShardingGatewayManager {
     }
     private var cachedGatewayBot: GatewayBotCache?
 
-    private struct GatewayBotInfo: Decodable {
+    private struct GatewayBotInfo: Decodable, Sendable {
         struct SessionStartLimit: Decodable, Sendable {
             let total: Int
             let remaining: Int

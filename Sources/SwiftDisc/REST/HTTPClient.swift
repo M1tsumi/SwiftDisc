@@ -312,7 +312,7 @@ final class HTTPClient: @unchecked Sendable {
             if let secs = Double(String(describing: retryAfterValue)) { return secs }
         }
         // Fallback to JSON body
-        struct RL: Decodable {
+        struct RL: Decodable, Sendable {
             let retry_after: Double?
         }
         if let rl = try? JSONDecoder().decode(RL.self, from: data), let s = rl.retry_after { return s }
