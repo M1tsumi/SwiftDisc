@@ -571,7 +571,7 @@ actor GatewayClient {
 
 // MARK: - Lightweight decode utilities
 
-private struct GatewayOpBox: Codable {
+private struct GatewayOpBox: Codable, Sendable {
     let op: GatewayOpcode
     let t: String?
 }
