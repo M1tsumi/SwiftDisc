@@ -1409,7 +1409,7 @@ public actor DiscordClient {
         let _: Ack = try await http.post(path: "/interactions/\(interactionId)/\(token)/callback", body: body)
     }
 
-    public enum InteractionResponseType: Int, Codable {
+    public enum InteractionResponseType: Int, Codable, Sendable {
         case pong = 1
         case channelMessageWithSource = 4
         case deferredChannelMessageWithSource = 5

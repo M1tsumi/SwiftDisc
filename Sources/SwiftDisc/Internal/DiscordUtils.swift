@@ -14,7 +14,7 @@ public enum EmojiUtils {
     }
 }
 
-public enum TimestampStyle: String {
+public enum TimestampStyle: String, Sendable {
     case shortTime = "t"      // 16:20
     case longTime = "T"       // 16:20:30
     case shortDate = "d"      // 20/04/2021
