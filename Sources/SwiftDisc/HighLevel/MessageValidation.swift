@@ -2,7 +2,7 @@ import Foundation
 
 /// Validation helpers for Discord message payloads to ensure compliance with API limits.
 /// These helpers provide pre-send validation to prevent API errors from invalid messages.
-public enum MessageValidation {
+public enum MessageValidation: Sendable {
     /// Maximum message content length in characters.
     public static let maxContentLength = 2000
     /// Maximum number of embeds per message.

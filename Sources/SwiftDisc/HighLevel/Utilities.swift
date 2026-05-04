@@ -1,7 +1,7 @@
 import Foundation
 
 /// A collection of static utilities for common bot development tasks.
-public enum BotUtils {
+public enum BotUtils: Sendable {
     /// Splits a long string into Discord-safe message chunks.
     ///
     /// Discord enforces a 2000-character message limit. This function splits content

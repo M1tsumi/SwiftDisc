@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Mentions {
+public enum Mentions: Sendable {
     public static func user(_ id: CustomStringConvertible) -> String { "<@\(id)>" }
     public static func userNickname(_ id: CustomStringConvertible) -> String { "<@!\(id)>" }
     public static func channel(_ id: CustomStringConvertible) -> String { "<#\(id)>" }
@@ -8,7 +8,7 @@ public enum Mentions {
     public static func slashCommand(name: String, id: CustomStringConvertible) -> String { "</\(name):\(id)>" }
 }
 
-public enum EmojiUtils {
+public enum EmojiUtils: Sendable {
     public static func custom(name: String, id: CustomStringConvertible, animated: Bool = false) -> String {
         animated ? "<a:\(name):\(id)>" : "<:\(name):\(id)>"
     }
@@ -24,7 +24,7 @@ public enum TimestampStyle: String, Sendable {
     case relativeTime = "R"   // in 2 months
 }
 
-public enum DiscordTimestamp {
+public enum DiscordTimestamp: Sendable {
     public static func format(date: Date = Date(), style: TimestampStyle = .shortDateTime) -> String {
         let seconds = Int(date.timeIntervalSince1970)
         return "<t:\(seconds):\(style.rawValue)>"
@@ -35,7 +35,7 @@ public enum DiscordTimestamp {
     }
 }
 
-public enum MessageFormat {
+public enum MessageFormat: Sendable {
     /// Escapes Discord markdown special characters in a user-provided string
     public static func escapeSpecialCharacters(_ input: String) -> String {
         // Order matters to avoid double-escaping

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ButtonBuilder: Sendable {
-    public enum Style: Int {
+    public enum Style: Int, Sendable {
         case primary = 1
         case secondary = 2
         case success = 3

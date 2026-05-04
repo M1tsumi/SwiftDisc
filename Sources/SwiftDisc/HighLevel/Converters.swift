@@ -1,7 +1,7 @@
 import Foundation
 
 /// Converter utilities for common command argument types.
-public enum Converters {
+public enum Converters: Sendable {
     // MARK: - Snowflake Parsing
     
     /// Parse a raw argument as a Snowflake<T> by accepting plain ids or mention forms like `<@1234>` or `<@!1234>`.

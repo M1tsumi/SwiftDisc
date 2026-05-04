@@ -1,6 +1,6 @@
 import Foundation
 
-public enum PermissionsUtil {
+public enum PermissionsUtil: Sendable {
     // MARK: - Permission Flag Constants
     
     /// Create instant invite
