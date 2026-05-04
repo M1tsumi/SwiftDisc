@@ -351,7 +351,11 @@ final class HTTPClient: @unchecked Sendable {
                 
                 return (data, http)
             } catch let de as DiscordError {
-                if (de as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
+                if case .network(let underlying, _) = de,
+                   let urlError = underlying as? URLError,
+                   urlError.code == .cancelled {
+                    throw DiscordError.cancelled
+                }
                 if attempt < maxAttempts {
                     let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
                     try await rateLimiter.backoff(after: backoff)

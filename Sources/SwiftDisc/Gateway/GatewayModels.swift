@@ -231,7 +231,7 @@ public struct GuildStickersUpdate: Codable, Hashable, Sendable {
 
 // MARK: - Request/Receive Guild Members
 public struct RequestGuildMembers: Codable, Hashable, Sendable {
-    public let op: Int = 8
+    public let op: Int
     public let d: Payload
     public struct Payload: Codable, Hashable, Sendable {
         public let guild_id: GuildID
@@ -240,6 +240,11 @@ public struct RequestGuildMembers: Codable, Hashable, Sendable {
         public let presences: Bool?
         public let user_ids: [UserID]?
         public let nonce: String?
+    }
+
+    public init(d: Payload) {
+        self.op = 8
+        self.d = d
     }
 }
 

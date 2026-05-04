@@ -143,6 +143,13 @@ public struct AllowedMentions: Codable, Hashable, Sendable {
     public let roles: [RoleID]?
     public let users: [UserID]?
     public let replied_user: Bool?
+
+    public init(parse: [String]? = nil, roles: [RoleID]? = nil, users: [UserID]? = nil, replied_user: Bool? = nil) {
+        self.parse = parse
+        self.roles = roles
+        self.users = users
+        self.replied_user = replied_user
+    }
 }
 
 public struct Reaction: Codable, Hashable, Sendable {
