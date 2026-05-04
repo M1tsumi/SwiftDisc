@@ -30,7 +30,7 @@ public final class SlashCommandBuilder {
     }
 
     @discardableResult
-    public func string(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+    public func string(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
         let b = OptionBuilder(type: .string, name: name, description: description, required: required)
         configure?(b)
         options.append(b.build())
@@ -38,7 +38,7 @@ public final class SlashCommandBuilder {
     }
 
     @discardableResult
-    public func integer(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+    public func integer(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
         let b = OptionBuilder(type: .integer, name: name, description: description, required: required)
         configure?(b)
         options.append(b.build())
@@ -46,7 +46,7 @@ public final class SlashCommandBuilder {
     }
 
     @discardableResult
-    public func number(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+    public func number(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
         let b = OptionBuilder(type: .number, name: name, description: description, required: required)
         configure?(b)
         options.append(b.build())

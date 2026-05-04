@@ -222,7 +222,7 @@ public struct ActionRowBuilder: Sendable {
 public struct ComponentsBuilder: Sendable {
     private var rows: [MessageComponent.ActionRow] = []
     public init() {}
-    public mutating func row(_ configure: (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
+    public mutating func row(_ configure: @Sendable (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
         var rb = ActionRowBuilder()
         configure(&rb)
         if case let .actionRow(row) = rb.build() {
