@@ -128,7 +128,7 @@ public actor DiscordClient {
 
         var localContinuation: AsyncStream<DiscordEvent>.Continuation!
         self.eventStream = AsyncStream<DiscordEvent> { @Sendable continuation in
-            continuation.onTermination = { _ in }
+            continuation.onTermination = { @Sendable _ in }
             localContinuation = continuation
         }
         self.eventContinuation = localContinuation

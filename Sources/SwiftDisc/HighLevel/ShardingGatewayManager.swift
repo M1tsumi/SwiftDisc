@@ -196,7 +196,7 @@ public actor ShardingGatewayManager {
     public func connect() async throws {
         // Prepare unified events
         self.eventStream = AsyncStream<ShardedEvent> { @Sendable continuation in
-            continuation.onTermination = { _ in
+            continuation.onTermination = { @Sendable _ in
                 // Clean up resources when stream terminates
                 Task @Sendable { await self.setShuttingDown() }
             }
