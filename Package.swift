@@ -15,7 +15,7 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftDisc",
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v6), .unsafeFlags(["-disable-strict-concurrency"])]
         ),
         // Example executables so contributors can run sample bots quickly with `swift run <name>`.
         .executableTarget(
