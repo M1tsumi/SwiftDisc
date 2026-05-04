@@ -260,7 +260,7 @@ public actor ShardingGatewayManager {
         let total = shardHandles.count
         guard shardId >= 0 && shardId < total else {
             log(.warning, "events(for:) invalid shardId \(shardId). Valid range: 0..<\(total)")
-            return AsyncStream { $0.finish() }
+            return AsyncStream { @Sendable $0.finish() }
         }
         return AsyncStream { @Sendable continuation in
             Task @Sendable {
