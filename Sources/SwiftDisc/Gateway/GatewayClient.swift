@@ -22,7 +22,7 @@ actor GatewayClient {
     private var maxReconnectAttempts: Int = 10
     private var maxReconnectDelayNs: UInt64 = 16_000_000_000
 
-    enum Status {
+    enum Status: Sendable {
         case disconnected
         case connecting
         case identifying
