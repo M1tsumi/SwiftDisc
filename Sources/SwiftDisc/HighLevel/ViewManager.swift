@@ -90,7 +90,7 @@ public actor ViewManager {
         Task @Sendable {
             // do not start twice
             if await listeningTask != nil { return }
-            let task = Task.detached {
+            let task = Task.detached @Sendable {
                 let eventStream = await client.events
                 for await event in eventStream {
                     switch event {
