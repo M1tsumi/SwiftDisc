@@ -3,7 +3,7 @@ import Foundation
 public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async -> Void
 
 /// Pattern matching type for view custom_id routing.
-public enum MatchType {
+public enum MatchType: Sendable {
     case exact
     case prefix
     case regex
