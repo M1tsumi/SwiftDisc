@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Snowflake<T>: Hashable, Codable, CustomStringConvertible, ExpressibleByStringLiteral {
+public struct Snowflake<T>: Hashable, Codable, CustomStringConvertible, ExpressibleByStringLiteral, Sendable {
     public let rawValue: String
     public init(_ raw: String) { self.rawValue = raw }
     public init(stringLiteral value: String) { self.rawValue = value }
