@@ -198,7 +198,7 @@ public actor ShardingGatewayManager {
         self.eventStream = AsyncStream<ShardedEvent> { continuation in
             continuation.onTermination = { _ in
                 // Clean up resources when stream terminates
-                Task { await self.setShuttingDown() }
+                Task @Sendable { await self.setShuttingDown() }
             }
             self.eventContinuation = continuation
         }
@@ -263,25 +263,9 @@ public actor ShardingGatewayManager {
             return AsyncStream { $0.finish() }
         }
         return AsyncStream { continuation in
-            Task {
+            Task @Sendable {
                 for await ev in self.events {
                     if ev.shardId == shardId { continuation.yield(ev) }
-                }
-                continuation.finish()
-            }
-        }
-    }
-
-    public func events(for shardIds: [Int]) -> AsyncStream<ShardedEvent> {
-        guard !shardIds.isEmpty else {
-            log(.debug, "events(for:) called with empty shardIds, returning empty stream")
-            return AsyncStream { $0.finish() }
-        }
-        let set = Set(shardIds)
-        return AsyncStream { continuation in
-            Task {
-                for await ev in self.events {
-                    if set.contains(ev.shardId) { continuation.yield(ev) }
                 }
                 continuation.finish()
             }
@@ -385,7 +369,7 @@ public actor ShardingGatewayManager {
             do {
                 log(.info, "Shard \(shardId) connecting (attempt \(attempt))")
                 try await handle.client.connect(intents: intents, shard: (shardId, totalShards)) { event in
-                    Task { [self] in
+                    Task @Sendable { [self] in
                         let latency = await handle.client.heartbeatLatency()
                         if case let .guildCreate(guild) = event {
                             await self.recordGuild(shardId: shardId, guildId: guild.id.rawValue)

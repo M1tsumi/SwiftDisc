@@ -635,14 +635,14 @@ public actor DiscordClient {
 
     public func loginAndConnect(intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: nil, eventSink: { event in
-            Task { [self] in await self.dispatcher.process(event: event, client: self) }
+            Task @Sendable { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
     // Connects this client as a specific shard index.
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: (index, total), eventSink: { event in
-            Task { [self] in await self.dispatcher.process(event: event, client: self) }
+            Task @Sendable { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
@@ -815,7 +815,7 @@ public actor DiscordClient {
     /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
         AsyncStream(Message.self) { continuation in
-            Task {
+            Task @Sendable {
                 var after: MessageID? = nil
                 var lastSeen: String? = nil
                 while true {

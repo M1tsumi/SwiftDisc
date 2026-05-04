@@ -40,7 +40,7 @@ public actor Cache {
             || configuration.roleTTL != nil
             || configuration.emojiTTL != nil
         if hasTTL {
-            Task {
+            Task @Sendable {
                 await self.startEvictionTaskIfNeeded()
             }
         }
@@ -163,7 +163,7 @@ public actor Cache {
 
     private func startEvictionTaskIfNeeded() {
         guard evictionTask == nil else { return }
-        evictionTask = Task {
+        evictionTask = Task @Sendable {
             await self.evictionLoop()
         }
     }

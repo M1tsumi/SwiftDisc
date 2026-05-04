@@ -473,7 +473,7 @@ actor GatewayClient {
 
     private func startHeartbeat() {
         heartbeatTask?.cancel()
-        heartbeatTask = Task {
+        heartbeatTask = Task @Sendable {
             await self.runHeartbeatLoop()
         }
     }

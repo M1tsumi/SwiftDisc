@@ -87,7 +87,7 @@ public actor ViewManager {
     
     /// Start listening to the client's event stream and route component interactions.
     nonisolated public func start(client: DiscordClient) {
-        Task {
+        Task @Sendable {
             // do not start twice
             if await listeningTask != nil { return }
             let task = Task.detached {
@@ -119,14 +119,14 @@ public actor ViewManager {
             for (pattern, matchType, handler) in view.patterns {
                 switch matchType {
                 case .exact:
-                    if pattern == customId { matched = true; Task { await handler(interaction, client) } }
+                    if pattern == customId { matched = true; Task @Sendable { await handler(interaction, client) } }
                 case .prefix:
-                    if customId.hasPrefix(pattern) { matched = true; Task { await handler(interaction, client) } }
+                    if customId.hasPrefix(pattern) { matched = true; Task @Sendable { await handler(interaction, client) } }
                 case .regex:
                     do {
                         let regex = try NSRegularExpression(pattern: pattern)
                         let range = NSRange(location: 0, length: customId.utf16.count)
-                        if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { await handler(interaction, client) } }
+                        if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task @Sendable { await handler(interaction, client) } }
                     } catch {
                         print("[ViewManager] Invalid regex '\(pattern)' for view '\(vid)': \(error)")
                     }

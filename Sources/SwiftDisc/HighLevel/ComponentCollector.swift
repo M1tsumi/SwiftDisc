@@ -7,7 +7,7 @@ public extension DiscordClient {
         AsyncStream { continuation in
             var collected = 0
 
-            let task = Task {
+            let task = Task @Sendable {
                 for await event in self.events {
                     switch event {
                     case .interactionCreate(let interaction):
@@ -28,7 +28,7 @@ public extension DiscordClient {
             }
 
             if let t = timeout {
-                Task {
+                Task @Sendable {
                     try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                     continuation.finish()
                     task.cancel()

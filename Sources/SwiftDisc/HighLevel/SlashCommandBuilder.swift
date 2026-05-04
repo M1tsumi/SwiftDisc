@@ -1,7 +1,7 @@
 import Foundation
 
-public final class SlashCommandBuilder: Sendable {
-    public final class OptionBuilder: Sendable {
+public final class SlashCommandBuilder: @unchecked Sendable {
+    public final class OptionBuilder: @unchecked Sendable {
         private var option: DiscordClient.ApplicationCommandOption
         private var choices: [DiscordClient.ApplicationCommandOption.Choice] = []
         public init(type: DiscordClient.ApplicationCommandOption.ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil) {
