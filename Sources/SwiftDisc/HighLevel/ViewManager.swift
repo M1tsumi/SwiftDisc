@@ -40,7 +40,17 @@ public actor ViewManager {
     private var views: [String: View] = [:]
     private var expiryTasks: [String: Task<Void, Never>] = [:]
     private var listeningTask: Task<Void, Never>?
-    
+
+    /// Optional error handler invoked when a view handler throws or an error occurs during interaction routing.
+    /// Use this to log errors, send error responses, or implement custom error recovery.
+    ///
+    /// ```swift
+    /// viewManager.onError = { error, viewId, interaction in
+    ///     print("View '\(viewId)' handler failed: \(error)")
+    /// }
+    /// ```
+    public var onError: (@Sendable (Error, String, Interaction) -> Void)?
+
     public init() {}
     
     /// Register a view and schedule expiration if a timeout is set.
@@ -76,7 +86,8 @@ public actor ViewManager {
                         _ = try? await client.editMessage(channelId: channelId, messageId: messageId, components: disabled)
                     }
                 } catch {
-                    print("[ViewManager] Failed to disable components for view '\(id)' (msg:\(messageId)): \(error)")
+                    let errorMsg = "[ViewManager] Failed to disable components for view '\(id)' (msg:\(messageId), channel:\(channelId)): \(error)"
+                    print(errorMsg)
                 }
             }
         }
@@ -119,16 +130,56 @@ public actor ViewManager {
             for (pattern, matchType, handler) in view.patterns {
                 switch matchType {
                 case .exact:
-                    if pattern == customId { matched = true; Task { @Sendable in await handler(interaction, client) } }
+                    if pattern == customId {
+                        matched = true
+                        Task { @Sendable in
+                            do {
+                                try await handler(interaction, client)
+                            } catch {
+                                if let onError = onError {
+                                    onError(error, vid, interaction)
+                                } else {
+                                    print("[ViewManager] Handler for view '\(vid)' (pattern: '\(pattern)') failed: \(error)")
+                                }
+                            }
+                        }
+                    }
                 case .prefix:
-                    if customId.hasPrefix(pattern) { matched = true; Task { @Sendable in await handler(interaction, client) } }
+                    if customId.hasPrefix(pattern) {
+                        matched = true
+                        Task { @Sendable in
+                            do {
+                                try await handler(interaction, client)
+                            } catch {
+                                if let onError = onError {
+                                    onError(error, vid, interaction)
+                                } else {
+                                    print("[ViewManager] Handler for view '\(vid)' (pattern: '\(pattern)') failed: \(error)")
+                                }
+                            }
+                        }
+                    }
                 case .regex:
                     do {
                         let regex = try NSRegularExpression(pattern: pattern)
                         let range = NSRange(location: 0, length: customId.utf16.count)
-                        if regex.firstMatch(in: customId, options: [], range: range) != nil { matched = true; Task { @Sendable in await handler(interaction, client) } }
+                        if regex.firstMatch(in: customId, options: [], range: range) != nil {
+                            matched = true
+                            Task { @Sendable in
+                                do {
+                                    try await handler(interaction, client)
+                                } catch {
+                                    if let onError = onError {
+                                        onError(error, vid, interaction)
+                                    } else {
+                                        print("[ViewManager] Handler for view '\(vid)' (regex: '\(pattern)') failed: \(error)")
+                                    }
+                                }
+                            }
+                        }
                     } catch {
-                        print("[ViewManager] Invalid regex '\(pattern)' for view '\(vid)': \(error)")
+                        let errorMsg = "[ViewManager] Invalid regex '\(pattern)' for view '\(vid)' matching customId '\(customId)': \(error)"
+                        print(errorMsg)
                     }
                 }
                 if matched {

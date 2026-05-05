@@ -40,6 +40,12 @@ public actor CommandRouter {
             self.command = command
         }
 
+        /// The channel ID where the command was invoked.
+        public var channelId: ChannelID { message.channel_id }
+
+        /// The user who invoked the command.
+        public var author: User? { message.author }
+
         // MARK: - Permission utilities
 
         /// Returns `true` if the message author has the given raw permission bit set.
@@ -67,6 +73,17 @@ public actor CommandRouter {
     public init(prefix: String) {
         self.prefix = prefix
     }
+
+    /// Optional error handler invoked when a command handler throws.
+    /// Use this to log errors, send error responses, or implement custom error recovery.
+    ///
+    /// ```swift
+    /// router.onError = { error, ctx in
+    ///     print("Command '\(ctx.command)' failed: \(error)")
+    ///     try? await ctx.client.sendMessage(channelId: ctx.channelId, content: "❌ Command failed")
+    /// }
+    /// ```
+    public var onError: (@Sendable (Error, Context) -> Void)?
 
     /// Register a command handler with an optional description.
     public func register(name: String, description: String? = nil, _ handler: @escaping Handler) {
@@ -174,8 +191,12 @@ public actor CommandRouter {
         do {
             try await executeMiddleware(context, handler: wrapper.handler, at: 0)
         } catch {
-            // Error handling could be extended with a dedicated error handler
-            print("[CommandRouter] Error in command '\(commandName)': \(error)")
+            if let onError = onError {
+                onError(error, context)
+            } else {
+                // Default error logging when no custom handler is set
+                print("[CommandRouter] Error in command '\(commandName)' in channel \(message.channel_id): \(error)")
+            }
         }
     }
 
