@@ -15,7 +15,7 @@ public actor Cache {
 
     public var configuration: Configuration
 
-    private struct TimedValue<V>: Sendable {
+    private struct TimedValue<V: Sendable>: Sendable {
         let value: V
         let storedAt: Date
     }
@@ -40,7 +40,7 @@ public actor Cache {
             || configuration.roleTTL != nil
             || configuration.emojiTTL != nil
         if hasTTL {
-            Task @Sendable {
+            Task { @Sendable in
                 await self.startEvictionTaskIfNeeded()
             }
         }
@@ -163,7 +163,7 @@ public actor Cache {
 
     private func startEvictionTaskIfNeeded() {
         guard evictionTask == nil else { return }
-        evictionTask = Task @Sendable {
+        evictionTask = Task { @Sendable in
             await self.evictionLoop()
         }
     }

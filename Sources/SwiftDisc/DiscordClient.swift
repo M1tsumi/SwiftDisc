@@ -126,12 +126,13 @@ public actor DiscordClient {
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration
 
-        var localContinuation: AsyncStream<DiscordEvent>.Continuation!
         self.eventStream = AsyncStream<DiscordEvent> { @Sendable continuation in
             continuation.onTermination = { @Sendable _ in }
-            localContinuation = continuation
+            Task { @Sendable [weak self] in
+                guard let self = self else { return }
+                self.eventContinuation = continuation
+            }
         }
-        self.eventContinuation = localContinuation
     }
 
     // MARK: - Extensions/Cogs
