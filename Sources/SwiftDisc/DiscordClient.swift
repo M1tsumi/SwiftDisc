@@ -14,7 +14,7 @@ public actor DiscordClient {
     private var currentUserId: UserID?
 
     private let eventStream: AsyncStream<DiscordEvent>
-    private let eventContinuation: AsyncStream<DiscordEvent>.Continuation
+    private var eventContinuation: AsyncStream<DiscordEvent>.Continuation?
 
     public let cache = Cache()
 
@@ -636,14 +636,14 @@ public actor DiscordClient {
 
     public func loginAndConnect(intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: nil, eventSink: { @Sendable event in
-            Task @Sendable { [self] in await self.dispatcher.process(event: event, client: self) }
+            Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
     // Connects this client as a specific shard index.
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: (index, total), eventSink: { @Sendable event in
-            Task @Sendable { [self] in await self.dispatcher.process(event: event, client: self) }
+            Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
