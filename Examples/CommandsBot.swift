@@ -26,7 +26,7 @@ struct CommandsBotMain {
             }
         }
         await router.register(name: "help", description: "Shows this help text") { ctx in
-            let help = await router.helpText()
+            let help = await router.generateHelp()
             for chunk in BotUtils.chunkMessage(help) {
                 do {
                     _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: chunk)
