@@ -16,7 +16,7 @@ let package = Package(
         .target(
             name: "SwiftDisc",
             exclude: ["../Examples"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // Example executables so contributors can run sample bots quickly with `swift run <name>`.
         .executableTarget(
@@ -24,54 +24,54 @@ let package = Package(
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["PingBot.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "SlashBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["SlashBot.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "CommandsBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["CommandsBot.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "AutocompleteBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["AutocompleteBot.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "FileUploadBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["FileUploadBot.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "ComponentsExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["ComponentsExample.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "ViewExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
             sources: ["ViewExample.swift"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(
             name: "SwiftDiscTests",
             dependencies: ["SwiftDisc"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )
