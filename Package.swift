@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftDisc",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v14),
         .macOS(.v11),
