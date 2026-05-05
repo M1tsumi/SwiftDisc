@@ -20,10 +20,9 @@ struct SlashBotMain {
         }
 
         // Wire slash router with error handler
-        let slash = SlashCommandRouter()
-        await slash.setErrorHandler { error, ctx in
+        let slash = SlashCommandRouter(onError: { error, ctx in
             print("Slash command '\(ctx.path)' failed: \(error)")
-        }
+        })
         await slash.register("ping") { ctx in
             do {
                 try await ctx.client.createInteractionResponse(interactionId: ctx.interaction.id, token: ctx.interaction.token, content: "Pong!")

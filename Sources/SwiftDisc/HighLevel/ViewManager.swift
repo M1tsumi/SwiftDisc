@@ -42,20 +42,17 @@ public actor ViewManager {
     private var listeningTask: Task<Void, Never>?
 
     /// Optional error handler invoked when a view handler throws or an error occurs during interaction routing.
-    /// Use this to log errors, send error responses, or implement custom error recovery.
+    /// Pass this during initialization to log errors, send error responses, or implement custom error recovery.
     ///
     /// ```swift
-    /// viewManager.onError = { error, viewId, interaction in
+    /// let manager = ViewManager { error, viewId, interaction in
     ///     print("View '\(viewId)' handler failed: \(error)")
     /// }
     /// ```
-    public var onError: (@Sendable (Error, String, Interaction) -> Void)?
+    private var onError: (@Sendable (Error, String, Interaction) -> Void)?
 
-    public init() {}
-
-    /// Sets the error handler for view handler failures. Must be called from within the actor.
-    public func setErrorHandler(_ handler: @Sendable (Error, String, Interaction) -> Void?) {
-        onError = handler
+    public init(onError: (@Sendable (Error, String, Interaction) -> Void)? = nil) {
+        self.onError = onError
     }
     
     /// Register a view and schedule expiration if a timeout is set.

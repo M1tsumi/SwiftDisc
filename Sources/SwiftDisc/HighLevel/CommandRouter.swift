@@ -70,25 +70,21 @@ public actor CommandRouter {
         }
     }
 
-    public init(prefix: String) {
+    public init(prefix: String, onError: (@Sendable (Error, Context) -> Void)? = nil) {
         self.prefix = prefix
-    }
-
-    /// Sets the error handler for command failures. Must be called from within the actor.
-    public func setErrorHandler(_ handler: @Sendable (Error, Context) -> Void?) {
-        onError = handler
+        self.onError = onError
     }
 
     /// Optional error handler invoked when a command handler throws.
-    /// Use this to log errors, send error responses, or implement custom error recovery.
+    /// Pass this during initialization to log errors, send error responses, or implement custom error recovery.
     ///
     /// ```swift
-    /// router.onError = { error, ctx in
+    /// let router = CommandRouter(prefix: "!") { error, ctx in
     ///     print("Command '\(ctx.command)' failed: \(error)")
     ///     try? await ctx.client.sendMessage(channelId: ctx.channelId, content: "❌ Command failed")
     /// }
     /// ```
-    public var onError: (@Sendable (Error, Context) -> Void)?
+    private var onError: (@Sendable (Error, Context) -> Void)?
 
     /// Register a command handler with an optional description.
     public func register(name: String, description: String? = nil, _ handler: @escaping Handler) {

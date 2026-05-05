@@ -104,13 +104,10 @@ public actor SlashCommandRouter {
     private var handlers: [String: Handler] = [:]
     private var middlewares: [Middleware] = []
     /// Optional error handler invoked when a command handler throws.
-    public var onError: (@Sendable (Error, Context) -> Void)?
+    private var onError: (@Sendable (Error, Context) -> Void)?
 
-    public init() {}
-
-    /// Sets the error handler for command failures. Must be called from within the actor.
-    public func setErrorHandler(_ handler: @Sendable (Error, Context) -> Void?) {
-        onError = handler
+    public init(onError: (@Sendable (Error, Context) -> Void)? = nil) {
+        self.onError = onError
     }
 
     /// Register a top-level command name.
