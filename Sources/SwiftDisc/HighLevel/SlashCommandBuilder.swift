@@ -31,24 +31,24 @@ public final class SlashCommandBuilder: @unchecked Sendable {
 
     @discardableResult
     public func string(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .string, name: name, description: description, required: required)
-        configure?(b)
+        var b = OptionBuilder(type: .string, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }
 
     @discardableResult
     public func integer(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .integer, name: name, description: description, required: required)
-        configure?(b)
+        var b = OptionBuilder(type: .integer, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }
 
     @discardableResult
     public func number(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .number, name: name, description: description, required: required)
-        configure?(b)
+        var b = OptionBuilder(type: .number, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }

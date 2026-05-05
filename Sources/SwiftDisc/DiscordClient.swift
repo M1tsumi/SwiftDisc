@@ -126,7 +126,7 @@ public actor DiscordClient {
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration
 
-        self.eventStream = AsyncStream<DiscordEvent> { @Sendable continuation in
+        self.eventStream = AsyncStream<DiscordEvent> { continuation in
             continuation.onTermination = { @Sendable _ in }
             self.eventContinuation = continuation
         }

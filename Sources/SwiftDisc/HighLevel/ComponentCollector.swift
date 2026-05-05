@@ -4,10 +4,10 @@ public extension DiscordClient {
     /// Collect component interactions (buttons/selects) matching an optional `customId` filter.
     /// Returns an `AsyncStream<Interaction>` yielding matching Interaction objects.
     func createComponentCollector(customId: String? = nil, timeout: TimeInterval? = nil, max: Int? = nil) -> AsyncStream<Interaction> {
-        AsyncStream { @Sendable continuation in
+        AsyncStream { continuation in
             var collected = 0
 
-            let task = Task { @Sendable in
+            let task = Task {
                 for await event in self.events {
                     switch event {
                     case .interactionCreate(let interaction):
@@ -28,7 +28,7 @@ public extension DiscordClient {
             }
 
             if let t = timeout {
-                Task @Sendable {
+                Task {
                     try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                     continuation.finish()
                     task.cancel()
