@@ -15,7 +15,7 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftDisc",
-            exclude: ["../Examples"],
+            exclude: ["Examples"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // Example executables so contributors can run sample bots quickly with `swift run <name>`.

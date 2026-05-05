@@ -115,7 +115,7 @@ public actor CommandRouter {
             if ctx.hasPermission(permission) {
                 try await next(ctx)
             } else {
-                try await ctx.client.sendMessage(
+                _ = try await ctx.client.sendMessage(
                     channelId: ctx.message.channel_id,
                     content: errorMessage,
                     messageReference: MessageReference(message_id: ctx.message.id, channel_id: ctx.message.channel_id)
@@ -135,7 +135,7 @@ public actor CommandRouter {
             if ctx.memberHasRole(roleId) {
                 try await next(ctx)
             } else {
-                try await ctx.client.sendMessage(
+                _ = try await ctx.client.sendMessage(
                     channelId: ctx.message.channel_id,
                     content: errorMessage,
                     messageReference: MessageReference(message_id: ctx.message.id, channel_id: ctx.message.channel_id)
@@ -150,7 +150,7 @@ public actor CommandRouter {
             if ctx.message.guild_id != nil {
                 try await next(ctx)
             } else {
-                try await ctx.client.sendMessage(
+                _ = try await ctx.client.sendMessage(
                     channelId: ctx.message.channel_id,
                     content: errorMessage
                 )
