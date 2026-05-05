@@ -74,6 +74,11 @@ public actor CommandRouter {
         self.prefix = prefix
     }
 
+    /// Sets the error handler for command failures. Must be called from within the actor.
+    public func setErrorHandler(_ handler: @Sendable (Error, Context) -> Void?) {
+        onError = handler
+    }
+
     /// Optional error handler invoked when a command handler throws.
     /// Use this to log errors, send error responses, or implement custom error recovery.
     ///

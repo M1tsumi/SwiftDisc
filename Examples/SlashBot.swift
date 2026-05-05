@@ -21,7 +21,7 @@ struct SlashBotMain {
 
         // Wire slash router with error handler
         let slash = SlashCommandRouter()
-        slash.onError = { error, ctx in
+        await slash.setErrorHandler { error, ctx in
             print("Slash command '\(ctx.path)' failed: \(error)")
         }
         await slash.register("ping") { ctx in

@@ -52,6 +52,11 @@ public actor ViewManager {
     public var onError: (@Sendable (Error, String, Interaction) -> Void)?
 
     public init() {}
+
+    /// Sets the error handler for view handler failures. Must be called from within the actor.
+    public func setErrorHandler(_ handler: @Sendable (Error, String, Interaction) -> Void?) {
+        onError = handler
+    }
     
     /// Register a view and schedule expiration if a timeout is set.
     public func register(_ view: View, client: DiscordClient) {

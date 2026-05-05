@@ -108,6 +108,11 @@ public actor SlashCommandRouter {
 
     public init() {}
 
+    /// Sets the error handler for command failures. Must be called from within the actor.
+    public func setErrorHandler(_ handler: @Sendable (Error, Context) -> Void?) {
+        onError = handler
+    }
+
     /// Register a top-level command name.
     public func register(_ name: String, handler: @escaping Handler) {
         handlers[name.lowercased()] = handler
