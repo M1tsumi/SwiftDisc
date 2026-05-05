@@ -110,7 +110,7 @@ public actor ShardingGatewayManager {
 
     // Unified event stream
     private var eventStream: AsyncStream<ShardedEvent>!
-    private var eventContinuation: AsyncStream<ShardedEvent>.Continuation!
+    private nonisolated(unsafe) var eventContinuation: AsyncStream<ShardedEvent>.Continuation!
     public var events: AsyncStream<ShardedEvent> { eventStream }
 
     // Logging
@@ -260,7 +260,7 @@ public actor ShardingGatewayManager {
         let total = shardHandles.count
         guard shardId >= 0 && shardId < total else {
             log(.warning, "events(for:) invalid shardId \(shardId). Valid range: 0..<\(total)")
-            return AsyncStream { _ in $0.finish() }
+            return AsyncStream { c in c.finish() }
         }
         return AsyncStream { continuation in
             Task {
