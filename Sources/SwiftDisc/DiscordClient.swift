@@ -13,7 +13,12 @@ public actor DiscordClient {
     private let dispatcher = EventDispatcher()
     private var currentUserId: UserID?
 
-    private let eventStream: AsyncStream<DiscordEvent>
+    private lazy var eventStream: AsyncStream<DiscordEvent> = {
+        AsyncStream { continuation in
+            continuation.onTermination = { @Sendable _ in }
+            self.eventContinuation = continuation
+        }
+    }()
     private nonisolated(unsafe) var eventContinuation: AsyncStream<DiscordEvent>.Continuation?
 
     public let cache = Cache()
@@ -125,11 +130,6 @@ public actor DiscordClient {
         self.http = HTTPClient(token: token, configuration: configuration)
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration
-
-        self.eventStream = AsyncStream<DiscordEvent> { continuation in
-            continuation.onTermination = { @Sendable _ in }
-            self.eventContinuation = continuation
-        }
     }
 
     // MARK: - Extensions/Cogs
