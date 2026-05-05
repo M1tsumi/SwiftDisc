@@ -135,7 +135,7 @@ actor GatewayClient {
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
-        Task.detached @Sendable {
+        Task.detached { @Sendable in
             await self.readLoop(eventSink: eventSink)
         }
         // Wait until the socket is actually usable before returning to callers.
@@ -473,7 +473,7 @@ actor GatewayClient {
 
     private func startHeartbeat() {
         heartbeatTask?.cancel()
-        heartbeatTask = Task @Sendable {
+        heartbeatTask = Task { @Sendable in
             await self.runHeartbeatLoop()
         }
     }

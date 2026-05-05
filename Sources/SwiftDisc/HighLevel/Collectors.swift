@@ -37,7 +37,7 @@ public extension DiscordClient {
             }
 
             if let t = timeout {
-                Task @Sendable {
+                Task { @Sendable in
                     try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                     continuation.finish()
                     task.cancel()
@@ -50,7 +50,7 @@ public extension DiscordClient {
     /// This yields members lazily and avoids manual paging logic.
     func streamGuildMembers(guildId: GuildID, pageLimit: Int = 1000, onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMember> {
         AsyncStream(GuildMember.self) { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 var after: UserID? = nil
                 var lastSeen: String? = nil
                 while true {
@@ -87,7 +87,7 @@ public extension DiscordClient {
     /// ```
     func messageEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Message> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .messageCreate(let msg) = event { continuation.yield(msg) }
@@ -104,7 +104,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields every `MessageReactionAdd` event.
     func reactionAddEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<MessageReactionAdd> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .messageReactionAdd(let ev) = event { continuation.yield(ev) }
@@ -123,7 +123,7 @@ public extension DiscordClient {
     /// Useful for bots that handle interactions outside of `SlashCommandRouter`.
     func interactionEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Interaction> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .interactionCreate(let interaction) = event { continuation.yield(interaction) }
@@ -140,7 +140,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields `GuildMemberAdd` events.
     func memberAddEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMemberAdd> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildMemberAdd(let ev) = event { continuation.yield(ev) }
@@ -157,7 +157,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields `GuildMemberRemove` events.
     func memberRemoveEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildMemberRemove> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildMemberRemove(let ev) = event { continuation.yield(ev) }
@@ -174,7 +174,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields `PresenceUpdate` events.
     func presenceUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<PresenceUpdate> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .presenceUpdate(let ev) = event { continuation.yield(ev) }
@@ -193,7 +193,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields thread create events.
     func threadCreateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .threadCreate(let ch) = event { continuation.yield(ch) }
@@ -210,7 +210,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields thread update events.
     func threadUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .threadUpdate(let ch) = event { continuation.yield(ch) }
@@ -227,7 +227,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields thread delete events.
     func threadDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Channel> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .threadDelete(let ch) = event { continuation.yield(ch) }
@@ -245,7 +245,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields guild role create events.
     func roleCreateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleCreate> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildRoleCreate(let ev) = event { continuation.yield(ev) }
@@ -262,7 +262,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields guild role update events.
     func roleUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleUpdate> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildRoleUpdate(let ev) = event { continuation.yield(ev) }
@@ -279,7 +279,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields guild role delete events.
     func roleDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildRoleDelete> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildRoleDelete(let ev) = event { continuation.yield(ev) }
@@ -296,7 +296,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields guild emoji update events.
     func emojiUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<GuildEmojisUpdate> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .guildEmojisUpdate(let ev) = event { continuation.yield(ev) }
@@ -313,7 +313,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields typing start events.
     func typingStartEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<TypingStart> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .typingStart(let ev) = event { continuation.yield(ev) }
@@ -330,7 +330,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields message update events.
     func messageUpdateEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<Message> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .messageUpdate(let msg) = event { continuation.yield(msg) }
@@ -347,7 +347,7 @@ public extension DiscordClient {
     /// A filtered `AsyncStream` that yields message delete events.
     func messageDeleteEvents(onError: @escaping @Sendable (Error) -> Void = { _ in }) -> AsyncStream<MessageDelete> {
         AsyncStream { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 do {
                     for await event in self.events {
                         if case .messageDelete(let ev) = event { continuation.yield(ev) }

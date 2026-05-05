@@ -128,10 +128,7 @@ public actor DiscordClient {
 
         self.eventStream = AsyncStream<DiscordEvent> { @Sendable continuation in
             continuation.onTermination = { @Sendable _ in }
-            Task { @Sendable [weak self] in
-                guard let self = self else { return }
-                self.eventContinuation = continuation
-            }
+            self.eventContinuation = continuation
         }
     }
 
@@ -770,7 +767,7 @@ public actor DiscordClient {
 
     // MARK: - Internal event emission used by EventDispatcher
     func _internalEmitEvent(_ event: DiscordEvent) {
-        eventContinuation.yield(event)
+        eventContinuation?.yield(event)
     }
 
     // MARK: - Raw REST passthroughs for endpoints not yet wrapped
@@ -816,7 +813,7 @@ public actor DiscordClient {
     /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
         AsyncStream(Message.self) { @Sendable continuation in
-            Task @Sendable {
+            Task { @Sendable in
                 var after: MessageID? = nil
                 var lastSeen: String? = nil
                 while true {
@@ -1484,7 +1481,7 @@ public actor DiscordClient {
 
     public func shutdown() async {
         await gateway.close()
-        eventContinuation.finish()
+        eventContinuation?.finish()
     }
 
     // MARK: - Slash command REST endpoints
@@ -1920,7 +1917,7 @@ public actor DiscordClient {
         before: AuditLogEntryID? = nil,
         limit: Int? = nil
     ) async throws -> AuditLog {
-        var path = "/guilds/\(guildId)/audit-logs"
+        let path = "/guilds/\(guildId)/audit-logs"
         var qs: [String] = []
         if let userId { qs.append("user_id=\(userId)") }
         if let actionType { qs.append("action_type=\(actionType)") }
@@ -2104,7 +2101,7 @@ public actor DiscordClient {
         before: UserID? = nil,
         after: UserID? = nil
     ) async throws -> [GuildScheduledEventUser] {
-        var path = "/guilds/\(guildId)/scheduled-events/\(eventId)/users"
+        let path = "/guilds/\(guildId)/scheduled-events/\(eventId)/users"
         var qs: [String] = []
         if let limit { qs.append("limit=\(limit)") }
         if withMember { qs.append("with_member=true") }

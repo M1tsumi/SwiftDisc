@@ -40,7 +40,7 @@ public struct SelectMenuBuilder: Sendable {
     public func customId(_ id: String) -> SelectMenuBuilder { var c = self; c.customId = id; return c }
     public func option(label: String, value: String, description: String? = nil, emoji: String? = nil, isDefault: Bool? = nil) -> SelectMenuBuilder {
         var c = self
-        c.options.append(.init(label: label, value: value, description: description, emoji: emoji, `default`: isDefault))
+        c.options.append(.init(label: label, value: value, description: description, emoji: emoji, default: isDefault))
         return c
     }
     public func placeholder(_ t: String) -> SelectMenuBuilder { var c = self; c.placeholder = t; return c }
@@ -65,7 +65,7 @@ public struct StringSelectMenuBuilder: Sendable {
     public func customId(_ id: String) -> StringSelectMenuBuilder { var c = self; c.customId = id; return c }
     public func option(label: String, value: String, description: String? = nil, emoji: String? = nil, isDefault: Bool? = nil) -> StringSelectMenuBuilder {
         var c = self
-        c.options.append(.init(label: label, value: value, description: description, emoji: emoji, `default`: isDefault))
+        c.options.append(.init(label: label, value: value, description: description, emoji: emoji, default: isDefault))
         return c
     }
     public func placeholder(_ t: String) -> StringSelectMenuBuilder { var c = self; c.placeholder = t; return c }

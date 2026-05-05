@@ -7,7 +7,7 @@ public extension DiscordClient {
         AsyncStream { @Sendable continuation in
             var collected = 0
 
-            let task = Task @Sendable {
+            let task = Task { @Sendable in
                 for await event in self.events {
                     switch event {
                     case .interactionCreate(let interaction):
