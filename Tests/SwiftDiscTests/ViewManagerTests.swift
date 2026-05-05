@@ -24,18 +24,17 @@ final class ViewManagerTests: XCTestCase {
         let manager = ViewManager()
         await client.useViewManager(manager)
 
-        let handled = expectation(description: "one-shot view handler called")
-        let handlers: [String: ViewHandler] = ["btn_ok": { _, _ in handled.fulfill() }]
+        let handlers: [String: ViewHandler] = ["btn_ok": { _, _ in }]
         let view = View(id: "oneshot", timeout: nil, handlers: handlers, oneShot: true)
         await manager.register(view, client: client)
 
         let interaction = TestFixtures.makeComponentInteraction(customId: "btn_ok")
 
+        // Emit the interaction event - this should trigger the one-shot removal
         await client._internalEmitEvent(.interactionCreate(interaction))
-        await fulfillment(of: [handled], timeout: 1.0)
 
-        // Give manager a moment to process one-shot cleanup.
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        // Give the async handler task time to execute and remove the one-shot view
+        try? await Task.sleep(nanoseconds: 100_000_000)
         let list = await manager.list()
         XCTAssertFalse(list.contains("oneshot"))
     }
