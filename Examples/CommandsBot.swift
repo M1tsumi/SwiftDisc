@@ -10,14 +10,14 @@ struct CommandsBotMain {
 
         // Set up command router with a 'ping' and 'help' command
         let router = CommandRouter(prefix: "!")
-        await router.register("ping", description: "Replies with Pong!") { ctx in
+        await router.register(name: "ping", description: "Replies with Pong!") { ctx in
             do {
                 _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: "Pong!")
             } catch {
                 print("Command 'ping' failed: \(error)")
             }
         }
-        await router.register("echo", description: "Echoes back your text") { ctx in
+        await router.register(name: "echo", description: "Echoes back your text") { ctx in
             let text = ctx.args.joined(separator: " ")
             do {
                 _ = try await ctx.client.sendMessage(channelId: ctx.message.channel_id, content: text.isEmpty ? "(no text)" : text)
@@ -25,7 +25,7 @@ struct CommandsBotMain {
                 print("Command 'echo' failed: \(error)")
             }
         }
-        await router.register("help", description: "Shows this help text") { ctx in
+        await router.register(name: "help", description: "Shows this help text") { ctx in
             let help = await router.helpText()
             for chunk in BotUtils.chunkMessage(help) {
                 do {
