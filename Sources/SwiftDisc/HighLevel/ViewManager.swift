@@ -110,7 +110,7 @@ public actor ViewManager {
         listeningTask = task
     }
     
-    private func routeInteraction(customId: String, interaction: Interaction, client: DiscordClient) async {
+    internal func routeInteraction(customId: String, interaction: Interaction, client: DiscordClient) async {
         let snapshot = Array(views)
         var oneShotToRemove: [String] = []
 

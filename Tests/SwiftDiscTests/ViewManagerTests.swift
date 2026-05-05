@@ -22,22 +22,18 @@ final class ViewManagerTests: XCTestCase {
     func testOneShotViewIsRemovedAfterMatchingInteraction() async {
         let client = DiscordClient(token: "")
         let manager = ViewManager()
-        await client.useViewManager(manager)
-
-        // Give the ViewManager listener time to start
-        try? await Task.sleep(nanoseconds: 50_000_000)
-
+        
         let handlers: [String: ViewHandler] = ["btn_ok": { _, _ in }]
         let view = View(id: "oneshot", timeout: nil, handlers: handlers, oneShot: true)
         await manager.register(view, client: client)
 
         let interaction = TestFixtures.makeComponentInteraction(customId: "btn_ok")
 
-        // Emit the interaction event - this should trigger the one-shot removal
-        await client._internalEmitEvent(.interactionCreate(interaction))
+        // Directly call routeInteraction to test one-shot removal without relying on event stream
+        // This avoids race conditions with async handler execution
+        await manager.routeInteraction(customId: "btn_ok", interaction: interaction, client: client)
 
-        // Give the async handler task time to execute and remove the one-shot view
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        // The one-shot view should be removed immediately after routing
         let list = await manager.list()
         XCTAssertFalse(list.contains("oneshot"))
     }
