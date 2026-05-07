@@ -30,6 +30,9 @@ public struct WebhookClient: Sendable {
         e.keyEncodingStrategy = .convertToSnakeCase
         return e
     }()
+    
+    // Rate limiter: Discord allows 5 webhook executions per second per webhook
+    private static let rateLimiter = WebhookRateLimiter()
 
     // MARK: - Init
 
@@ -50,47 +53,50 @@ public struct WebhookClient: Sendable {
         // pathComponents example: ["/", "api", "webhooks", "12345", "token"]
         guard
             let webhookIdx = parts.firstIndex(of: "webhooks"),
-            parts.index(after: webhookIdx) < parts.endIndex,
-            parts.index(webhookIdx, offsetBy: 2) < parts.endIndex
+            webhookIdx + 2 < parts.count,
+            let idStr = parts[webhookIdx + 1] as String?,
+            let token = parts.last as String?
         else { return nil }
-
-        let rawId = parts[parts.index(after: webhookIdx)]
-        let rawToken = parts[parts.index(webhookIdx, offsetBy: 2)]
-        self.id = WebhookID(rawId)
-        self.token = rawToken
+        
+        let idParts = idStr.split(separator: "-").joined()
+        guard let idVal = UInt64(idParts) else { return nil }
+        self.id = WebhookID(String(idVal))
+        self.token = token
     }
 
-    // MARK: - Execute
+    // MARK: - Execute Message
 
-    /// Post a message through the webhook.
+    /// Execute a webhook message.
     ///
     /// - Parameters:
-    ///   - content: Plain-text body.
-    ///   - username: Override the webhook's display name for this message.
-    ///   - avatarUrl: Override the webhook's avatar URL for this message.
-    ///   - embeds: Rich embeds.
-    ///   - components: Message components (buttons, selects, etc.).
-    ///   - wait: When `true`, Discord returns the created ``Message`` object;
-    ///     otherwise returns `nil`.
-    ///   - files: Binary file attachments.
-    /// - Returns: The sent ``Message`` if `wait == true`, otherwise `nil`.
-    @discardableResult
+    ///   - content: Message content
+    ///   - username: Override the webhook username
+    ///   - avatarUrl: Override the webhook avatar
+    ///   - embeds: Array of embeds
+    ///   - components: Message components
+    ///   - files: File attachments
+    ///   - threadId: Send to a specific thread
+    /// - Returns: The created message
     public func execute(
         content: String? = nil,
         username: String? = nil,
         avatarUrl: String? = nil,
         embeds: [Embed]? = nil,
         components: [MessageComponent]? = nil,
-        wait: Bool = false,
-        files: [FileAttachment] = []
-    ) async throws -> Message? {
+        files: [FileAttachment]? = nil,
+        threadId: String? = nil
+    ) async throws -> Message {
+        await Self.rateLimiter.waitForAvailability()
+        
         var urlStr = "\(Self.apiBase)/webhooks/\(id)/\(token)"
-        if wait { urlStr += "?wait=true" }
+        if let threadId = threadId {
+            urlStr += "?thread_id=\(threadId)"
+        }
         guard let url = URL(string: urlStr) else {
             throw WebhookError.invalidURL(urlStr)
         }
 
-        struct Body: Encodable {
+        struct Body: Encodable, Sendable {
             let content: String?
             let username: String?
             let avatar_url: String?
@@ -108,24 +114,21 @@ public struct WebhookClient: Sendable {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
 
-        if files.isEmpty {
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try Self.encoder.encode(body)
-        } else {
+        if let files = files, !files.isEmpty {
             let boundary = "WebhookBoundary-\(UUID().uuidString)"
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
             req.httpBody = buildMultipart(jsonBody: try Self.encoder.encode(body), files: files, boundary: boundary)
+        } else {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try Self.encoder.encode(body)
         }
 
         let (data, response) = try await URLSession.shared.data(for: req)
         if let httpResponse = response as? HTTPURLResponse,
            !(200..<300).contains(httpResponse.statusCode) {
-            if data.isEmpty { throw WebhookError.httpError(httpResponse.statusCode, nil) }
-            let msg = String(data: data, encoding: .utf8)
+            let msg = data.isEmpty ? nil : String(data: data, encoding: .utf8)
             throw WebhookError.httpError(httpResponse.statusCode, msg)
         }
-
-        if !wait || data.isEmpty { return nil }
         return try Self.decoder.decode(Message.self, from: data)
     }
 
@@ -133,22 +136,28 @@ public struct WebhookClient: Sendable {
 
     /// Edit a previously sent webhook message.
     ///
-    /// Pass `@original` as `messageId` to edit the most recent message sent in
-    /// an interaction context.
-    @discardableResult
+    /// - Parameters:
+    ///   - messageId: The message to edit
+    ///   - content: New message content
+    ///   - embeds: New embeds
+    ///   - components: New components
+    ///   - files: New file attachments
+    /// - Returns: The updated message
     public func editMessage(
         messageId: String,
         content: String? = nil,
         embeds: [Embed]? = nil,
         components: [MessageComponent]? = nil,
-        files: [FileAttachment] = []
+        files: [FileAttachment]? = nil
     ) async throws -> Message {
+        await Self.rateLimiter.waitForAvailability()
+        
         let urlStr = "\(Self.apiBase)/webhooks/\(id)/\(token)/messages/\(messageId)"
         guard let url = URL(string: urlStr) else {
             throw WebhookError.invalidURL(urlStr)
         }
 
-        struct PatchBody: Encodable {
+        struct PatchBody: Encodable, Sendable {
             let content: String?
             let embeds: [Embed]?
             let components: [MessageComponent]?
@@ -158,13 +167,13 @@ public struct WebhookClient: Sendable {
         var req = URLRequest(url: url)
         req.httpMethod = "PATCH"
 
-        if files.isEmpty {
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try Self.encoder.encode(body)
-        } else {
+        if let files = files, !files.isEmpty {
             let boundary = "WebhookBoundary-\(UUID().uuidString)"
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
             req.httpBody = buildMultipart(jsonBody: try Self.encoder.encode(body), files: files, boundary: boundary)
+        } else {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try Self.encoder.encode(body)
         }
 
         let (data, response) = try await URLSession.shared.data(for: req)
@@ -182,6 +191,8 @@ public struct WebhookClient: Sendable {
     ///
     /// Pass `@original` as `messageId` to delete the original interaction response.
     public func deleteMessage(messageId: String) async throws {
+        await Self.rateLimiter.waitForAvailability()
+        
         let urlStr = "\(Self.apiBase)/webhooks/\(id)/\(token)/messages/\(messageId)"
         guard let url = URL(string: urlStr) else {
             throw WebhookError.invalidURL(urlStr)
@@ -194,6 +205,30 @@ public struct WebhookClient: Sendable {
             let msg = data.isEmpty ? nil : String(data: data, encoding: .utf8)
             throw WebhookError.httpError(httpResponse.statusCode, msg)
         }
+    }
+    
+    // MARK: - Get Message
+    
+    /// Get a webhook message.
+    ///
+    /// - Parameter messageId: The message to retrieve
+    /// - Returns: The message
+    public func getMessage(messageId: String) async throws -> Message {
+        await Self.rateLimiter.waitForAvailability()
+        
+        let urlStr = "\(Self.apiBase)/webhooks/\(id)/\(token)/messages/\(messageId)"
+        guard let url = URL(string: urlStr) else {
+            throw WebhookError.invalidURL(urlStr)
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        let (data, response) = try await URLSession.shared.data(for: req)
+        if let httpResponse = response as? HTTPURLResponse,
+           !(200..<300).contains(httpResponse.statusCode) {
+            let msg = data.isEmpty ? nil : String(data: data, encoding: .utf8)
+            throw WebhookError.httpError(httpResponse.statusCode, msg)
+        }
+        return try Self.decoder.decode(Message.self, from: data)
     }
 
     // MARK: - Private utilities
@@ -220,6 +255,34 @@ public struct WebhookClient: Sendable {
 
         body.append("--\(boundary)--\(crlf)".utf8Data)
         return body
+    }
+}
+
+// MARK: - Rate Limiter
+
+/// Simple rate limiter for webhook requests.
+/// Discord allows 5 webhook executions per second per webhook.
+private actor WebhookRateLimiter {
+    private var timestamps: [Date] = []
+    private let maxRequests: Int = 5
+    private let window: TimeInterval = 1.0 // 1 second window
+    
+    func waitForAvailability() async {
+        let now = Date()
+        // Remove timestamps older than the window
+        timestamps = timestamps.filter { now.timeIntervalSince($0) < window }
+        
+        if timestamps.count >= maxRequests {
+            // Wait until the oldest request is outside the window
+            if let oldest = timestamps.first {
+                let waitTime = window - now.timeIntervalSince(oldest)
+                if waitTime > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(waitTime * 1_000_000_000))
+                }
+            }
+        }
+        
+        timestamps.append(now)
     }
 }
 

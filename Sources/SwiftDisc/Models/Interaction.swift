@@ -71,6 +71,7 @@ public struct Interaction: Codable, Hashable, Sendable {
         public let height: Int?
         public let width: Int?
         public let ephemeral: Bool?
+        public let flags: Int?
     }
 
     public struct ResolvedData: Codable, Hashable, Sendable {

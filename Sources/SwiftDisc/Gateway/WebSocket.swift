@@ -53,7 +53,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
         case .data(let data):
             return .data(data)
         @unknown default:
-            return .string("")
+            throw DiscordError.gateway("Unknown WebSocket message type received")
         }
     }
 

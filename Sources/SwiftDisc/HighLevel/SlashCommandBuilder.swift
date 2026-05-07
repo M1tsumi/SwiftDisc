@@ -1,7 +1,7 @@
 import Foundation
 
-public final class SlashCommandBuilder {
-    public final class OptionBuilder {
+public final class SlashCommandBuilder: @unchecked Sendable {
+    public final class OptionBuilder: @unchecked Sendable {
         private var option: DiscordClient.ApplicationCommandOption
         private var choices: [DiscordClient.ApplicationCommandOption.Choice] = []
         public init(type: DiscordClient.ApplicationCommandOption.ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil) {
@@ -30,25 +30,25 @@ public final class SlashCommandBuilder {
     }
 
     @discardableResult
-    public func string(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .string, name: name, description: description, required: required)
-        configure?(b)
+    public func string(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+        var b = OptionBuilder(type: .string, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }
 
     @discardableResult
-    public func integer(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .integer, name: name, description: description, required: required)
-        configure?(b)
+    public func integer(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+        var b = OptionBuilder(type: .integer, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }
 
     @discardableResult
-    public func number(_ name: String, _ description: String, required: Bool? = nil, configure: ((OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
-        let b = OptionBuilder(type: .number, name: name, description: description, required: required)
-        configure?(b)
+    public func number(_ name: String, _ description: String, required: Bool? = nil, configure: (@Sendable (inout OptionBuilder) -> Void)? = nil) -> SlashCommandBuilder {
+        var b = OptionBuilder(type: .number, name: name, description: description, required: required)
+        configure?(&b)
         options.append(b.build())
         return self
     }

@@ -9,7 +9,7 @@ actor GatewayClient {
     private var heartbeatIntervalMs: Int = 0
     private var seq: Int?
     private var sessionId: String?
-    private var awaitingHeartbeatAck = false
+    private var missedHeartbeatAckCount: Int = 0
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
     private var resumeCount: Int = 0
@@ -19,8 +19,10 @@ actor GatewayClient {
     private var lastResumeSuccessAt: Date?
     private var allowReconnect: Bool = true
     private var connectReadyContinuation: CheckedContinuation<Void, Never>?
+    private var maxReconnectAttempts: Int = 10
+    private var maxReconnectDelayNs: UInt64 = 16_000_000_000
 
-    enum Status {
+    enum Status: Sendable {
         case disconnected
         case connecting
         case identifying
@@ -31,11 +33,13 @@ actor GatewayClient {
 
     // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
+        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
         let enc = JSONEncoder()
         let data = try enc.encode(payload)
-        try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
     }
+
     private var status: Status = .disconnected
 
     private var lastIntents: GatewayIntents = []
@@ -58,28 +62,28 @@ actor GatewayClient {
         }
     }
 
-    // Sends VOICE_STATE_UPDATE (OP 4) to join, move, or leave voice channels.
-    func updateVoiceState(guildId: GuildID, channelId: ChannelID?, selfMute: Bool, selfDeaf: Bool) async {
-        struct VoiceStateUpdateData: Codable {
-            let guild_id: GuildID
-            let channel_id: ChannelID?
-            let self_mute: Bool
-            let self_deaf: Bool
-        }
-        let payload = GatewayPayload(op: .voiceStateUpdate, d: VoiceStateUpdateData(guild_id: guildId, channel_id: channelId, self_mute: selfMute, self_deaf: selfDeaf), s: nil, t: nil)
-        if let data = try? JSONEncoder().encode(payload) {
-            try? await socket?.send(.string(String(decoding: data, as: UTF8.self)))
-        }
-    }
-
     func connect(intents: GatewayIntents, shard: (index: Int, total: Int)? = nil, eventSink: @escaping @Sendable (DiscordEvent) -> Void) async throws {
+        // Validate gateway version
+        guard configuration.apiVersion >= 8 && configuration.apiVersion <= 10 else {
+            throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
+        }
         guard var components = URLComponents(url: configuration.gatewayBaseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
-        components.queryItems = [
+        var queryItems = [
             URLQueryItem(name: "v", value: String(configuration.apiVersion)),
             URLQueryItem(name: "encoding", value: "json")
         ]
+        // Add transport compression if configured
+        switch configuration.gatewayCompression {
+        case .zlibStream:
+            queryItems.append(URLQueryItem(name: "compress", value: "zlib-stream"))
+        case .zstdStream:
+            queryItems.append(URLQueryItem(name: "compress", value: "zstd-stream"))
+        case .none:
+            break
+        }
+        components.queryItems = queryItems
         guard let url = components.url else {
             throw DiscordError.gateway("Failed to construct gateway URL")
         }
@@ -123,19 +127,23 @@ actor GatewayClient {
         } else {
             self.status = .identifying
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
-            let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: nil, large_threshold: nil, shard: shardArray)
+            let compress = configuration.gatewayPayloadCompression ? true : nil
+            let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
             let payload = GatewayPayload(op: .identify, d: identify, s: nil, t: nil)
             let data = try enc.encode(payload)
             try await socket.send(.string(String(decoding: data, as: UTF8.self)))
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
-        Task.detached { [weak self] in
-            await self?.readLoop(eventSink: eventSink)
+        Task.detached { @Sendable in
+            await self.readLoop(eventSink: eventSink)
         }
         // Wait until the socket is actually usable before returning to callers.
-        if self.status != .ready {
-            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        // Use a single atomic check to avoid race condition with readLoop setting status.
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            if self.status == .ready {
+                cont.resume()
+            } else {
                 self.connectReadyContinuation = cont
             }
         }
@@ -166,7 +174,7 @@ actor GatewayClient {
                         if t == "READY" {
                             if let payload = try? dec.decode(GatewayPayload<ReadyEvent>.self, from: data), let ready = payload.d {
                                 // Save session ID so reconnects can try RESUME.
-                                self.sessionId = ready.session_id ?? self.sessionId
+                                self.sessionId = ready.session_id
                                 self.status = .ready
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
@@ -296,6 +304,18 @@ actor GatewayClient {
                             if let payload = try? dec.decode(GatewayPayload<ThreadMembersUpdate>.self, from: data), let m = payload.d {
                                 eventSink(.threadMembersUpdate(m))
                             }
+                        } else if t == "THREAD_LIST_SYNC" {
+                            if let payload = try? dec.decode(GatewayPayload<ThreadListSync>.self, from: data), let tls = payload.d {
+                                eventSink(.threadListSync(tls))
+                            }
+                        } else if t == "APPLICATION_COMMAND_PERMISSIONS_UPDATE" {
+                            if let payload = try? dec.decode(GatewayPayload<ApplicationCommandPermissionsUpdate>.self, from: data), let acpu = payload.d {
+                                eventSink(.applicationCommandPermissionsUpdate(acpu))
+                            }
+                        } else if t == "CHANNEL_INFO" {
+                            if let payload = try? dec.decode(GatewayPayload<Channel>.self, from: data), let channel = payload.d {
+                                eventSink(.channelInfo(channel))
+                            }
                         } else if t == "INTERACTION_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<Interaction>.self, from: data), let interaction = payload.d {
                                 eventSink(.interactionCreate(interaction))
@@ -303,14 +323,6 @@ actor GatewayClient {
                                 // Preserve visibility when payload shape drifts instead of silently dropping.
                                 logDecodeDiagnostic("Failed to decode INTERACTION_CREATE as Interaction (op=\(opBox.op.rawValue), seq=\(String(describing: self.seq)))", data: data)
                                 eventSink(.raw(t, data))
-                            }
-                        } else if t == "VOICE_STATE_UPDATE" {
-                            if let payload = try? dec.decode(GatewayPayload<VoiceState>.self, from: data), let state = payload.d {
-                                eventSink(.voiceStateUpdate(state))
-                            }
-                        } else if t == "VOICE_SERVER_UPDATE" {
-                            if let payload = try? dec.decode(GatewayPayload<VoiceServerUpdate>.self, from: data), let vsu = payload.d {
-                                eventSink(.voiceServerUpdate(vsu))
                             }
                         } else if t == "GUILD_SCHEDULED_EVENT_CREATE" {
                             if let payload = try? dec.decode(GatewayPayload<GuildScheduledEvent>.self, from: data), let ev = payload.d {
@@ -425,14 +437,20 @@ actor GatewayClient {
                             eventSink(.raw(t, data))
                         }
                     case .heartbeatAck:
-                        awaitingHeartbeatAck = false
+                        missedHeartbeatAckCount = 0
                         lastHeartbeatAckAt = Date()
+                        break
+                    case .rateLimited:
+                        // Gateway is rate limiting our connection
+                        logDecodeDiagnostic("Gateway rate limited, waiting before reconnecting")
+                        await attemptReconnect()
                         break
                     case .invalidSession:
                         // Resume was rejected. Clear session state so next connect uses IDENTIFY.
                         self.resumeFailureCount += 1
                         self.sessionId = nil
                         self.seq = nil
+                        eventSink(.sessionInvalidated)
                         await attemptReconnect()
                         break
                     case .reconnect:
@@ -455,8 +473,7 @@ actor GatewayClient {
 
     private func startHeartbeat() {
         heartbeatTask?.cancel()
-        heartbeatTask = Task { [weak self] in
-            guard let self else { return }
+        heartbeatTask = Task { @Sendable in
             await self.runHeartbeatLoop()
         }
     }
@@ -467,8 +484,8 @@ actor GatewayClient {
         let jitterNs = UInt64.random(in: 0..<UInt64(heartbeatIntervalMs)) * 1_000_000
         try? await Task.sleep(nanoseconds: jitterNs)
         while !Task.isCancelled {
-            // Missing ACK usually means a stale socket; reconnect early.
-            if awaitingHeartbeatAck {
+            // Allow tolerance for delayed ACKs - reconnect after 3 missed heartbeats
+            if missedHeartbeatAckCount >= 3 {
                 await attemptReconnect()
                 break
             }
@@ -477,7 +494,7 @@ actor GatewayClient {
                 let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
                 let data = try JSONEncoder().encode(payload)
                 try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
-                awaitingHeartbeatAck = true
+                missedHeartbeatAckCount += 1
                 lastHeartbeatSentAt = Date()
             } catch {
                 await attemptReconnect()
@@ -489,27 +506,28 @@ actor GatewayClient {
     }
 
     private func attemptReconnect() async {
-        // Reconnect strategy: close current socket, then retry with bounded exponential backoff.
+        // Reconnect strategy: close current socket, then retry with bounded exponential backoff with jitter.
         if !allowReconnect { return }
         await socket?.close()
         socket = nil
         heartbeatTask?.cancel()
         heartbeatTask = nil
-        awaitingHeartbeatAck = false
+        missedHeartbeatAckCount = 0
         status = .reconnecting
         let intents = lastIntents
         guard let sink = lastEventSink else { return }
         var delay: UInt64 = 500_000_000
         var attemptCount = 0
-        let maxAttempts = 10
-        while allowReconnect && attemptCount < maxAttempts {
+        while allowReconnect && attemptCount < maxReconnectAttempts {
             attemptCount += 1
-            try? await Task.sleep(nanoseconds: delay)
+            // Add jitter to delay to avoid thundering herd with multiple shards
+            let jitter = UInt64.random(in: 0...(delay / 4))
+            try? await Task.sleep(nanoseconds: delay + jitter)
             do {
                 try await connect(intents: intents, shard: lastShard, eventSink: sink)
                 return
             } catch {
-                delay = min(delay * 2, 16_000_000_000)
+                delay = min(delay * 2, maxReconnectDelayNs)
                 continue
             }
         }
@@ -553,7 +571,7 @@ actor GatewayClient {
 
 // MARK: - Lightweight decode utilities
 
-private struct GatewayOpBox: Codable {
+private struct GatewayOpBox: Codable, Sendable {
     let op: GatewayOpcode
     let t: String?
 }

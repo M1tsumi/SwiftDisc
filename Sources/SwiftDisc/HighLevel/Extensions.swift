@@ -14,7 +14,7 @@ public extension SwiftDiscExtension {
 }
 
 /// A closure-based implementation of `SwiftDiscExtension`.
-public final class Cog: SwiftDiscExtension {
+public final class Cog: SwiftDiscExtension, Sendable {
     public let name: String
     private let registerBlock: @Sendable (DiscordClient) async -> Void
     private let unloadBlock: @Sendable (DiscordClient) async -> Void

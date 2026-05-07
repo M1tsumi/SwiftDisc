@@ -1,7 +1,10 @@
 import Foundation
 
 public struct Template: Codable, Hashable, Sendable {
-    public struct TemplateGuild: Codable, Hashable, Sendable { public let id: GuildID?; public let name: String? }
+    public struct TemplateGuild: Codable, Hashable, Sendable {
+        public let id: GuildID?
+        public let name: String?
+    }
     public let code: String
     public let name: String
     public let description: String?

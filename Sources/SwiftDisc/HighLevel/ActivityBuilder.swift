@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ActivityBuilder {
+public struct ActivityBuilder: Sendable {
     private var name: String
     private var type: Int = 0 // 0 = playing, 2 = listening, 3 = watching, etc.
     private var state: String?
@@ -17,6 +17,7 @@ public struct ActivityBuilder {
     private var secretJoin: String?
     private var secretSpectate: String?
     private var secretMatch: String?
+    private var url: String?
 
     public init(name: String) { self.name = name }
 
@@ -45,6 +46,9 @@ public struct ActivityBuilder {
     public func party(id: String? = nil, size: [Int]? = nil) -> ActivityBuilder { var c = self; c.partyId = id; c.partySize = size; return c }
 
     public func secrets(join: String? = nil, spectate: String? = nil, match: String? = nil) -> ActivityBuilder { var c = self; c.secretJoin = join; c.secretSpectate = spectate; c.secretMatch = match; return c }
+    
+    /// Set the streaming URL (required when type is 1/streaming).
+    public func url(_ u: String) -> ActivityBuilder { var c = self; c.url = u; return c }
 
     public func build() -> PresenceUpdatePayload.Activity {
         let ts = (start == nil && end == nil) ? nil : PresenceUpdatePayload.Activity.Timestamps(start: start, end: end)

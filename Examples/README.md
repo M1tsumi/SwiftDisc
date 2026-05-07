@@ -40,14 +40,6 @@ These examples are simple, single-file bots demonstrating new features. They ass
 - File: `Examples/ThreadsAndScheduledEventsBot.swift`
 - What it does: Prints thread lifecycle and guild scheduled event activity to stdout.
 
-## 4) Voice — Stream Opus from stdin (macOS)
-- File: `Examples/VoiceStdin.swift`
-- What it does: Joins a voice channel and streams length‑prefixed Opus frames from stdin using `PipeOpusSource`.
-- Requirements: `DiscordConfiguration(enableVoiceExperimental: true)`; provide Opus packets (48kHz, ~20ms). No Swift dependencies required.
-- Usage:
-  - Build/run the example and pipe framed Opus into stdin.
-  - Framing format per packet: `[u32 little‑endian length][<length> bytes]` repeated.
-
 ## Minimal Integration Snippets
 
 ### Autocomplete registration

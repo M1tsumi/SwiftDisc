@@ -24,11 +24,18 @@ public struct User: Codable, Hashable, Sendable {
     public let public_flags: Int?
     /// The user's primary guild tag. Added 2025-07-02.
     public let primary_guild: UserPrimaryGuild?
+    public let locale: String?
+    public let email: String?
+    public let verified: Bool?
+    public let mfa_enabled: Bool?
+    public let bot: Bool?
+    public let system: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, username, discriminator, avatar, banner
         case accent_color, flags, public_flags
-        case primary_guild
+        case primary_guild, locale, email, verified
+        case mfa_enabled, bot, system
         case globalName = "global_name"
     }
 }

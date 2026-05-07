@@ -2,11 +2,11 @@ import XCTest
 @testable import SwiftDisc
 
 final class CodableDecodingTests: XCTestCase {
-    private struct UserContainer: Codable {
+    private struct UserContainer: Codable, Sendable {
         let id: UserID
     }
 
-    private struct PermissionContainer: Codable {
+    private struct PermissionContainer: Codable, Sendable {
         let permissions: PermissionBitset
     }
 

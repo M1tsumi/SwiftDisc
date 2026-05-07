@@ -14,7 +14,7 @@ import Foundation
 ///     .timestamp(Date())
 ///     .build()
 /// ```
-public struct EmbedBuilder {
+public struct EmbedBuilder: Sendable {
     private var title: String?
     private var description: String?
     private var url: String?
@@ -141,5 +141,58 @@ public struct EmbedBuilder {
             image: image,
             timestamp: timestamp
         )
+    }
+    
+    /// Validates the embed against Discord API limits.
+    /// - Throws: ValidationError if any limits are exceeded
+    public func validate() throws {
+        if let title = title, title.count > 256 {
+            throw ValidationError.titleTooLong(length: title.count, max: 256)
+        }
+        if let description = description, description.count > 4096 {
+            throw ValidationError.descriptionTooLong(length: description.count, max: 4096)
+        }
+        if fields.count > 25 {
+            throw ValidationError.tooManyFields(count: fields.count, max: 25)
+        }
+        for (index, field) in fields.enumerated() {
+            if field.name.count > 256 {
+                throw ValidationError.fieldNameTooLong(field: index, length: field.name.count, max: 256)
+            }
+            if field.value.count > 1024 {
+                throw ValidationError.fieldValueTooLong(field: index, length: field.value.count, max: 1024)
+            }
+        }
+    }
+    
+    /// Builds and validates the embed.
+    /// - Throws: ValidationError if any limits are exceeded
+    /// - Returns: A fully composed `Embed` value
+    public func buildAndValidate() throws -> Embed {
+        try validate()
+        return build()
+    }
+    
+    public enum ValidationError: Error, LocalizedDescription, Sendable {
+        case titleTooLong(length: Int, max: Int)
+        case descriptionTooLong(length: Int, max: Int)
+        case tooManyFields(count: Int, max: Int)
+        case fieldNameTooLong(field: Int, length: Int, max: Int)
+        case fieldValueTooLong(field: Int, length: Int, max: Int)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .titleTooLong(let length, let max):
+                return "Embed title too long: \(length) characters (max \(max))"
+            case .descriptionTooLong(let length, let max):
+                return "Embed description too long: \(length) characters (max \(max))"
+            case .tooManyFields(let count, let max):
+                return "Too many embed fields: \(count) (max \(max))"
+            case .fieldNameTooLong(let field, let length, let max):
+                return "Embed field \(field) name too long: \(length) characters (max \(max))"
+            case .fieldValueTooLong(let field, let length, let max):
+                return "Embed field \(field) value too long: \(length) characters (max \(max))"
+            }
+        }
     }
 }

@@ -16,7 +16,7 @@ actor EventDispatcher {
             await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
             await client.cache.add(message: msg)
             if let cb = await client.onMessage { await cb(msg) }
-            if let router = await client.commands { await router.handleIfCommand(message: msg, client: client) }
+            if let router = await client.commands { await router.handle(msg, client: client) }
 
         case .messageUpdate(let msg):
             await client.cache.upsert(user: msg.author)
@@ -77,16 +77,22 @@ actor EventDispatcher {
 
         // MARK: Roles
         case .guildRoleCreate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleCreate { await cb(ev) }
 
         case .guildRoleUpdate(let ev):
+            await client.cache.upsert(role: ev.role, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleUpdate { await cb(ev) }
 
         case .guildRoleDelete(let ev):
+            await client.cache.removeRole(id: ev.role_id, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleDelete { await cb(ev) }
 
         // MARK: Emojis / Stickers (no callback – stream-only)
-        case .guildEmojisUpdate, .guildStickersUpdate:
+        case .guildEmojisUpdate(let ev):
+            await client.cache.upsert(emojis: ev.emojis, guildId: ev.guild_id)
+
+        case .guildStickersUpdate:
             break
 
         // MARK: Channels
@@ -102,6 +108,10 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: channel.id)
             if let cb = await client.onChannelDelete { await cb(channel) }
 
+        // MARK: Voice
+        // Voice events are not currently modeled in DiscordEvent enum
+        // These are handled via raw events if needed
+
         // MARK: Threads
         case .threadCreate(let ch):
             await client.cache.upsert(channel: ch)
@@ -115,8 +125,22 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: ch.id)
             if let cb = await client.onThreadDelete { await cb(ch) }
 
-        case .threadMemberUpdate, .threadMembersUpdate:
+        case .threadMemberUpdate:
             break
+
+        case .threadMembersUpdate(let ev):
+            if let cb = await client.onThreadMembersUpdate { await cb(ev) }
+
+        case .threadListSync(let ev):
+            for thread in ev.threads { await client.cache.upsert(channel: thread) }
+
+        // MARK: Application Commands
+        case .applicationCommandPermissionsUpdate(let ev):
+            if let cb = await client.onApplicationCommandPermissionsUpdate { await cb(ev) }
+
+        // MARK: Channel Info
+        case .channelInfo(let channel):
+            await client.cache.upsert(channel: channel)
 
         // MARK: Interactions
         case .interactionCreate(let interaction):
@@ -130,13 +154,6 @@ actor EventDispatcher {
                 await s.handle(interaction: interaction, client: client)
             }
 
-        // MARK: Voice
-        case .voiceStateUpdate(let state):
-            await client._internalOnVoiceStateUpdate(state)
-            if let cb = await client.onVoiceStateUpdate { await cb(state) }
-
-        case .voiceServerUpdate(let vsu):
-            await client._internalOnVoiceServerUpdate(vsu)
 
         // MARK: Presence & Typing
         case .typingStart(let ev):
@@ -213,6 +230,9 @@ actor EventDispatcher {
 
         // MARK: Raw / Other
         case .raw:
+            break
+
+        case .sessionInvalidated:
             break
         }
 
