@@ -1,7 +1,7 @@
 import Foundation
 
-public struct ButtonBuilder {
-    public enum Style: Int {
+public struct ButtonBuilder: Sendable {
+    public enum Style: Int, Sendable {
         case primary = 1
         case secondary = 2
         case success = 3
@@ -29,7 +29,7 @@ public struct ButtonBuilder {
     }
 }
 
-public struct SelectMenuBuilder {
+public struct SelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.SelectMenu.Option] = []
     private var placeholder: String?
@@ -52,7 +52,52 @@ public struct SelectMenuBuilder {
     }
 }
 
-public struct TextInputBuilder {
+// MARK: - String Select Menu Builder (Discord's newer select menu type)
+
+public struct StringSelectMenuBuilder: Sendable {
+    private var customId: String = ""
+    private var options: [MessageComponent.SelectMenu.Option] = []
+    private var placeholder: String?
+    private var min: Int?
+    private var max: Int?
+    private var disabled: Bool?
+    public init() {}
+    public func customId(_ id: String) -> StringSelectMenuBuilder { var c = self; c.customId = id; return c }
+    public func option(label: String, value: String, description: String? = nil, emoji: String? = nil, isDefault: Bool? = nil) -> StringSelectMenuBuilder {
+        var c = self
+        c.options.append(.init(label: label, value: value, description: description, emoji: emoji, default: isDefault))
+        return c
+    }
+    public func placeholder(_ t: String) -> StringSelectMenuBuilder { var c = self; c.placeholder = t; return c }
+    public func minValues(_ v: Int) -> StringSelectMenuBuilder { var c = self; c.min = v; return c }
+    public func maxValues(_ v: Int) -> StringSelectMenuBuilder { var c = self; c.max = v; return c }
+    public func disabled(_ d: Bool = true) -> StringSelectMenuBuilder { var c = self; c.disabled = d; return c }
+    public func build() -> MessageComponent {
+        MessageComponent.select(.init(custom_id: customId, options: options, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled))
+    }
+}
+
+// MARK: - Channel Select Menu Builder
+
+public struct ChannelSelectMenuBuilder: Sendable {
+    private var customId: String = ""
+    private var placeholder: String?
+    private var channelTypes: [Int]?
+    private var defaultChannelIds: [ChannelID]?
+    private var disabled: Bool?
+    public init() {}
+    public func customId(_ id: String) -> ChannelSelectMenuBuilder { var c = self; c.customId = id; return c }
+    public func placeholder(_ t: String) -> ChannelSelectMenuBuilder { var c = self; c.placeholder = t; return c }
+    /// Set allowed channel types (0=GuildText, 2=Voice, 4=Category, 5=News, 10=NewsThread, 11=PublicThread, 12=PrivateThread, 13=StageVoice)
+    public func channelTypes(_ types: [Int]) -> ChannelSelectMenuBuilder { var c = self; c.channelTypes = types; return c }
+    public func defaultChannels(_ ids: [ChannelID]) -> ChannelSelectMenuBuilder { var c = self; c.defaultChannelIds = ids; return c }
+    public func disabled(_ d: Bool = true) -> ChannelSelectMenuBuilder { var c = self; c.disabled = d; return c }
+    public func build() -> MessageComponent {
+        MessageComponent.channelSelect(.init(custom_id: customId, placeholder: placeholder, disabled: disabled, channel_types: channelTypes, default_values: defaultChannelIds?.map { .init(id: $0.rawValue, type: .channel) }))
+    }
+}
+
+public struct TextInputBuilder: Sendable {
     private var customId: String = ""
     private var style: MessageComponent.TextInput.Style = .short
     private var label: String = ""
@@ -74,17 +119,19 @@ public struct TextInputBuilder {
         if let min = minLength, let max = maxLength, min > max { throw ValidationError.invalidLength }
         if label.isEmpty { throw ValidationError.missingLabel }
         if customId.isEmpty { throw ValidationError.missingCustomId }
+        if let max = maxLength, max > 4000 { throw ValidationError.maxLengthExceeded(max: 4000) }
+        if let min = minLength, min < 0 { throw ValidationError.invalidLength }
     }
     public func build() throws -> MessageComponent {
         try validate()
         return .textInput(.init(custom_id: customId, style: style, label: label, min_length: minLength, max_length: maxLength, required: required, value: value, placeholder: placeholder))
     }
-    public enum ValidationError: Error { case invalidLength, missingLabel, missingCustomId }
+    public enum ValidationError: Error, Sendable { case invalidLength, missingLabel, missingCustomId, maxLengthExceeded(max: Int) }
 }
 
 // MARK: - Modal Component Builders (added 2026)
 
-public struct LabelBuilder {
+public struct LabelBuilder: Sendable {
     private var label: String = ""
     private var description: String?
     private var components: [MessageComponent]?
@@ -97,7 +144,7 @@ public struct LabelBuilder {
     }
 }
 
-public struct RadioGroupBuilder {
+public struct RadioGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.RadioGroup.RadioOption] = []
     private var required: Bool?
@@ -114,7 +161,7 @@ public struct RadioGroupBuilder {
     }
 }
 
-public struct CheckboxGroupBuilder {
+public struct CheckboxGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.CheckboxGroup.CheckboxOption] = []
     private var minValues: Int?
@@ -133,7 +180,7 @@ public struct CheckboxGroupBuilder {
     }
 }
 
-public struct CheckboxBuilder {
+public struct CheckboxBuilder: Sendable {
     private var customId: String = ""
     private var required: Bool?
     private var isDefault: Bool?
@@ -146,7 +193,7 @@ public struct CheckboxBuilder {
     }
 }
 
-public struct FileUploadBuilder {
+public struct FileUploadBuilder: Sendable {
     private var customId: String = ""
     private var label: String = ""
     private var minLength: Int?
@@ -165,17 +212,17 @@ public struct FileUploadBuilder {
     }
 }
 
-public struct ActionRowBuilder {
+public struct ActionRowBuilder: Sendable {
     private var components: [MessageComponent] = []
     public init() {}
     public func add(_ component: MessageComponent) -> ActionRowBuilder { var c = self; c.components.append(component); return c }
     public func build() -> MessageComponent { .actionRow(.init(components: components)) }
 }
 
-public struct ComponentsBuilder {
+public struct ComponentsBuilder: Sendable {
     private var rows: [MessageComponent.ActionRow] = []
     public init() {}
-    public mutating func row(_ configure: (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
+    public mutating func row(_ configure: @Sendable (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
         var rb = ActionRowBuilder()
         configure(&rb)
         if case let .actionRow(row) = rb.build() {

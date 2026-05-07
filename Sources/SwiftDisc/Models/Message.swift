@@ -61,6 +61,12 @@ public struct MessageReference: Codable, Hashable, Sendable {
     public let channel_id: ChannelID?
     public let guild_id: GuildID?
     public let fail_if_not_exists: Bool?
+    public init(message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+        self.message_id = message_id
+        self.channel_id = channel_id
+        self.guild_id = guild_id
+        self.fail_if_not_exists = fail_if_not_exists
+    }
 }
 
 public struct MessageActivity: Codable, Hashable, Sendable {
@@ -137,6 +143,13 @@ public struct AllowedMentions: Codable, Hashable, Sendable {
     public let roles: [RoleID]?
     public let users: [UserID]?
     public let replied_user: Bool?
+
+    public init(parse: [String]? = nil, roles: [RoleID]? = nil, users: [UserID]? = nil, replied_user: Bool? = nil) {
+        self.parse = parse
+        self.roles = roles
+        self.users = users
+        self.replied_user = replied_user
+    }
 }
 
 public struct Reaction: Codable, Hashable, Sendable {

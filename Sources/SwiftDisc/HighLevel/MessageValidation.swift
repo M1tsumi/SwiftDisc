@@ -2,7 +2,7 @@ import Foundation
 
 /// Validation helpers for Discord message payloads to ensure compliance with API limits.
 /// These helpers provide pre-send validation to prevent API errors from invalid messages.
-public enum MessageValidation {
+public enum MessageValidation: Sendable {
     /// Maximum message content length in characters.
     public static let maxContentLength = 2000
     /// Maximum number of embeds per message.
@@ -15,15 +15,31 @@ public enum MessageValidation {
     public static let maxFileSizeBytes = 25 * 1024 * 1024
     /// Maximum file upload size in bytes with premium (500MB).
     public static let maxFileSizePremiumBytes = 500 * 1024 * 1024
+    
+    /// Maximum number of poll answers.
+    public static let maxPollAnswers = 10
+    
+    /// Maximum poll answer text length.
+    public static let maxPollAnswerLength = 55
+    
+    /// Maximum poll question length.
+    public static let maxPollQuestionLength = 300
 
     /// Errors that can occur during message validation.
-    public enum ValidationError: Error, LocalizedDescription {
+    public enum ValidationError: Error, LocalizedDescription, Sendable {
         case contentTooLong(length: Int, max: Int)
         case tooManyEmbeds(count: Int, max: Int)
         case tooManyActionRows(count: Int, max: Int)
         case tooManyComponentsInRow(count: Int, max: Int)
         case fileTooLarge(size: Int, max: Int)
         case missingRequiredField(field: String)
+        case tooManyPollAnswers(count: Int, max: Int)
+        case pollAnswerTooLong(length: Int, max: Int)
+        case pollQuestionTooLong(length: Int, max: Int)
+        case embedFieldTooLong(field: String, length: Int, max: Int)
+        case embedTitleTooLong(length: Int, max: Int)
+        case embedDescriptionTooLong(length: Int, max: Int)
+        case tooManyEmbedFields(count: Int, max: Int)
 
         public var errorDescription: String? {
             switch self {
@@ -39,6 +55,20 @@ public enum MessageValidation {
                 return "File too large: \(size) bytes (max \(max))"
             case .missingRequiredField(let field):
                 return "Missing required field: \(field)"
+            case .tooManyPollAnswers(let count, let max):
+                return "Too many poll answers: \(count) (max \(max))"
+            case .pollAnswerTooLong(let length, let max):
+                return "Poll answer too long: \(length) characters (max \(max))"
+            case .pollQuestionTooLong(let length, let max):
+                return "Poll question too long: \(length) characters (max \(max))"
+            case .embedFieldTooLong(let field, let length, let max):
+                return "Embed field '\(field)' too long: \(length) characters (max \(max))"
+            case .embedTitleTooLong(let length, let max):
+                return "Embed title too long: \(length) characters (max \(max))"
+            case .embedDescriptionTooLong(let length, let max):
+                return "Embed description too long: \(length) characters (max \(max))"
+            case .tooManyEmbedFields(let count, let max):
+                return "Too many embed fields: \(count) (max \(max))"
             }
         }
     }
@@ -98,9 +128,70 @@ public enum MessageValidation {
         try validateEmbeds(embeds)
         try validateComponents(components)
     }
+    
+    /// Validate embed fields.
+    public static func validateEmbedFields(_ fields: [Embed.Field]?) throws {
+        guard let fields = fields, !fields.isEmpty else { return }
+        let count = fields.count
+        guard count <= 25 else {
+            throw ValidationError.tooManyEmbedFields(count: count, max: 25)
+        }
+        for field in fields {
+            let nameLength = field.name.count
+            guard nameLength <= 256 else {
+                throw ValidationError.embedFieldTooLong(field: "name", length: nameLength, max: 256)
+            }
+            let valueLength = field.value.count
+            guard valueLength <= 1024 else {
+                throw ValidationError.embedFieldTooLong(field: "value", length: valueLength, max: 1024)
+            }
+        }
+    }
+    
+    /// Validate embed title and description.
+    public static func validateEmbedLimits(_ embed: Embed) throws {
+        if let title = embed.title {
+            let length = title.count
+            guard length <= 256 else {
+                throw ValidationError.embedTitleTooLong(length: length, max: 256)
+            }
+        }
+        if let description = embed.description {
+            let length = description.count
+            guard length <= 4096 else {
+                throw ValidationError.embedDescriptionTooLong(length: length, max: 4096)
+            }
+        }
+        try validateEmbedFields(embed.fields)
+    }
+    
+    /// Validate poll question.
+    public static func validatePollQuestion(_ question: String) throws {
+        let length = question.count
+        guard length <= maxPollQuestionLength else {
+            throw ValidationError.pollQuestionTooLong(length: length, max: maxPollQuestionLength)
+        }
+    }
+    
+    /// Validate poll answers.
+    public static func validatePollAnswers(_ answers: [String]) throws {
+        let count = answers.count
+        guard count >= 2 else {
+            throw ValidationError.missingRequiredField(field: "Poll must have at least 2 answers")
+        }
+        guard count <= maxPollAnswers else {
+            throw ValidationError.tooManyPollAnswers(count: count, max: maxPollAnswers)
+        }
+        for answer in answers {
+            let length = answer.count
+            guard length <= maxPollAnswerLength else {
+                throw ValidationError.pollAnswerTooLong(length: length, max: maxPollAnswerLength)
+            }
+        }
+    }
 }
 
 /// Protocol for types that can provide localized error descriptions.
-public protocol LocalizedDescription {
+public protocol LocalizedDescription: Sendable {
     var errorDescription: String? { get }
 }

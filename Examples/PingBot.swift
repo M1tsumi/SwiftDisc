@@ -17,7 +17,7 @@ struct PingBotMain {
                 do {
                     try await client.sendMessage(channelId: msg.channel_id, content: "Pong!")
                 } catch {
-                    print("Failed to send Pong: \(error)")
+                    print("Failed to send Pong in channel \(msg.channel_id): \(error)")
                 }
             }
         }
@@ -27,7 +27,7 @@ struct PingBotMain {
             let events = await client.events
             for await _ in events { /* keep alive */ }
         } catch {
-            print("❌ Error: \(error)")
+            print("❌ Connection error: \(error)")
         }
     }
 }

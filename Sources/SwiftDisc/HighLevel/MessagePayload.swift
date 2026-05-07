@@ -25,6 +25,9 @@ public struct MessagePayload: Sendable {
     public var flags: Int?
     public var stickerIds: [StickerID]?
     public var files: [FileAttachment]?
+    public var poll: Poll?
+    public var threadName: String?
+    public var threadId: ChannelID?
 
     public init() {}
 
@@ -123,6 +126,22 @@ public struct MessagePayload: Sendable {
 
     /// Set the full list of file attachments (replaces any previously added files).
     public func files(_ fs: [FileAttachment]) -> Self { var c = self; c.files = fs; return c }
+    
+    // MARK: - Polls
+    
+    /// Attach a poll to the message.
+    /// - Parameter poll: The poll to attach
+    public func poll(_ poll: Poll) -> Self { var c = self; c.poll = poll; return c }
+    
+    // MARK: - Threads
+    
+    /// Create a thread from this message with the given name.
+    /// - Parameter name: The thread name
+    public func thread(_ name: String) -> Self { var c = self; c.threadName = name; return c }
+    
+    /// Create a thread in an existing thread channel.
+    /// - Parameter threadId: The parent thread ID
+    public func inThread(_ threadId: ChannelID) -> Self { var c = self; c.threadId = threadId; return c }
 }
 
 // MARK: - DiscordClient send and edit API
@@ -147,6 +166,7 @@ public extension DiscordClient {
                 components: payload.components,
                 tts: payload.tts,
                 flags: payload.flags,
+                poll: payload.poll,
                 files: files
             )
         }
@@ -159,7 +179,8 @@ public extension DiscordClient {
             messageReference: payload.messageReference,
             tts: payload.tts,
             flags: payload.flags,
-            stickerIds: payload.stickerIds
+            stickerIds: payload.stickerIds,
+            poll: payload.poll
         )
     }
 
@@ -197,7 +218,7 @@ public extension DiscordClient {
         let type: InteractionResponseType = deferred
             ? .deferredChannelMessageWithSource
             : .channelMessageWithSource
-        struct DataObj: Encodable {
+        struct DataObj: Encodable, Sendable {
             let content: String?
             let embeds: [Embed]?
             let components: [MessageComponent]?
@@ -205,7 +226,10 @@ public extension DiscordClient {
             let tts: Bool?
             let allowed_mentions: AllowedMentions?
         }
-        struct Body: Encodable { let type: Int; let data: DataObj }
+        struct Body: Encodable, Sendable {
+            let type: Int
+            let data: DataObj
+        }
         let data = DataObj(
             content: payload.content,
             embeds: payload.embeds,
@@ -214,7 +238,8 @@ public extension DiscordClient {
             tts: payload.tts,
             allowed_mentions: payload.allowedMentions
         )
-        struct Ack: Decodable {}
+        struct Ack: Decodable, Sendable {
+        }
         let _: Ack = try await http.post(
             path: "/interactions/\(interaction.id)/\(interaction.token)/callback",
             body: Body(type: type.rawValue, data: data)
