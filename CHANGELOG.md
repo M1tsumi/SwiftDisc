@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-04
+
+### Overview
+SwiftDisc 2.2.0 improves error handling across the high-level router components with custom error handler support, adds convenience properties to command contexts, improves error logging with additional context, and fixes actor-isolation issues for Swift 6 strict concurrency compliance.
+
+### Added
+- **Error handlers for routers** — CommandRouter, SlashCommandRouter, and ViewManager now support optional error handlers that are invoked when command or view handlers throw
+- **Error context improvements** — ViewManager error messages now include channel ID, message ID, pattern, and custom ID information for better debugging
+- **Convenience properties** — CommandRouter.Context now includes channelId and author properties for easier access to common message data
+- **Example error handling** — SlashBot.swift demonstrates error handler usage, PingBot.swift shows improved error messages with channel context
+
+### Changed
+- **Error handler initialization** — error handlers are now passed during router initialization instead of being set via property assignment to comply with Swift 6 actor isolation rules
+- **Default error logging** — improved default error logging with channel ID, pattern type, and custom ID context when no custom error handler is set
+- **Example error messages** — connection error messages in examples now specify "Connection error" instead of generic "Error"
+
+### Fixed
+- **Actor-isolation errors** — fixed actor-isolation violations by passing error handlers during initialization instead of mutating actor-isolated properties from outside the actor
+
 ## [2.1.0] - 2026-04-08
 
 ### Overview

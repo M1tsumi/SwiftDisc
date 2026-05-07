@@ -1,4 +1,4 @@
-SwiftDisc Developer Documentation
+SwiftDisc Developer Documentation (v2.2.0)
 =================================
 
 Overview

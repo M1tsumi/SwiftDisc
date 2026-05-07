@@ -2,7 +2,7 @@ import Foundation
 
 public struct DiscordConfiguration: Sendable {
     /// SwiftDisc library version for User-Agent header and Discord tracking.
-    public static let version = "2.1.0"
+    public static let version = "2.2.0"
 
     // Default URLs are static constants so startup never depends on force-unwrapped strings.
     public static let defaultApiBaseURL: URL = URL(string: "https://discord.com/api")!

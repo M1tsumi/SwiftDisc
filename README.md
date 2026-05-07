@@ -31,7 +31,7 @@ Add SwiftDisc with Swift Package Manager:
 ```swift
 // Package.swift
 .dependencies([
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.1.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.2.0")
 ]),
 .targets([
     .target(
@@ -163,7 +163,7 @@ swift run FileUploadBotExample
 
 ## Reliability and DX notes
 
-SwiftDisc v2.1.0 includes practical reliability and onboarding improvements:
+SwiftDisc v2.2.0 includes practical reliability and onboarding improvements:
 
 - Actor-safe example patterns for Swift 6 strict concurrency.
 - Reusable test fixtures for faster test authoring.
