@@ -163,6 +163,7 @@ public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
 public struct ReadyEvent: Codable, Hashable, Sendable {
     public let user: User
     public let session_id: String
+    public let resume_gateway_url: String?
 }
 
 // Note: Guild model lives in Sources/SwiftDisc/Models/Guild.swift

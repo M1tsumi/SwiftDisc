@@ -11,6 +11,7 @@ actor GatewayClient {
     private var heartbeatIntervalMs: Int = 0
     private var seq: Int?
     private var sessionId: String?
+    private var resumeGatewayUrl: String?
     private var missedHeartbeatAckCount: Int = 0
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
@@ -69,7 +70,9 @@ actor GatewayClient {
         guard configuration.apiVersion >= 8 && configuration.apiVersion <= 10 else {
             throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
         }
-        guard var components = URLComponents(url: configuration.gatewayBaseURL, resolvingAgainstBaseURL: false) else {
+        // Use resume_gateway_url from READY if available, otherwise use default gateway URL
+        let baseURL = resumeGatewayUrl ?? configuration.gatewayBaseURL
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
         var queryItems = [
@@ -175,8 +178,9 @@ actor GatewayClient {
                         guard let t = opBox.t else { continue }
                         if t == "READY" {
                             if let payload = try? dec.decode(GatewayPayload<ReadyEvent>.self, from: data), let ready = payload.d {
-                                // Save session ID so reconnects can try RESUME.
+                                // Save session ID and resume gateway URL for reconnects.
                                 self.sessionId = ready.session_id
+                                self.resumeGatewayUrl = ready.resume_gateway_url
                                 self.status = .ready
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
