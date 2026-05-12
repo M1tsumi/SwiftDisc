@@ -13,7 +13,7 @@ actor EventDispatcher {
         // MARK: Messages
         case .messageCreate(let msg):
             await client.cache.upsert(user: msg.author)
-            await client.cache.upsert(channel: Channel(id: msg.channel_id, type: 0))
+            await client.cache.ensureChannelStub(id: msg.channel_id)
             await client.cache.add(message: msg)
             if let cb = await client.onMessage { await cb(msg) }
             if let router = await client.commands { await router.handle(msg, client: client) }
@@ -145,7 +145,7 @@ actor EventDispatcher {
         // MARK: Interactions
         case .interactionCreate(let interaction):
             if let cid = interaction.channel_id {
-                await client.cache.upsert(channel: Channel(id: cid, type: 0))
+                await client.cache.ensureChannelStub(id: cid)
             }
             if let cb = await client.onInteractionCreate { await cb(interaction) }
             if interaction.type == 4, let ac = await client.autocomplete {
@@ -231,13 +231,11 @@ actor EventDispatcher {
         // MARK: Raw / Other
         case .raw:
             break
-
+        // MARK: Session events
         case .sessionInvalidated:
             break
+        case .disconnected:
+            break
         }
-
-        await client._internalEmitEvent(event)
     }
 }
-
-

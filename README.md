@@ -31,7 +31,7 @@ Add SwiftDisc with Swift Package Manager:
 ```swift
 // Package.swift
 .dependencies([
-    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.2.0")
+    .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.3.0")
 ]),
 .targets([
     .target(
@@ -163,12 +163,17 @@ swift run FileUploadBotExample
 
 ## Reliability and DX notes
 
-SwiftDisc v2.2.0 includes practical reliability and onboarding improvements:
+SwiftDisc v2.3.0 is a correctness and reliability patch release that fixes critical compilation issues for Swift 6.2, resolves gateway connection and disconnect handling bugs, corrects multipart attachment handling, and improves WebSocket message size limits. This release ensures stability and proper behavior across gateway, REST, and WebSocket layers.
 
-- Actor-safe example patterns for Swift 6 strict concurrency.
-- Reusable test fixtures for faster test authoring.
-- Cleaner callback setup with explicit setter methods.
-- Updated docs aimed at first-run success.
+### Debugging capabilities
+
+SwiftDisc provides several debugging and observability features for developers:
+
+- **Gateway decode diagnostics** — Enable `DiscordConfiguration.enableGatewayDecodeDiagnostics` to log gateway payload decoding failures with opcode/event context and payload previews
+- **Rate limit observability** — Use `DiscordConfiguration.onRateLimit` to observe REST bucket updates and waits through lightweight `RateLimitEvent` snapshots
+- **Typed error handling** — All REST and gateway operations throw `DiscordError` with descriptive messages and optional `debugContext` for troubleshooting
+- **Router error handlers** — `CommandRouter`, `SlashCommandRouter`, and `ViewManager` support optional error handlers that receive context about failed operations
+- **Default error logging** — Routers include default error logging with channel ID, pattern type, and custom ID context when no custom error handler is set
 
 ## Troubleshooting
 

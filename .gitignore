@@ -59,6 +59,11 @@ Pods/
 /docs/
 .github/PULL_REQUEST_TEMPLATE.md
 
+# Local development files
+.local/
+
+
+
 # Standard Swift and IDE ignores
 .build/
 .swiftpm/

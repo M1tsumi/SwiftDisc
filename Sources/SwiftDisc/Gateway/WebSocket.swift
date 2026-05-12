@@ -14,11 +14,13 @@ protocol WebSocketClient: Sendable {
     func send(_ message: WebSocketMessage) async throws
     func receive() async throws -> WebSocketMessage
     func close() async
+    var closeCode: Int? { get }
 }
 
 final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     private let session: URLSession
+    private(set) var closeCode: Int?
 
     deinit {
         // Ensure FoundationNetworking tears down socket resources deterministically.
@@ -33,6 +35,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
         config.httpMaximumConnectionsPerHost = 8
         self.session = URLSession(configuration: config)
         self.task = session.webSocketTask(with: url)
+        self.task.maximumMessageSize = 16 * 1024 * 1024 // 16 MiB to handle large GUILD_CREATE payloads
         self.task.resume()
     }
 
@@ -59,11 +62,13 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
 
     func close() async {
         task.cancel(with: .normalClosure, reason: nil)
+        closeCode = Int(task.closeCode.rawValue)
         session.invalidateAndCancel()
     }
 }
 
 final class UnavailableWebSocketAdapter: WebSocketClient, Sendable {
+    var closeCode: Int? { nil }
     func send(_ message: WebSocketMessage) async throws { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func receive() async throws -> WebSocketMessage { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func close() async { }

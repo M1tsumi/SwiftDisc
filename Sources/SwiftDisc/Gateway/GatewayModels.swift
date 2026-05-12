@@ -115,6 +115,7 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementDelete(Entitlement)
     // Session events
     case sessionInvalidated
+    case disconnected(reason: String)
 }
 
 public struct MessageDelete: Codable, Hashable, Sendable {
@@ -162,6 +163,7 @@ public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
 public struct ReadyEvent: Codable, Hashable, Sendable {
     public let user: User
     public let session_id: String
+    public let resume_gateway_url: String?
 }
 
 // Note: Guild model lives in Sources/SwiftDisc/Models/Guild.swift
@@ -302,9 +304,9 @@ public struct IdentifyConnectionProperties: Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case os = "$os"
-        case browser = "$browser"
-        case device = "$device"
+        case os
+        case browser
+        case device
     }
 }
 

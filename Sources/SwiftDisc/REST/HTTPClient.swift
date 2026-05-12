@@ -170,7 +170,34 @@ final class HTTPClient: @unchecked Sendable {
         let lineBreak = "\r\n"
         func append(_ string: String) { body.append(Data(string.utf8)) }
 
-        if let json = jsonPayload {
+        // Collect attachment descriptors for files with descriptions
+        struct AttachmentDescriptor: Encodable, Sendable {
+            let id: Int
+            let description: String
+            let filename: String
+        }
+        var descriptors: [AttachmentDescriptor] = []
+        for (idx, file) in files.enumerated() {
+            if let desc = file.description {
+                descriptors.append(AttachmentDescriptor(id: idx, description: desc, filename: file.filename))
+            }
+        }
+
+        // If there are descriptors, modify the JSON payload to include them
+        var finalJsonPayload = jsonPayload
+        if !descriptors.isEmpty, let originalJson = jsonPayload {
+            // Parse the original JSON and add attachments array
+            if var jsonObj = try? JSONSerialization.jsonObject(with: originalJson) as? [String: Any] {
+                jsonObj["attachments"] = descriptors.map { desc in
+                    ["id": desc.id, "description": desc.description, "filename": desc.filename]
+                }
+                if let modifiedData = try? JSONSerialization.data(withJSONObject: jsonObj) {
+                    finalJsonPayload = modifiedData
+                }
+            }
+        }
+
+        if let json = finalJsonPayload {
             append("--\(boundary)\r\n")
             append("Content-Disposition: form-data; name=\"payload_json\"\r\n")
             append("Content-Type: application/json\r\n\r\n")
@@ -185,19 +212,6 @@ final class HTTPClient: @unchecked Sendable {
             append("Content-Type: \(ct)\r\n\r\n")
             body.append(file.data)
             append(lineBreak)
-            if let desc = file.description {
-                append("--\(boundary)\r\n")
-                append("Content-Disposition: form-data; name=\"attachments\"\r\n")
-                append("Content-Type: application/json\r\n\r\n")
-                // Attachment descriptors must use the same index as files[idx].
-                struct Desc: Encodable, Sendable {
-                    let id: Int
-                    let description: String
-                }
-                let descObj = [Desc(id: idx, description: desc)]
-                if let data = try? JSONEncoder().encode(descObj) { body.append(data) }
-                append(lineBreak)
-            }
         }
 
         append("--\(boundary)--\r\n")
@@ -295,7 +309,23 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     private func makeRouteKey(method: String, path: String) -> String {
-        // Normalize resource IDs to keep related routes in the same limiter bucket.
+        // Discord's bucket model is per-route-per-major-param.
+        // Extract major params (channel_id, guild_id, webhook_id) for proper bucket isolation.
+        let components = path.split(separator: "/").map { String($0) }
+        var majorParam: String?
+        
+        // Find the first major parameter in the path
+        for (index, component) in components.enumerated() {
+            if index > 0 {
+                let prev = components[index - 1]
+                if prev == "channels" || prev == "guilds" || prev == "webhooks" {
+                    majorParam = component
+                    break
+                }
+            }
+        }
+        
+        // Normalize non-major snowflakes to :id
         let replaced: String
         if let regex = Self.routeKeyRegex {
             let range = NSRange(location: 0, length: path.utf16.count)
@@ -304,7 +334,9 @@ final class HTTPClient: @unchecked Sendable {
         } else {
             replaced = path
         }
-        return "\(method) \(replaced)"
+        
+        let major = majorParam ?? "global"
+        return "\(method):\(replaced)|major=\(major)"
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
@@ -364,6 +396,7 @@ final class HTTPClient: @unchecked Sendable {
                 throw de
             } catch {
                 // Handle non-DiscordError network errors
+                // Cancellation should always be terminal - check before retry logic
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
                     let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)

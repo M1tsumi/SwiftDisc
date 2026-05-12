@@ -2,7 +2,7 @@ import Foundation
 
 public struct DiscordConfiguration: Sendable {
     /// SwiftDisc library version for User-Agent header and Discord tracking.
-    public static let version = "2.2.0"
+    public static let version = "2.3.0"
 
     // Default URLs are static constants so startup never depends on force-unwrapped strings.
     public static let defaultApiBaseURL: URL = URL(string: "https://discord.com/api")!
@@ -22,7 +22,9 @@ public struct DiscordConfiguration: Sendable {
     /// Gateway transport compression: none, zlib-stream, or zstd-stream
     public enum GatewayCompression: Sendable {
         case none
+        @available(*, unavailable, message: "zlib-stream compression not yet implemented")
         case zlibStream
+        @available(*, unavailable, message: "zstd-stream compression not yet implemented")
         case zstdStream
     }
     public var gatewayCompression: GatewayCompression

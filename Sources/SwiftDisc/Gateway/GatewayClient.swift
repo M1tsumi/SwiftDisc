@@ -1,6 +1,8 @@
 import Foundation
 
 actor GatewayClient {
+    private struct SeqProbe: Decodable { let s: Int? }
+    
     private let token: String
     private let configuration: DiscordConfiguration
 
@@ -9,6 +11,7 @@ actor GatewayClient {
     private var heartbeatIntervalMs: Int = 0
     private var seq: Int?
     private var sessionId: String?
+    private var resumeGatewayUrl: String?
     private var missedHeartbeatAckCount: Int = 0
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
@@ -67,7 +70,14 @@ actor GatewayClient {
         guard configuration.apiVersion >= 8 && configuration.apiVersion <= 10 else {
             throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
         }
-        guard var components = URLComponents(url: configuration.gatewayBaseURL, resolvingAgainstBaseURL: false) else {
+        // Use resume_gateway_url from READY if available, otherwise use default gateway URL
+        let baseURL: URL
+        if let resumeUrl = resumeGatewayUrl, let url = URL(string: resumeUrl) {
+            baseURL = url
+        } else {
+            baseURL = configuration.gatewayBaseURL
+        }
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
         var queryItems = [
@@ -163,8 +173,8 @@ actor GatewayClient {
                 }
                 lastFrameData = data
                 // Track the latest sequence number for heartbeats and resume.
-                if let seqBox = try? dec.decode([String: Int].self, from: data), let seqNum = seqBox["s"] {
-                    self.seq = seqNum
+                if let probe = try? dec.decode(SeqProbe.self, from: data), let s = probe.s {
+                    self.seq = s
                 }
                 // Decode opcode first, then dispatch by event name when needed.
                 if let opBox = try? dec.decode(GatewayOpBox.self, from: data) {
@@ -173,8 +183,9 @@ actor GatewayClient {
                         guard let t = opBox.t else { continue }
                         if t == "READY" {
                             if let payload = try? dec.decode(GatewayPayload<ReadyEvent>.self, from: data), let ready = payload.d {
-                                // Save session ID so reconnects can try RESUME.
+                                // Save session ID and resume gateway URL for reconnects.
                                 self.sessionId = ready.session_id
+                                self.resumeGatewayUrl = ready.resume_gateway_url
                                 self.status = .ready
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
@@ -446,12 +457,29 @@ actor GatewayClient {
                         await attemptReconnect()
                         break
                     case .invalidSession:
-                        // Resume was rejected. Clear session state so next connect uses IDENTIFY.
-                        self.resumeFailureCount += 1
-                        self.sessionId = nil
-                        self.seq = nil
-                        eventSink(.sessionInvalidated)
-                        await attemptReconnect()
+                        // Decode the resumable flag (d field) to determine if session can be resumed
+                        if let payload = try? dec.decode(GatewayPayload<Bool>.self, from: data), let resumable = payload.d {
+                            if resumable {
+                                // Session is resumable - sleep 1-5s then retry RESUME
+                                let delay = UInt64.random(in: 1_000_000_000...5_000_000_000)
+                                try? await Task.sleep(nanoseconds: delay)
+                                await attemptReconnect()
+                            } else {
+                                // Session is not resumable - clear state and use IDENTIFY on reconnect
+                                self.resumeFailureCount += 1
+                                self.sessionId = nil
+                                self.seq = nil
+                                eventSink(.sessionInvalidated)
+                                await attemptReconnect()
+                            }
+                        } else {
+                            // Failed to decode, assume non-resumable
+                            self.resumeFailureCount += 1
+                            self.sessionId = nil
+                            self.seq = nil
+                            eventSink(.sessionInvalidated)
+                            await attemptReconnect()
+                        }
                         break
                     case .reconnect:
                         await attemptReconnect()
@@ -508,6 +536,17 @@ actor GatewayClient {
     private func attemptReconnect() async {
         // Reconnect strategy: close current socket, then retry with bounded exponential backoff with jitter.
         if !allowReconnect { return }
+        
+        // Check for fatal close codes that should not trigger reconnection
+        let closeCode = await socket?.closeCode
+        if let code = closeCode, isFatalCloseCode(code) {
+            status = .disconnected
+            let reason = fatalCloseCodeDescription(code)
+            guard let sink = lastEventSink else { return }
+            sink(.disconnected(reason: "Fatal close code \(code): \(reason)"))
+            return
+        }
+        
         await socket?.close()
         socket = nil
         heartbeatTask?.cancel()
@@ -530,6 +569,26 @@ actor GatewayClient {
                 delay = min(delay * 2, maxReconnectDelayNs)
                 continue
             }
+        }
+        // Max reconnect attempts reached - surface fatal disconnect
+        status = .disconnected
+        sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+    }
+    
+    private func isFatalCloseCode(_ code: Int) -> Bool {
+        // Only explicit fatal codes should block reconnection; other 4000-series codes are recoverable
+        return code == 4004 || code == 4010 || code == 4011 || code == 4012 || code == 4013 || code == 4014
+    }
+    
+    private func fatalCloseCodeDescription(_ code: Int) -> String {
+        switch code {
+        case 4004: return "Authentication failed"
+        case 4010: return "Invalid shard"
+        case 4011: return "Sharding required"
+        case 4012: return "Invalid API version"
+        case 4013: return "Invalid intents"
+        case 4014: return "Disallowed intents"
+        default: return "Unknown error"
         }
     }
 

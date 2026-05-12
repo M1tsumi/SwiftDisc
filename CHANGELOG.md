@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-05-12
+
+### Overview
+SwiftDisc 2.3.0 is a correctness and reliability patch release that fixes critical compilation issues for Swift 6.2, resolves gateway connection and disconnect handling bugs, corrects multipart attachment handling, and improves WebSocket message size limits. This release ensures stability and proper behavior across gateway, REST, and WebSocket layers.
+
+### Fixed
+- **EventDispatcher syntax errors** — corrected missing switch brace and syntax issues in the EventDispatcher actor
+- **Swift 6.2 compilation errors** — fixed compilation issues to ensure compatibility with Swift 6.2
+- **Multipart attachment descriptors** — corrected handling of attachment descriptors in multipart requests
+- **Unimplemented compression options** — disabled zlib-stream and zstd-stream compression options that were not yet implemented
+- **Resume gateway URL handling** — now correctly uses `resume_gateway_url` from READY payload for session resumption
+- **Fatal disconnect surfacing** — fixed disconnect error propagation to ensure fatal disconnects are properly surfaced
+- **Close code handling** — improved WebSocket close code handling for better disconnect diagnostics
+- **Cancellation handling** — fixed cancellation handling to fail fast when operations are cancelled
+- **WebSocket maximum message size** — corrected WebSocket maximum message size limits
+- **Identify connection properties** — fixed Identify payload connection property keys for proper gateway authentication
+
+### Changed
+- **Gateway reliability** — improved connection stability and error recovery
+- **Error propagation** — enhanced error handling throughout the gateway and REST layers
+
 ## [2.2.0] - 2026-05-04
 
 ### Overview

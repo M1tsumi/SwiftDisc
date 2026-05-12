@@ -56,6 +56,14 @@ public actor Cache {
         channelsTimed[channel.id] = TimedValue(value: channel, storedAt: Date())
     }
 
+    /// Insert a stub channel only if not already cached.
+    /// Used when only the channel ID is known from events like MESSAGE_CREATE.
+    public func ensureChannelStub(id: ChannelID) {
+        if channelsTimed[id] == nil {
+            channelsTimed[id] = TimedValue(value: Channel(id: id, type: 0), storedAt: Date())
+        }
+    }
+
     public func removeChannel(id: ChannelID) {
         channelsTimed.removeValue(forKey: id)
     }
