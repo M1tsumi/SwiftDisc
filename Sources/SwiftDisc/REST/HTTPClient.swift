@@ -472,8 +472,9 @@ final class HTTPClient: @unchecked Sendable {
 
     private static func isRouteSnowflakeComponent(_ component: String) -> Bool {
         guard component.count >= minimumSnowflakeDigits else { return false }
-        guard let first = component.unicodeScalars.first, decimalDigits.contains(first) else { return false }
-        return component.unicodeScalars.allSatisfy { decimalDigits.contains($0) }
+        let scalars = component.unicodeScalars
+        guard let first = scalars.first, decimalDigits.contains(first) else { return false }
+        return scalars.dropFirst().allSatisfy { decimalDigits.contains($0) }
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
