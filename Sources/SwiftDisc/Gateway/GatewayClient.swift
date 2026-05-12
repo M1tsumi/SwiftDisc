@@ -1,6 +1,8 @@
 import Foundation
 
 actor GatewayClient {
+    private struct SeqProbe: Decodable { let s: Int? }
+    
     private let token: String
     private let configuration: DiscordConfiguration
 
@@ -163,8 +165,8 @@ actor GatewayClient {
                 }
                 lastFrameData = data
                 // Track the latest sequence number for heartbeats and resume.
-                if let seqBox = try? dec.decode([String: Int].self, from: data), let seqNum = seqBox["s"] {
-                    self.seq = seqNum
+                if let probe = try? dec.decode(SeqProbe.self, from: data), let s = probe.s {
+                    self.seq = s
                 }
                 // Decode opcode first, then dispatch by event name when needed.
                 if let opBox = try? dec.decode(GatewayOpBox.self, from: data) {
