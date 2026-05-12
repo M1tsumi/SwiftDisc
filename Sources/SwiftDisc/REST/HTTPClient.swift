@@ -295,7 +295,23 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     private func makeRouteKey(method: String, path: String) -> String {
-        // Normalize resource IDs to keep related routes in the same limiter bucket.
+        // Discord's bucket model is per-route-per-major-param.
+        // Extract major params (channel_id, guild_id, webhook_id) for proper bucket isolation.
+        let components = path.split(separator: "/").map { String($0) }
+        var majorParam: String?
+        
+        // Find the first major parameter in the path
+        for (index, component) in components.enumerated() {
+            if index > 0 {
+                let prev = components[index - 1]
+                if prev == "channels" || prev == "guilds" || prev == "webhooks" {
+                    majorParam = component
+                    break
+                }
+            }
+        }
+        
+        // Normalize non-major snowflakes to :id
         let replaced: String
         if let regex = Self.routeKeyRegex {
             let range = NSRange(location: 0, length: path.utf16.count)
@@ -304,7 +320,9 @@ final class HTTPClient: @unchecked Sendable {
         } else {
             replaced = path
         }
-        return "\(method) \(replaced)"
+        
+        let major = majorParam ?? "global"
+        return "\(method):\(replaced)|major=\(major)"
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
