@@ -381,22 +381,34 @@ public actor DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: body)
     }
 
-    // MARK: - App emoji endpoints
-    public func createAppEmoji(applicationId: ApplicationID, name: String, imageBase64: String, options: [String: JSONValue]? = nil) async throws -> JSONValue {
+    // MARK: - Application emoji endpoints
+    /// List all emojis for the application (bot-owned emojis usable in any guild)
+    public func listApplicationEmojis(applicationId: ApplicationID) async throws -> [Emoji] {
+        try await http.get(path: "/applications/\(applicationId)/emojis")
+    }
+
+    /// Create a new application emoji
+    public func createApplicationEmoji(applicationId: ApplicationID, name: String, imageBase64: String, options: [String: JSONValue]? = nil) async throws -> Emoji {
         var payload: [String: JSONValue] = [
             "name": .string(name),
             "image": .string(imageBase64)
         ]
         if let options { for (k, v) in options { payload[k] = v } }
-        return try await postApplicationResource(applicationId: applicationId, relativePath: "app-emojis", payload: payload)
+        return try await http.post(path: "/applications/\(applicationId)/emojis", body: payload)
     }
 
-    public func updateAppEmoji(applicationId: ApplicationID, emojiId: String, updates: [String: JSONValue]) async throws -> JSONValue {
-        try await patchApplicationResource(applicationId: applicationId, relativePath: "app-emojis/\(emojiId)", payload: updates)
+    /// Update an existing application emoji
+    public func updateApplicationEmoji(applicationId: ApplicationID, emojiId: EmojiID, name: String? = nil, roles: [RoleID]? = nil) async throws -> Emoji {
+        struct Body: Encodable, Sendable {
+            let name: String?
+            let roles: [RoleID]?
+        }
+        return try await http.patch(path: "/applications/\(applicationId)/emojis/\(emojiId)", body: Body(name: name, roles: roles))
     }
 
-    public func deleteAppEmoji(applicationId: ApplicationID, emojiId: String) async throws {
-        try await deleteApplicationResource(applicationId: applicationId, relativePath: "app-emojis/\(emojiId)")
+    /// Delete an application emoji
+    public func deleteApplicationEmoji(applicationId: ApplicationID, emojiId: EmojiID) async throws {
+        try await http.delete(path: "/applications/\(applicationId)/emojis/\(emojiId)")
     }
 
     // MARK: - User app resource endpoints
