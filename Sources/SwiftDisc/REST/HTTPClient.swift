@@ -98,12 +98,12 @@ final class HTTPClient: @unchecked Sendable {
         self.session = URLSession(configuration: config)
     }
 
-    func get<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
-        try await request(method: "GET", path: path, body: Optional<Data>.none, query: query, headers: headers)
+    func get<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
+        try await request(method: "GET", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
     }
 
     /// Fetch raw response bytes without JSON decoding. Useful for non-JSON endpoints (e.g. CSV).
-    func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> Data {
+    func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> Data {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "GET", path: trimmed)
         let (data, http) = try await executeWithRetry(routeKey: routeKey) {
@@ -112,7 +112,7 @@ final class HTTPClient: @unchecked Sendable {
             url = buildURLWithQuery(url: url, query: query)
             var req = URLRequest(url: url)
             req.httpMethod = "GET"
-            applyCustomHeaders(req: &req, headers: headers)
+            applyCustomHeaders(req: &req, headers: headers, auditReason: reason)
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
             return (data, http)
@@ -124,41 +124,41 @@ final class HTTPClient: @unchecked Sendable {
         throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
-    func post<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+    func post<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: POST \(path)") }
-        return try await request(method: "POST", path: path, body: data, query: query, headers: headers)
+        return try await request(method: "POST", path: path, body: data, query: query, headers: headers, reason: reason)
     }
 
-    func patch<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+    func patch<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PATCH \(path)") }
-        return try await request(method: "PATCH", path: path, body: data, query: query, headers: headers)
+        return try await request(method: "PATCH", path: path, body: data, query: query, headers: headers, reason: reason)
     }
 
-    func put<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+    func put<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONEncoder().encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PUT \(path)") }
-        return try await request(method: "PUT", path: path, body: data, query: query, headers: headers)
+        return try await request(method: "PUT", path: path, body: data, query: query, headers: headers, reason: reason)
     }
 
     // Use this for endpoints that accept an empty PUT and return 204 No Content.
-    func put(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none, query: query, headers: headers)
+    func put(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
+        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
     }
 
-    func delete<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
-        try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
+    func delete<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
+        try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
     }
 
-    func delete(path: String, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers)
+    func delete(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
+        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
     }
 
     private struct EmptyResponse: Decodable, Sendable {
     }
 
-    private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil) async throws(DiscordError) -> T {
+    private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: method, path: trimmed)
         let (data, http) = try await executeWithRetry(routeKey: routeKey) {
@@ -168,7 +168,7 @@ final class HTTPClient: @unchecked Sendable {
             var req = URLRequest(url: url)
             req.httpMethod = method
             req.httpBody = body
-            applyCustomHeaders(req: &req, headers: headers)
+            applyCustomHeaders(req: &req, headers: headers, auditReason: reason)
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
             return (data, http)
@@ -191,10 +191,16 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     // MARK: - Custom headers support
-    private func applyCustomHeaders(req: inout URLRequest, headers: [String: String]?) {
+    private func applyCustomHeaders(req: inout URLRequest, headers: [String: String]?, auditReason: String? = nil) {
         guard let headers = headers else { return }
         for (key, value) in headers {
             req.setValue(value, forHTTPHeaderField: key)
+        }
+        // Add X-Audit-Log-Reason header if provided (URL-encoded)
+        if let reason = auditReason {
+            if let encoded = reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                req.setValue(encoded, forHTTPHeaderField: "X-Audit-Log-Reason")
+            }
         }
     }
 
@@ -272,7 +278,7 @@ final class HTTPClient: @unchecked Sendable {
         return body
     }
 
-    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws(DiscordError) -> T {
+    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "POST", path: trimmed)
         for file in files {
@@ -289,6 +295,7 @@ final class HTTPClient: @unchecked Sendable {
             req.httpMethod = "POST"
             req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files, boundary: boundary)
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            applyCustomHeaders(req: &req, headers: nil, auditReason: reason)
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
             return (data, http)
@@ -302,7 +309,7 @@ final class HTTPClient: @unchecked Sendable {
         throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
-    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?, reason: String? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "PATCH", path: trimmed)
         for file in files ?? [] {
@@ -319,6 +326,7 @@ final class HTTPClient: @unchecked Sendable {
             req.httpMethod = "PATCH"
             req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files ?? [], boundary: boundary)
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            applyCustomHeaders(req: &req, headers: nil, auditReason: reason)
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
             return (data, http)
@@ -332,7 +340,7 @@ final class HTTPClient: @unchecked Sendable {
         throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
-    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?, reason: String? = nil) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "DELETE", path: trimmed)
         for file in files ?? [] {
@@ -349,6 +357,7 @@ final class HTTPClient: @unchecked Sendable {
             req.httpMethod = "DELETE"
             req.httpBody = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files ?? [], boundary: boundary)
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            applyCustomHeaders(req: &req, headers: nil, auditReason: reason)
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
             return (data, http)
@@ -491,47 +500,47 @@ final class HTTPClient: @unchecked Sendable {
         self.configuration = configuration
     }
 
-    func get<T: Decodable>(path: String) async throws(DiscordError) -> T {
+    func get<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func post<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func post<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func patch<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func patch<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func put<B: Encodable, T: Decodable>(path: String, body: B) async throws(DiscordError) -> T {
+    func put<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func put(path: String) async throws(DiscordError) {
+    func put(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
         throw DiscordError.unavailable
     }
 
-    func delete<T: Decodable>(path: String) async throws(DiscordError) -> T {
+    func delete<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func delete(path: String) async throws(DiscordError) {
+    func delete(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
         throw DiscordError.unavailable
     }
 
-    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]) async throws(DiscordError) -> T {
+    func postMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+    func patchMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?) async throws(DiscordError) -> T {
+    func deleteMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment]?, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func getRaw(path: String) async throws(DiscordError) -> Data {
+    func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> Data {
         throw DiscordError.unavailable
     }
 }
