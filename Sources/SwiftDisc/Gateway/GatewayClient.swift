@@ -576,8 +576,8 @@ actor GatewayClient {
     }
     
     private func isFatalCloseCode(_ code: Int) -> Bool {
-        // 4000-series close codes are fatal and should not trigger reconnection
-        return (4000...4999).contains(code)
+        // Only explicit fatal codes should block reconnection; other 4000-series codes are recoverable
+        return code == 4004 || code == 4010 || code == 4011 || code == 4012 || code == 4013 || code == 4014
     }
     
     private func fatalCloseCodeDescription(_ code: Int) -> String {
