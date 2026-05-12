@@ -40,7 +40,6 @@ private actor AsyncSemaphore {
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
 final class HTTPClient: @unchecked Sendable {
-    private static let decimalDigits = CharacterSet.decimalDigits
     // Keep this aligned with historical route-key behavior (`/[0-9]{5,}`).
     private static let minimumSnowflakeDigits = 5
     private let token: String
@@ -460,11 +459,12 @@ final class HTTPClient: @unchecked Sendable {
         }
         
         // Normalize non-major snowflakes to :id, but keep the major param
-        let replaced = components.enumerated().map { index, component in
+        let joinedPath = components.enumerated().map { index, component in
             if index == majorParamIndex { return component }
             let isSnowflake = Self.isRouteSnowflakeComponent(component)
             return isSnowflake ? ":id" : component
         }.joined(separator: "/")
+        let replaced = path.hasPrefix("/") ? "/\(joinedPath)" : joinedPath
         
         let major = majorParam ?? "global"
         return "\(method):\(replaced)|major=\(major)"
@@ -472,7 +472,7 @@ final class HTTPClient: @unchecked Sendable {
 
     private static func isRouteSnowflakeComponent(_ component: String) -> Bool {
         guard component.count >= minimumSnowflakeDigits else { return false }
-        return component.unicodeScalars.allSatisfy { decimalDigits.contains($0) }
+        return component.allSatisfy { $0.isWholeNumber }
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
