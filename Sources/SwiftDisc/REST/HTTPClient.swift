@@ -466,7 +466,7 @@ final class HTTPClient: @unchecked Sendable {
             // Then restore the major param, if present.
             if let majorIdx = majorParamIndex, majorIdx < components.count {
                 var replacedComponents = replaced.split(separator: "/").map { String($0) }
-                if majorIdx < replacedComponents.count {
+                if majorIdx < replacedComponents.count, replacedComponents.count >= components.count {
                     replacedComponents[majorIdx] = components[majorIdx]
                     replaced = replacedComponents.joined(separator: "/")
                 }
