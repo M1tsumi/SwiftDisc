@@ -515,9 +515,13 @@ public actor DiscordClient {
         try await http.delete(path: "/guilds/\(guildId)/members/\(userId)/roles/\(roleId)")
     }
 
-    // Searches guild members by prefix match.
+    // Searches guild members by prefix match using POST endpoint (2024+)
     public func searchGuildMembers(guildId: GuildID, query: String, limit: Int = 1) async throws -> [GuildMember] {
-        try await http.get(path: "/guilds/\(guildId)/members/search?query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&limit=\(limit)")
+        struct Body: Encodable, Sendable {
+            let query: String
+            let limit: Int
+        }
+        return try await http.post(path: "/guilds/\(guildId)/members/search", body: Body(query: query, limit: limit))
     }
 
     // MARK: - REST: User and bot profile
