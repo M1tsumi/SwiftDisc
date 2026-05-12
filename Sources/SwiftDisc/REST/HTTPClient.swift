@@ -461,12 +461,10 @@ final class HTTPClient: @unchecked Sendable {
         // Normalize non-major snowflakes to :id, but keep the major param
         let joinedPath = components.enumerated().map { index, component in
             if index == majorParamIndex { return component }
-            let isSnowflake = Self.isRouteSnowflakeComponent(component)
-            return isSnowflake ? ":id" : component
+            return Self.isRouteSnowflakeComponent(component) ? ":id" : component
         }.joined(separator: "/")
         let major = majorParam ?? "global"
-        let normalizedPath = path.hasPrefix("/") ? "/\(joinedPath)" : joinedPath
-        return "\(method):\(normalizedPath)|major=\(major)"
+        return "\(method):\(joinedPath)|major=\(major)"
     }
 
     private static func isRouteSnowflakeComponent(_ component: String) -> Bool {
