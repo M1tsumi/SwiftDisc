@@ -382,6 +382,7 @@ final class HTTPClient: @unchecked Sendable {
                 throw de
             } catch {
                 // Handle non-DiscordError network errors
+                // Cancellation should always be terminal - check before retry logic
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
                 if attempt < maxAttempts {
                     let backoff = min(0.5 * pow(2.0, Double(attempt - 1)), 4.0)
