@@ -442,7 +442,7 @@ final class HTTPClient: @unchecked Sendable {
     private func makeRouteKey(method: String, path: String) -> String {
         // Discord's bucket model is per-route-per-major-param.
         // Extract major params (channel_id, guild_id, webhook_id) for proper bucket isolation.
-        let components = path.split(separator: "/").map { String($0) }
+        let components = path.split(separator: "/", omittingEmptySubsequences: false).map { String($0) }
         var majorParam: String?
         var majorParamIndex: Int?
         
@@ -464,7 +464,7 @@ final class HTTPClient: @unchecked Sendable {
             let isSnowflake = Self.isRouteSnowflakeComponent(component)
             return isSnowflake ? ":id" : component
         }.joined(separator: "/")
-        let replaced = path.hasPrefix("/") ? "/\(joinedPath)" : joinedPath
+        let replaced = joinedPath
         
         let major = majorParam ?? "global"
         return "\(method):\(replaced)|major=\(major)"
