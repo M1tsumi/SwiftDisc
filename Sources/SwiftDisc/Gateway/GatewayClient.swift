@@ -527,6 +527,17 @@ actor GatewayClient {
     private func attemptReconnect() async {
         // Reconnect strategy: close current socket, then retry with bounded exponential backoff with jitter.
         if !allowReconnect { return }
+        
+        // Check for fatal close codes that should not trigger reconnection
+        let closeCode = await socket?.closeCode
+        if let code = closeCode, isFatalCloseCode(code) {
+            status = .disconnected
+            let reason = fatalCloseCodeDescription(code)
+            guard let sink = lastEventSink else { return }
+            sink(.disconnected(reason: "Fatal close code \(code): \(reason)"))
+            return
+        }
+        
         await socket?.close()
         socket = nil
         heartbeatTask?.cancel()
@@ -549,6 +560,26 @@ actor GatewayClient {
                 delay = min(delay * 2, maxReconnectDelayNs)
                 continue
             }
+        }
+        // Max reconnect attempts reached - surface fatal disconnect
+        status = .disconnected
+        sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+    }
+    
+    private func isFatalCloseCode(_ code: Int) -> Bool {
+        // 4000-series close codes are fatal and should not trigger reconnection
+        return (4000...4999).contains(code)
+    }
+    
+    private func fatalCloseCodeDescription(_ code: Int) -> String {
+        switch code {
+        case 4004: return "Authentication failed"
+        case 4010: return "Invalid shard"
+        case 4011: return "Sharding required"
+        case 4012: return "Invalid API version"
+        case 4013: return "Invalid intents"
+        case 4014: return "Disallowed intents"
+        default: return "Unknown error"
         }
     }
 

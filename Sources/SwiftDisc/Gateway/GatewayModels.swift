@@ -115,6 +115,7 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementDelete(Entitlement)
     // Session events
     case sessionInvalidated
+    case disconnected(reason: String)
 }
 
 public struct MessageDelete: Codable, Hashable, Sendable {
