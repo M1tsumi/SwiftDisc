@@ -302,9 +302,9 @@ public struct IdentifyConnectionProperties: Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case os = "$os"
-        case browser = "$browser"
-        case device = "$device"
+        case os
+        case browser
+        case device
     }
 }
 
