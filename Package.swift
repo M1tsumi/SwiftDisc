@@ -1,6 +1,32 @@
 // swift-tools-version:6.2
 import PackageDescription
 
+// All Swift files inside the `Examples/` directory. Each example executable
+// target points at the same `Examples` path with `sources:` listing the one
+// file it owns; the rest must be excluded so SwiftPM does not report them as
+// unhandled resources.
+let allExampleFiles: [String] = [
+    "AutocompleteBot.swift",
+    "CogExample.swift",
+    "CommandFrameworkBot.swift",
+    "CommandsBot.swift",
+    "ComponentsExample.swift",
+    "FileUploadBot.swift",
+    "LinkedRolesBot.swift",
+    "PingBot.swift",
+    "SlashBot.swift",
+    "ThreadsAndScheduledEventsBot.swift",
+    "ViewExample.swift"
+]
+
+// README.md sits alongside the example sources and is not a Swift source.
+let exampleNonSourceFiles: [String] = ["README.md"]
+
+func exampleExcludes(keeping source: String) -> [String] {
+    let others = allExampleFiles.filter { $0 != source }
+    return others + exampleNonSourceFiles
+}
+
 let package = Package(
     name: "SwiftDisc",
     defaultLocalization: "en",
@@ -16,7 +42,6 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftDisc",
-            exclude: ["Examples"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // Example executables so contributors can run sample bots quickly with `swift run <name>`.
@@ -24,6 +49,7 @@ let package = Package(
             name: "PingBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "PingBot.swift"),
             sources: ["PingBot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -31,6 +57,7 @@ let package = Package(
             name: "SlashBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "SlashBot.swift"),
             sources: ["SlashBot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -38,6 +65,7 @@ let package = Package(
             name: "CommandsBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "CommandsBot.swift"),
             sources: ["CommandsBot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -45,6 +73,7 @@ let package = Package(
             name: "AutocompleteBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "AutocompleteBot.swift"),
             sources: ["AutocompleteBot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -52,6 +81,7 @@ let package = Package(
             name: "FileUploadBotExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "FileUploadBot.swift"),
             sources: ["FileUploadBot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -59,6 +89,7 @@ let package = Package(
             name: "ComponentsExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "ComponentsExample.swift"),
             sources: ["ComponentsExample.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
@@ -66,6 +97,7 @@ let package = Package(
             name: "ViewExample",
             dependencies: ["SwiftDisc"],
             path: "Examples",
+            exclude: exampleExcludes(keeping: "ViewExample.swift"),
             sources: ["ViewExample.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
