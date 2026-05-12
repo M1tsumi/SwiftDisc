@@ -8,6 +8,35 @@ private struct APIErrorBody: Decodable, Sendable {
     let code: Int?
 }
 
+/// A simple async semaphore for limiting concurrent operations
+private actor AsyncSemaphore {
+    private var value: Int
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    
+    init(value: Int) {
+        self.value = value
+    }
+    
+    func wait() async {
+        if value > 0 {
+            value -= 1
+            return
+        }
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+    
+    func signal() {
+        if let waiter = waiters.first {
+            waiters.removeFirst()
+            waiter.resume()
+        } else {
+            value += 1
+        }
+    }
+}
+
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
 final class HTTPClient: @unchecked Sendable {
@@ -16,6 +45,31 @@ final class HTTPClient: @unchecked Sendable {
     private let session: URLSession
     private let rateLimiter: RateLimiter
     private static let routeKeyRegex = try? NSRegularExpression(pattern: #"/([0-9]{5,})"#, options: [])
+    
+    // Per-bucket semaphores to serialize concurrent requests before bucket limits are known
+    // Default to 50 concurrent requests per bucket (Discord's typical limit)
+    private actor BucketSemaphores {
+        private var semaphores: [String: AsyncSemaphore] = [:]
+        private let defaultPermits: Int
+        
+        init(defaultPermits: Int = 50) {
+            self.defaultPermits = defaultPermits
+        }
+        
+        func semaphore(for key: String) -> AsyncSemaphore {
+            if let existing = semaphores[key] {
+                return existing
+            }
+            let newSemaphore = AsyncSemaphore(value: defaultPermits)
+            semaphores[key] = newSemaphore
+            return newSemaphore
+        }
+        
+        func updatePermits(for key: String, to permits: Int) {
+            semaphores[key] = AsyncSemaphore(value: permits)
+        }
+    }
+    private let bucketSemaphores = BucketSemaphores()
 
     deinit {
         // Explicit shutdown avoids libcurl worker-thread crashes during Linux test teardown.
@@ -313,6 +367,7 @@ final class HTTPClient: @unchecked Sendable {
         // Extract major params (channel_id, guild_id, webhook_id) for proper bucket isolation.
         let components = path.split(separator: "/").map { String($0) }
         var majorParam: String?
+        var majorParamIndex: Int?
         
         // Find the first major parameter in the path
         for (index, component) in components.enumerated() {
@@ -320,19 +375,25 @@ final class HTTPClient: @unchecked Sendable {
                 let prev = components[index - 1]
                 if prev == "channels" || prev == "guilds" || prev == "webhooks" {
                     majorParam = component
+                    majorParamIndex = index
                     break
                 }
             }
         }
         
-        // Normalize non-major snowflakes to :id
-        let replaced: String
-        if let regex = Self.routeKeyRegex {
+        // Normalize non-major snowflakes to :id, but keep the major param
+        var replaced = path
+        if let regex = Self.routeKeyRegex, let majorIdx = majorParamIndex {
             let range = NSRange(location: 0, length: path.utf16.count)
-            replaced = regex.stringByReplacingMatches(in: 
-                path, options: [], range: range, withTemplate: "/:id")
-        } else {
-            replaced = path
+            // First replace all snowflakes with :id
+            replaced = regex.stringByReplacingMatches(in: path, options: [], range: range, withTemplate: "/:id")
+            // Then restore the major param by reconstructing the path
+            let prefixComponents = components[..<majorIdx].joined(separator: "/")
+            let suffixComponents = components[(majorIdx + 1)...].joined(separator: "/")
+            replaced = "\(prefixComponents)/\(majorParam ?? "")/\(suffixComponents)"
+        } else if let regex = Self.routeKeyRegex {
+            let range = NSRange(location: 0, length: path.utf16.count)
+            replaced = regex.stringByReplacingMatches(in: path, options: [], range: range, withTemplate: "/:id")
         }
         
         let major = majorParam ?? "global"
@@ -358,10 +419,20 @@ final class HTTPClient: @unchecked Sendable {
             attempt += 1
             try await rateLimiter.waitTurn(routeKey: routeKey)
             
+            // Acquire semaphore to limit concurrent requests per bucket
+            let semaphore = await bucketSemaphores.semaphore(for: routeKey)
+            await semaphore.wait()
+            defer { Task { await semaphore.signal() } }
+            
             do {
                 let (data, http) = try await request()
                 let headerStrings = Dictionary(uniqueKeysWithValues: http.allHeaderFields.map { (String(describing: $0.key), String(describing: $0.value)) })
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: headerStrings)
+                
+                // Update semaphore permits based on actual bucket limit from headers
+                if let limit = headerStrings["X-RateLimit-Limit"], let limitInt = Int(limit) {
+                    await bucketSemaphores.updatePermits(for: routeKey, to: limitInt)
+                }
                 
                 // Handle 429 rate limit errors
                 if http.statusCode == 429 {
