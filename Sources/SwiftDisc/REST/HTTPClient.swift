@@ -40,7 +40,7 @@ private actor AsyncSemaphore {
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
 final class HTTPClient: @unchecked Sendable {
-    // Keep this aligned with historical route-key behavior (`/[0-9]{5,}`).
+    // Keep this aligned with historical route-key behavior (`([0-9]{5,})`).
     private static let minimumSnowflakeDigits = 5
     private let token: String
     private let configuration: DiscordConfiguration
@@ -464,7 +464,8 @@ final class HTTPClient: @unchecked Sendable {
             return Self.isRouteSnowflakeComponent(component) ? ":id" : component
         }.joined(separator: "/")
         let major = majorParam ?? "global"
-        return "\(method):\(joinedPath)|major=\(major)"
+        let normalizedPath = path.hasPrefix("/") ? "/\(joinedPath)" : joinedPath
+        return "\(method):\(normalizedPath)|major=\(major)"
     }
 
     private static func isRouteSnowflakeComponent(_ component: String) -> Bool {
