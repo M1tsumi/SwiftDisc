@@ -22,7 +22,9 @@ public struct DiscordConfiguration: Sendable {
     /// Gateway transport compression: none, zlib-stream, or zstd-stream
     public enum GatewayCompression: Sendable {
         case none
+        @available(*, unavailable, message: "zlib-stream compression not yet implemented")
         case zlibStream
+        @available(*, unavailable, message: "zstd-stream compression not yet implemented")
         case zstdStream
     }
     public var gatewayCompression: GatewayCompression
