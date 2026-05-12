@@ -11,7 +11,7 @@ public final class SlashCommandBuilder: @unchecked Sendable {
         public func required(_ req: Bool = true) -> OptionBuilder { option = .init(type: option.type, name: option.name, description: option.description, required: req, choices: option.choices); return self }
         @discardableResult
         public func choice(_ name: String, _ value: String) -> OptionBuilder {
-            choices.append(.init(name: name, value: value));
+            choices.append(.init(name: name, name_localizations: nil, value: .string(value)));
             option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: choices)
             return self
         }
