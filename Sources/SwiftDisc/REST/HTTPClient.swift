@@ -41,6 +41,8 @@ private actor AsyncSemaphore {
 
 final class HTTPClient: @unchecked Sendable {
     private static let decimalDigits = CharacterSet.decimalDigits
+    // Keep this aligned with historical route-key behavior (`/[0-9]{5,}`).
+    private static let minimumSnowflakeDigits = 5
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
@@ -460,12 +462,18 @@ final class HTTPClient: @unchecked Sendable {
         // Normalize non-major snowflakes to :id, but keep the major param
         let replaced = components.enumerated().map { index, component in
             if index == majorParamIndex { return component }
-            let isSnowflake = component.count >= 5 && component.unicodeScalars.allSatisfy { Self.decimalDigits.contains($0) }
+            let isSnowflake = Self.isRouteSnowflakeComponent(component)
             return isSnowflake ? ":id" : component
         }.joined(separator: "/")
         
         let major = majorParam ?? "global"
         return "\(method):\(replaced)|major=\(major)"
+    }
+
+    private static func isRouteSnowflakeComponent(_ component: String) -> Bool {
+        guard component.count >= minimumSnowflakeDigits else { return false }
+        guard let first = component.unicodeScalars.first, decimalDigits.contains(first) else { return false }
+        return component.unicodeScalars.allSatisfy { decimalDigits.contains($0) }
     }
 
     private func parseRetryAfter(headers: [AnyHashable: Any], data: Data) -> TimeInterval {
