@@ -448,12 +448,29 @@ actor GatewayClient {
                         await attemptReconnect()
                         break
                     case .invalidSession:
-                        // Resume was rejected. Clear session state so next connect uses IDENTIFY.
-                        self.resumeFailureCount += 1
-                        self.sessionId = nil
-                        self.seq = nil
-                        eventSink(.sessionInvalidated)
-                        await attemptReconnect()
+                        // Decode the resumable flag (d field) to determine if session can be resumed
+                        if let payload = try? dec.decode(GatewayPayload<Bool>.self, from: data), let resumable = payload.d {
+                            if resumable {
+                                // Session is resumable - sleep 1-5s then retry RESUME
+                                let delay = UInt64.random(in: 1_000_000_000...5_000_000_000)
+                                try? await Task.sleep(nanoseconds: delay)
+                                await attemptResume()
+                            } else {
+                                // Session is not resumable - clear state and use IDENTIFY on reconnect
+                                self.resumeFailureCount += 1
+                                self.sessionId = nil
+                                self.seq = nil
+                                eventSink(.sessionInvalidated)
+                                await attemptReconnect()
+                            }
+                        } else {
+                            // Failed to decode, assume non-resumable
+                            self.resumeFailureCount += 1
+                            self.sessionId = nil
+                            self.seq = nil
+                            eventSink(.sessionInvalidated)
+                            await attemptReconnect()
+                        }
                         break
                     case .reconnect:
                         await attemptReconnect()
