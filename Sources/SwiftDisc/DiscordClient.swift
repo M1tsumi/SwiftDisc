@@ -761,7 +761,7 @@ public actor DiscordClient {
     /// - Returns: Paginated list of poll answer users
     public func getPollAnswerVoters(channelId: ChannelID, messageId: MessageID, answerId: Int, after: UserID? = nil, limit: Int = 25) async throws -> PollAnswerUsers {
         var query: [String: String] = ["limit": String(limit)]
-        if let after { query["after"] = String(after) }
+        if let after { query["after"] = after.rawValue }
         return try await http.get(path: "/channels/\(channelId)/polls/\(messageId)/answers/\(answerId)", query: query)
     }
 
