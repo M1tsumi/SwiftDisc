@@ -371,6 +371,73 @@ final class HTTPClient: @unchecked Sendable {
         throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
     }
 
+    // MARK: - Sticker-specific multipart (uses individual form-data fields, not payload_json)
+    func postStickerMultipart<T: Decodable>(path: String, name: String, description: String?, tags: String, file: FileAttachment, reason: String? = nil) async throws(DiscordError) -> T {
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let routeKey = makeRouteKey(method: "POST", path: trimmed)
+        if file.data.count > configuration.maxUploadBytes {
+            throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
+        }
+        let boundary = makeBoundary()
+        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+            var url = configuration.restBase
+            url.appendPathComponent(trimmed)
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.httpBody = buildStickerMultipartBody(name: name, description: description, tags: tags, file: file, boundary: boundary)
+            req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            applyCustomHeaders(req: &req, headers: nil, auditReason: reason)
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse else { throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1)) }
+            return (data, http)
+        }
+        if (200..<300).contains(http.statusCode) {
+            do { return try JSONDecoder().decode(T.self, from: data) } catch { throw DiscordError.decoding(error, debugContext: "Endpoint: POST \(path)") }
+        }
+        if let apiErr = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
+            throw DiscordError.api(message: apiErr.message, code: apiErr.code)
+        }
+        throw DiscordError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+    }
+
+    // Discord sticker uploads use individual form-data fields, not payload_json
+    private func buildStickerMultipartBody(name: String, description: String?, tags: String, file: FileAttachment, boundary: String) -> Data {
+        var body = Data()
+        let lineBreak = "\r\n"
+        func append(_ string: String) { body.append(Data(string.utf8)) }
+
+        // name field
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"name\"\r\n\r\n")
+        append(name)
+        append(lineBreak)
+
+        // description field (optional)
+        if let desc = description {
+            append("--\(boundary)\r\n")
+            append("Content-Disposition: form-data; name=\"description\"\r\n\r\n")
+            append(desc)
+            append(lineBreak)
+        }
+
+        // tags field
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"tags\"\r\n\r\n")
+        append(tags)
+        append(lineBreak)
+
+        // file field
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"file\"; filename=\"\(file.filename)\"\r\n")
+        let ct = file.contentType ?? guessMimeType(filename: file.filename)
+        append("Content-Type: \(ct)\r\n\r\n")
+        body.append(file.data)
+        append(lineBreak)
+
+        append("--\(boundary)--\r\n")
+        return body
+    }
+
     private func makeRouteKey(method: String, path: String) -> String {
         // Discord's bucket model is per-route-per-major-param.
         // Extract major params (channel_id, guild_id, webhook_id) for proper bucket isolation.

@@ -1905,14 +1905,8 @@ public actor DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/stickers/\(stickerId)")
     }
 
-    public func createGuildSticker(guildId: GuildID, name: String, description: String? = nil, tags: String, file: FileAttachment) async throws -> Sticker {
-        struct Payload: Encodable, Sendable {
-            let name: String
-            let description: String?
-            let tags: String
-        }
-        let payload = Payload(name: name, description: description, tags: tags)
-        return try await http.postMultipart(path: "/guilds/\(guildId)/stickers", jsonBody: payload, files: [file])
+    public func createGuildSticker(guildId: GuildID, name: String, description: String? = nil, tags: String, file: FileAttachment, reason: String? = nil) async throws -> Sticker {
+        return try await http.postStickerMultipart(path: "/guilds/\(guildId)/stickers", name: name, description: description, tags: tags, file: file, reason: reason)
     }
 
     public func modifyGuildSticker(guildId: GuildID, stickerId: StickerID, name: String? = nil, description: String? = nil, tags: String? = nil) async throws -> Sticker {
