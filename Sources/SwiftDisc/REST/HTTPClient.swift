@@ -44,7 +44,6 @@ final class HTTPClient: @unchecked Sendable {
     private let configuration: DiscordConfiguration
     private let session: URLSession
     private let rateLimiter: RateLimiter
-    private static let routeKeyRegex = try? NSRegularExpression(pattern: #"/([0-9]{5,})"#, options: [])
     
     // Per-bucket semaphores to serialize concurrent requests before bucket limits are known
     // Default to 50 concurrent requests per bucket (Discord's typical limit)
@@ -458,20 +457,11 @@ final class HTTPClient: @unchecked Sendable {
         }
         
         // Normalize non-major snowflakes to :id, but keep the major param
-        var replaced = path
-        if let regex = Self.routeKeyRegex {
-            let range = NSRange(location: 0, length: path.utf16.count)
-            replaced = regex.stringByReplacingMatches(in: path, options: [], range: range, withTemplate: "/:id")
-
-            // Then restore the major param, if present.
-            if let majorIdx = majorParamIndex, majorIdx < components.count {
-                var replacedComponents = replaced.split(separator: "/").map { String($0) }
-                if majorIdx < replacedComponents.count, replacedComponents.count >= components.count {
-                    replacedComponents[majorIdx] = components[majorIdx]
-                    replaced = replacedComponents.joined(separator: "/")
-                }
-            }
-        }
+        let replaced = components.enumerated().map { index, component in
+            if index == majorParamIndex { return component }
+            let isSnowflake = component.count >= 5 && component.unicodeScalars.allSatisfy { CharacterSet.decimalDigits.contains($0) }
+            return isSnowflake ? ":id" : component
+        }.joined(separator: "/")
         
         let major = majorParam ?? "global"
         return "\(method):\(replaced)|major=\(major)"
