@@ -236,6 +236,6 @@ actor EventDispatcher {
             break
         case .disconnected:
             break
+        }
     }
 }
-
