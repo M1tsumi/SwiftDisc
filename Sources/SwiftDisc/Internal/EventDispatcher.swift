@@ -234,12 +234,8 @@ actor EventDispatcher {
         // MARK: Session events
         case .sessionInvalidated:
             break
-        case .disconnected(let reason):
-            if let cb = await client.onDisconnect { await cb(reason) }
+        case .disconnected:
             break
     }
-}
-
-await client._internalEmitEvent(event)
 }
 
