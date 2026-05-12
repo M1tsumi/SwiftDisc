@@ -459,17 +459,18 @@ final class HTTPClient: @unchecked Sendable {
         
         // Normalize non-major snowflakes to :id, but keep the major param
         var replaced = path
-        if let regex = Self.routeKeyRegex, let majorIdx = majorParamIndex {
-            let range = NSRange(location: 0, length: path.utf16.count)
-            // First replace all snowflakes with :id
-            replaced = regex.stringByReplacingMatches(in: path, options: [], range: range, withTemplate: "/:id")
-            // Then restore the major param by reconstructing the path
-            let prefixComponents = components[..<majorIdx].joined(separator: "/")
-            let suffixComponents = components[(majorIdx + 1)...].joined(separator: "/")
-            replaced = "\(prefixComponents)/\(majorParam ?? "")/\(suffixComponents)"
-        } else if let regex = Self.routeKeyRegex {
+        if let regex = Self.routeKeyRegex {
             let range = NSRange(location: 0, length: path.utf16.count)
             replaced = regex.stringByReplacingMatches(in: path, options: [], range: range, withTemplate: "/:id")
+
+            // Then restore the major param, if present.
+            if let majorIdx = majorParamIndex, majorIdx < components.count {
+                var replacedComponents = replaced.split(separator: "/").map { String($0) }
+                if replacedComponents.count == components.count {
+                    replacedComponents[majorIdx] = components[majorIdx]
+                    replaced = replacedComponents.joined(separator: "/")
+                }
+            }
         }
         
         let major = majorParam ?? "global"
