@@ -1561,17 +1561,22 @@ public actor DiscordClient {
         }
         public let type: ApplicationCommandOptionType
         public let name: String
+        public let name_localizations: [String: String]?
         public let description: String
+        public let description_localizations: [String: String]?
         public let required: Bool?
         public struct Choice: Codable, Sendable {
             public let name: String
-            public let value: String
+            public let name_localizations: [String: String]?
+            public let value: JSONValue
         }
         public let choices: [Choice]?
-        public init(type: ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil, choices: [Choice]? = nil) {
+        public init(type: ApplicationCommandOptionType, name: String, description: String, required: Bool? = nil, choices: [Choice]? = nil, nameLocalizations: [String: String]? = nil, descriptionLocalizations: [String: String]? = nil) {
             self.type = type
             self.name = name
+            self.name_localizations = nameLocalizations
             self.description = description
+            self.description_localizations = descriptionLocalizations
             self.required = required
             self.choices = choices
         }
@@ -1579,13 +1584,17 @@ public actor DiscordClient {
 
     public struct ApplicationCommandCreate: Encodable, Sendable {
         public let name: String
+        public let name_localizations: [String: String]?
         public let description: String
+        public let description_localizations: [String: String]?
         public let options: [ApplicationCommandOption]?
         public let default_member_permissions: String?
         public let dm_permission: Bool?
-        public init(name: String, description: String, options: [ApplicationCommandOption]? = nil, default_member_permissions: String? = nil, dm_permission: Bool? = nil) {
+        public init(name: String, description: String, options: [ApplicationCommandOption]? = nil, default_member_permissions: String? = nil, dm_permission: Bool? = nil, nameLocalizations: [String: String]? = nil, descriptionLocalizations: [String: String]? = nil) {
             self.name = name
+            self.name_localizations = nameLocalizations
             self.description = description
+            self.description_localizations = descriptionLocalizations
             self.options = options
             self.default_member_permissions = default_member_permissions
             self.dm_permission = dm_permission
