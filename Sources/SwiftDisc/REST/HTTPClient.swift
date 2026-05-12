@@ -40,6 +40,7 @@ private actor AsyncSemaphore {
 #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Windows)
 
 final class HTTPClient: @unchecked Sendable {
+    private static let decimalDigits = CharacterSet.decimalDigits
     private let token: String
     private let configuration: DiscordConfiguration
     private let session: URLSession
@@ -459,7 +460,7 @@ final class HTTPClient: @unchecked Sendable {
         // Normalize non-major snowflakes to :id, but keep the major param
         let replaced = components.enumerated().map { index, component in
             if index == majorParamIndex { return component }
-            let isSnowflake = component.count >= 5 && component.unicodeScalars.allSatisfy { CharacterSet.decimalDigits.contains($0) }
+            let isSnowflake = component.count >= 5 && component.unicodeScalars.allSatisfy { Self.decimalDigits.contains($0) }
             return isSnowflake ? ":id" : component
         }.joined(separator: "/")
         
