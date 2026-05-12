@@ -739,6 +739,20 @@ public actor DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/polls/\(pollId)/expire", body: Empty())
     }
 
+    /// Get paginated list of users who voted for a specific poll answer
+    /// - Parameters:
+    ///   - channelId: The channel containing the poll message
+    ///   - messageId: The message ID containing the poll
+    ///   - answerId: The answer ID to get voters for
+    ///   - after: Get users after this user ID for pagination
+    ///   - limit: Maximum number of users to return (1-100)
+    /// - Returns: Paginated list of poll answer users
+    public func getPollAnswerVoters(channelId: ChannelID, messageId: MessageID, answerId: Int, after: UserID? = nil, limit: Int = 25) async throws -> PollAnswerUsers {
+        var query: [String: String] = ["limit": String(limit)]
+        if let after { query["after"] = String(after) }
+        return try await http.get(path: "/channels/\(channelId)/polls/\(messageId)/answers/\(answerId)", query: query)
+    }
+
     // Presence updates for status and activity changes.
     public func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
         await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)

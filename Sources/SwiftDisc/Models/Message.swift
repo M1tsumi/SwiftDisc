@@ -138,6 +138,16 @@ public struct Poll: Codable, Hashable, Sendable {
     public let results: Results?
 }
 
+/// Response from the poll answer voters endpoint
+public struct PollAnswerUsers: Codable, Hashable, Sendable {
+    /// Whether there are more users after this batch
+    public let has_more: Bool?
+    /// List of users who voted for this answer
+    public let users: [User]
+    /// User ID to use for pagination (after parameter)
+    public let after: UserID?
+}
+
 public struct AllowedMentions: Codable, Hashable, Sendable {
     public let parse: [String]?
     public let roles: [RoleID]?
