@@ -33,6 +33,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
         config.httpMaximumConnectionsPerHost = 8
         self.session = URLSession(configuration: config)
         self.task = session.webSocketTask(with: url)
+        self.task.maximumMessageSize = 16 * 1024 * 1024 // 16 MiB to handle large GUILD_CREATE payloads
         self.task.resume()
     }
 
