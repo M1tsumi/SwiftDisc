@@ -2246,6 +2246,20 @@ public actor DiscordClient {
         try await http.delete(path: "/guilds/\(guildId)/soundboard-sounds/\(soundId)")
     }
 
+    /// Play a soundboard sound in a voice channel
+    /// - Parameters:
+    ///   - channelId: The voice channel to play the sound in
+    ///   - soundId: The soundboard sound to play
+    ///   - guildId: The guild containing the sound
+    /// - Returns: The soundboard sound object
+    public func playSoundboardSound(channelId: ChannelID, soundId: SoundboardSoundID, guildId: GuildID) async throws -> SoundboardSound {
+        struct Body: Encodable, Sendable {
+            let sound_id: SoundboardSoundID
+            let guild_id: GuildID
+        }
+        return try await http.post(path: "/channels/\(channelId)/send-soundboard-sound", body: Body(sound_id: soundId, guild_id: guildId))
+    }
+
     // MARK: - REST: Entitlements & SKUs (Monetization)
 
     public func listEntitlements(
