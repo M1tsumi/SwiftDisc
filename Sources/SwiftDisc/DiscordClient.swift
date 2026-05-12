@@ -1184,6 +1184,29 @@ public actor DiscordClient {
         let _: EmptyResponse = try await http.put(path: path, body: Body(delete_message_days: deleteMessageDays))
     }
 
+    /// Bulk ban up to 200 users from a guild in a single API call
+    /// - Parameters:
+    ///   - guildId: The guild to ban users from
+    ///   - userIds: Array of user IDs to ban (max 200)
+    ///   - deleteMessageSeconds: Number of seconds to delete messages for (0-604800)
+    ///   - reason: Audit log reason for the ban
+    /// - Returns: Object containing list of successfully banned user IDs
+    public func bulkBanMembers(guildId: GuildID, userIds: [UserID], deleteMessageSeconds: Int? = nil, reason: String? = nil) async throws -> BulkBanResponse {
+        struct Body: Encodable, Sendable {
+            let user_ids: [UserID]
+            let delete_message_seconds: Int?
+        }
+        guard userIds.count <= 200 else {
+            throw DiscordError.validation("Cannot ban more than 200 users in a single bulk ban")
+        }
+        let response: BulkBanResponse = try await http.post(
+            path: "/guilds/\(guildId)/bulk-ban",
+            body: Body(user_ids: userIds, delete_message_seconds: deleteMessageSeconds),
+            reason: reason
+        )
+        return response
+    }
+
     public func unbanMember(guildId: GuildID, userId: UserID) async throws {
         try await http.delete(path: "/guilds/\(guildId)/bans/\(userId)")
     }
