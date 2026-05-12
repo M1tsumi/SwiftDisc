@@ -62,7 +62,7 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
 
     func close() async {
         task.cancel(with: .normalClosure, reason: nil)
-        closeCode = task.closeCode?.rawValue
+        closeCode = Int(task.closeCode.rawValue)
         session.invalidateAndCancel()
     }
 }

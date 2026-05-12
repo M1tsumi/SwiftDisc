@@ -71,7 +71,12 @@ actor GatewayClient {
             throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
         }
         // Use resume_gateway_url from READY if available, otherwise use default gateway URL
-        let baseURL = resumeGatewayUrl ?? configuration.gatewayBaseURL
+        let baseURL: URL
+        if let resumeUrl = resumeGatewayUrl, let url = URL(string: resumeUrl) {
+            baseURL = url
+        } else {
+            baseURL = configuration.gatewayBaseURL
+        }
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             throw DiscordError.gateway("Invalid gateway URL")
         }
@@ -458,7 +463,7 @@ actor GatewayClient {
                                 // Session is resumable - sleep 1-5s then retry RESUME
                                 let delay = UInt64.random(in: 1_000_000_000...5_000_000_000)
                                 try? await Task.sleep(nanoseconds: delay)
-                                await attemptResume()
+                                await attemptReconnect()
                             } else {
                                 // Session is not resumable - clear state and use IDENTIFY on reconnect
                                 self.resumeFailureCount += 1
