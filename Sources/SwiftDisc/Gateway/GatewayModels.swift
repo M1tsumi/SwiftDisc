@@ -294,8 +294,11 @@ public enum DiscordEvent: Hashable, Sendable {
     
     /// An auto moderation rule was created.
     case autoModerationRuleCreate(AutoModerationRule)
-    
+
     /// An auto moderation rule was updated.
+    case autoModerationRuleUpdate(AutoModerationRule)
+
+    /// An auto moderation rule was deleted.
     case autoModerationRuleDelete(AutoModerationRule)
     case autoModerationActionExecution(AutoModerationActionExecution)
     // Audit log
