@@ -163,7 +163,7 @@ public struct ChannelSelectMenuBuilder: Sendable {
     public func defaultChannels(_ ids: [ChannelID]) -> ChannelSelectMenuBuilder { var c = self; c.defaultChannelIds = ids; return c }
     public func disabled(_ d: Bool = true) -> ChannelSelectMenuBuilder { var c = self; c.disabled = d; return c }
     public func build() -> MessageComponent {
-        MessageComponent.channelSelect(.init(custom_id: customId, placeholder: placeholder, disabled: disabled, channel_types: channelTypes, default_values: defaultChannelIds?.map { .init(id: $0.rawValue, type: .channel) }))
+        MessageComponent.channelSelect(.init(custom_id: customId, placeholder: placeholder, disabled: disabled, default_values: defaultChannelIds?.map { .init(id: $0.rawValue, type: "channel") }, channel_types: channelTypes))
     }
 }
 
@@ -230,7 +230,7 @@ public struct TextInputBuilder: Sendable {
     /// Builds the text input.
     public func build() throws -> MessageComponent {
         try validate()
-        return .textInput(.init(custom_id: customId, style: style, label: label, min_length: minLength, max_length: maxLength, required: required, value: value, placeholder: placeholder))
+        return .textInput(.init(custom_id: customId, style: style.rawValue, label: label, min_length: minLength, max_length: maxLength, required: required, value: value, placeholder: placeholder))
     }
     
     /// Validation errors for text input.
