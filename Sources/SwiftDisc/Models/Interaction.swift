@@ -55,7 +55,7 @@ public struct Interaction: Codable, Hashable, Sendable {
     public let user: User?
     
     /// The interaction token used for follow-up responses.
-    public let token
+    public let token: String
     
     /// The version of the interaction.
     public let version: Int?

@@ -269,6 +269,22 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a default selected value for a select menu.
+    ///
+    /// Used to pre-select options in user, role, mentionable, and channel select menus.
+    public struct DefaultSelectValue: Codable, Hashable, Sendable {
+        /// The ID of the entity to pre-select.
+        public let id: String
+        
+        /// The type of entity (user, role, channel, etc.).
+        public let type: String
+        
+        public init(id: String, type: String) {
+            self.id = id
+            self.type = type
+        }
+    }
+
     /// Represents a user select menu component.
     ///
     /// User select menus allow users to select from a list of users in the server.
@@ -454,6 +470,14 @@ public enum MessageComponent: Codable, Hashable, Sendable {
     /// )
     /// ```
     public struct TextInput: Codable, Hashable, Sendable {
+        /// The text input style.
+        public enum Style: Int, Codable, Hashable, Sendable {
+            /// Short (single line) input.
+            case short = 1
+            /// Paragraph (multi-line) input.
+            case paragraph = 2
+        }
+        
         /// The component type (always 4 for text inputs).
         public let type: Int
         
