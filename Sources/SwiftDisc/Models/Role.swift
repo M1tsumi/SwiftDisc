@@ -70,7 +70,7 @@ public struct Role: Codable, Hashable, Sendable {
     public let id: RoleID
     
     /// The role name.
-    public let name
+    public let name: String
     
     /// Deprecated in favour of `colors`; still returned for backwards compatibility.
     public let color: Int?

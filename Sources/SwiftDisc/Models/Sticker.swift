@@ -18,7 +18,7 @@ public struct Sticker: Codable, Hashable, Sendable {
     public let id: StickerID
     
     /// The sticker name.
-    public let name
+    public let name: String
     
     /// The sticker description.
     public let description: String?
@@ -47,7 +47,7 @@ public struct StickerItem: Codable, Hashable, Sendable {
     public let id: StickerID
     
     /// The sticker name.
-    public let name
+    public let name: String
     
     /// The sticker format type.
     public let format_type: Int
@@ -74,7 +74,7 @@ public struct StickerPack: Codable, Hashable, Sendable {
     public let stickers: [Sticker]
     
     /// The sticker pack name.
-    public let name
+    public let name: String
     
     /// The SKU ID for this pack.
     public let sku_id: SKUID?

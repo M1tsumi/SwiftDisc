@@ -1,230 +1,230 @@
-import Foundation
+﻿import Foundation
 
-# Documentation
-
-The primary client for interacting with the Discord API.
-
-`DiscordClient` is an `actor`, providing automatic data-race safety for all methods and stored properties. `let` stored properties (e.g., `token`, `cache`) are accessible from any context without `await`, while mutable operations require async/await.
-
-## Overview
-
-SwiftDisc is a Swift-first Discord API wrapper that provides:
-- **Gateway connectivity** for real-time event handling
-- **REST API** for HTTP-based operations
-- **High-level routers** for commands, slash commands, autocomplete, and components
-- **Typed models** for Discord entities (channels, guilds, messages, etc.)
-- **Automatic rate-limiting** and reconnect logic
-- **Actor-safe concurrency** with Swift 6.2
-
-## Quick Start
-
-```swift
-import Foundation
-import SwiftDisc
-
-let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
-let client = DiscordClient(token: token)
-
-await client.setOnReady { ready in
-    print("Logged in as \(ready.user.username)")
-}
-
-await client.setOnMessage { message in
-    guard message.content?.lowercased() == "ping" else { return }
-    try await message.reply(client: client, content: "Pong!")
-}
-
-try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
-for await event in await client.events {
-    // Handle events
-}
-```
-
-## Gateway Intents
-
-Discord requires you to specify which events you want to receive. Use `GatewayIntents` to configure this:
-
-```swift
-try await client.loginAndConnect(intents: [
-    .guilds,              // Guild events (create, update, delete)
-    .guildMessages,       // Message events in guilds
-    .messageContent,      // Message content (privileged intent)
-    .guildMembers,        // Member join/leave/update
-    .guildPresences       // User presence updates
-])
-```
-
-> **Note:** Some intents like `messageContent` and `guildPresences` are privileged and must be enabled in the Discord Developer Portal.
-
-## Event Handling
-
-You can handle events in two ways:
-
-1. **Using callback properties** (simple for basic bots):
-```swift
-await client.setOnMessage { message in
-    print("Received: \(message.content ?? "")")
-}
-```
-
-2. **Using the event stream** (for advanced event processing):
-```swift
-for await event in await client.events {
-    switch event {
-    case .messageCreate(let message):
-        print("Message: \(message.content ?? "")")
-    case .ready(let ready):
-        print("Ready as \(ready.user.username)")
-    default:
-        break
-    }
-}
-```
-
-## High-Level Routers
-
-SwiftDisc provides high-level routers for common bot patterns:
-
-### Command Router (Prefix-based commands)
-```swift
-let commands = CommandRouter()
-await commands.register("!ping") { ctx in
-    try await ctx.message.reply(client: client, content: "Pong!")
-}
-await client.useCommands(commands)
-```
-
-### Slash Command Router
-```swift
-let slash = SlashCommandRouter()
-await slash.register("ping") { ctx in
-    try await ctx.client.createInteractionResponse(
-        interactionId: ctx.interaction.id,
-        token: ctx.interaction.token,
-        content: "Pong!"
-    )
-}
-await client.useSlashCommands(slash)
-```
-
-### Autocomplete Router
-```swift
-let autocomplete = AutocompleteRouter()
-await autocomplete.register("search") { ctx in
-    let choices = ctx.focusedValue.map { value in
-        AutocompleteChoice(name: value, value: value)
-    }
-    try await ctx.respond(choices: choices)
-}
-await client.useAutocomplete(autocomplete)
-```
-
-### View Manager (Persistent Components)
-```swift
-let viewManager = ViewManager()
-await viewManager.register("my_view") { ctx in
-    try await ctx.respond(content: "View clicked!")
-}
-await client.useViewManager(viewManager)
-```
-
-## REST API
-
-All Discord REST endpoints are available as methods on `DiscordClient`:
-
-```swift
-// Send a message
-try await client.sendMessage(
-    channelId: channelId,
-    content: "Hello, world!"
-)
-
-// Edit a message
-try await client.editMessage(
-    channelId: channelId,
-    messageId: messageId,
-    content: "Updated message"
-)
-
-// Delete a message
-try await client.deleteMessage(
-    channelId: channelId,
-    messageId: messageId
-)
-```
-
-## Cache
-
-The client includes a built-in cache that stores Discord entities:
-
-```swift
-let cache = await client.cache
-
-// Access cached data
-if let guild = cache.guilds[guildId] {
-    print("Guild: \(guild.name)")
-}
-```
-
-## Error Handling
-
-All operations can throw `DiscordError`:
-
-```swift
-do {
-    try await client.sendMessage(channelId: channelId, content: "Hello")
-} catch let error as DiscordError {
-    print("Discord error: \(error)")
-    if let context = error.debugContext {
-        print("Debug context: \(context)")
-    }
-}
-```
-
-## Configuration
-
-Customize client behavior with `DiscordConfiguration`:
-
-```swift
-let config = DiscordConfiguration(
-    apiBaseURL: URL(string: "https://discord.com/api")!,
-    apiVersion: 10,
-    gatewayBaseURL: URL(string: "wss://gateway.discord.gg")!
-)
-let client = DiscordClient(token: token, configuration: config)
-```
-
-## Sharding
-
-For large bots, use sharding to distribute load:
-
-```swift
-// Connect as shard 0 of 5 total shards
-try await client.loginAndConnectSharded(
-    index: 0,
-    total: 5,
-    intents: [.guilds, .guildMessages]
-)
-```
-
-## Thread Safety
-
-As an `actor`, `DiscordClient` provides automatic thread safety:
-- All methods are serialized and safe to call from any context
-- `let` properties can be accessed without `await`
-- Mutable operations require `await`
-- No data races possible
-
-## See Also
-- `DiscordConfiguration` for client configuration options
-- `GatewayIntents` for gateway event subscription
-- `CommandRouter` for prefix-based commands
-- `SlashCommandRouter` for slash commands
-- `AutocompleteRouter` for autocomplete handling
-- `ViewManager` for persistent component state
-- `Cache` for entity caching
-- `DiscordError` for error handling
-
+/// # Documentation
+///
+/// The primary client for interacting with the Discord API.
+///
+/// `DiscordClient` is an `actor`, providing automatic data-race safety for all methods and stored properties. `let` stored properties (e.g., `token`, `cache`) are accessible from any context without `await`, while mutable operations require async/await.
+///
+/// ## Overview
+///
+/// SwiftDisc is a Swift-first Discord API wrapper that provides:
+/// - **Gateway connectivity** for real-time event handling
+/// - **REST API** for HTTP-based operations
+/// - **High-level routers** for commands, slash commands, autocomplete, and components
+/// - **Typed models** for Discord entities (channels, guilds, messages, etc.)
+/// - **Automatic rate-limiting** and reconnect logic
+/// - **Actor-safe concurrency** with Swift 6.2
+///
+/// ## Quick Start
+///
+/// ```swift
+/// import Foundation
+/// import SwiftDisc
+///
+/// let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
+/// let client = DiscordClient(token: token)
+///
+/// await client.setOnReady { ready in
+///     print("Logged in as \(ready.user.username)")
+/// }
+///
+/// await client.setOnMessage { message in
+///     guard message.content?.lowercased() == "ping" else { return }
+///     try await message.reply(client: client, content: "Pong!")
+/// }
+///
+/// try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+/// for await event in await client.events {
+///     // Handle events
+/// }
+/// ```
+///
+/// ## Gateway Intents
+///
+/// Discord requires you to specify which events you want to receive. Use `GatewayIntents` to configure this:
+///
+/// ```swift
+/// try await client.loginAndConnect(intents: [
+///     .guilds,              // Guild events (create, update, delete)
+///     .guildMessages,       // Message events in guilds
+///     .messageContent,      // Message content (privileged intent)
+///     .guildMembers,        // Member join/leave/update
+///     .guildPresences       // User presence updates
+/// ])
+/// ```
+///
+/// > **Note:** Some intents like `messageContent` and `guildPresences` are privileged and must be enabled in the Discord Developer Portal.
+///
+/// ## Event Handling
+///
+/// You can handle events in two ways:
+///
+/// 1. **Using callback properties** (simple for basic bots):
+/// ```swift
+/// await client.setOnMessage { message in
+///     print("Received: \(message.content ?? "")")
+/// }
+/// ```
+///
+/// 2. **Using the event stream** (for advanced event processing):
+/// ```swift
+/// for await event in await client.events {
+///     switch event {
+///     case .messageCreate(let message):
+///         print("Message: \(message.content ?? "")")
+///     case .ready(let ready):
+///         print("Ready as \(ready.user.username)")
+///     default:
+///         break
+///     }
+/// }
+/// ```
+///
+/// ## High-Level Routers
+///
+/// SwiftDisc provides high-level routers for common bot patterns:
+///
+/// ### Command Router (Prefix-based commands)
+/// ```swift
+/// let commands = CommandRouter()
+/// await commands.register("!ping") { ctx in
+///     try await ctx.message.reply(client: client, content: "Pong!")
+/// }
+/// await client.useCommands(commands)
+/// ```
+///
+/// ### Slash Command Router
+/// ```swift
+/// let slash = SlashCommandRouter()
+/// await slash.register("ping") { ctx in
+///     try await ctx.client.createInteractionResponse(
+///         interactionId: ctx.interaction.id,
+///         token: ctx.interaction.token,
+///         content: "Pong!"
+///     )
+/// }
+/// await client.useSlashCommands(slash)
+/// ```
+///
+/// ### Autocomplete Router
+/// ```swift
+/// let autocomplete = AutocompleteRouter()
+/// await autocomplete.register("search") { ctx in
+///     let choices = ctx.focusedValue.map { value in
+///         AutocompleteChoice(name: value, value: value)
+///     }
+///     try await ctx.respond(choices: choices)
+/// }
+/// await client.useAutocomplete(autocomplete)
+/// ```
+///
+/// ### View Manager (Persistent Components)
+/// ```swift
+/// let viewManager = ViewManager()
+/// await viewManager.register("my_view") { ctx in
+///     try await ctx.respond(content: "View clicked!")
+/// }
+/// await client.useViewManager(viewManager)
+/// ```
+///
+/// ## REST API
+///
+/// All Discord REST endpoints are available as methods on `DiscordClient`:
+///
+/// ```swift
+/// // Send a message
+/// try await client.sendMessage(
+///     channelId: channelId,
+///     content: "Hello, world!"
+/// )
+///
+/// // Edit a message
+/// try await client.editMessage(
+///     channelId: channelId,
+///     messageId: messageId,
+///     content: "Updated message"
+/// )
+///
+/// // Delete a message
+/// try await client.deleteMessage(
+///     channelId: channelId,
+///     messageId: messageId
+/// )
+/// ```
+///
+/// ## Cache
+///
+/// The client includes a built-in cache that stores Discord entities:
+///
+/// ```swift
+/// let cache = await client.cache
+///
+/// // Access cached data
+/// if let guild = cache.guilds[guildId] {
+///     print("Guild: \(guild.name)")
+/// }
+/// ```
+///
+/// ## Error Handling
+///
+/// All operations can throw `DiscordError`:
+///
+/// ```swift
+/// do {
+///     try await client.sendMessage(channelId: channelId, content: "Hello")
+/// } catch let error as DiscordError {
+///     print("Discord error: \(error)")
+///     if let context = error.debugContext {
+///         print("Debug context: \(context)")
+///     }
+/// }
+/// ```
+///
+/// ## Configuration
+///
+/// Customize client behavior with `DiscordConfiguration`:
+///
+/// ```swift
+/// let config = DiscordConfiguration(
+///     apiBaseURL: URL(string: "https://discord.com/api")!,
+///     apiVersion: 10,
+///     gatewayBaseURL: URL(string: "wss://gateway.discord.gg")!
+/// )
+/// let client = DiscordClient(token: token, configuration: config)
+/// ```
+///
+/// ## Sharding
+///
+/// For large bots, use sharding to distribute load:
+///
+/// ```swift
+/// // Connect as shard 0 of 5 total shards
+/// try await client.loginAndConnectSharded(
+///     index: 0,
+///     total: 5,
+///     intents: [.guilds, .guildMessages]
+/// )
+/// ```
+///
+/// ## Thread Safety
+///
+/// As an `actor`, `DiscordClient` provides automatic thread safety:
+/// - All methods are serialized and safe to call from any context
+/// - `let` properties can be accessed without `await`
+/// - Mutable operations require `await`
+/// - No data races possible
+///
+/// ## See Also
+/// - `DiscordConfiguration` for client configuration options
+/// - `GatewayIntents` for gateway event subscription
+/// - `CommandRouter` for prefix-based commands
+/// - `SlashCommandRouter` for slash commands
+/// - `AutocompleteRouter` for autocomplete handling
+/// - `ViewManager` for persistent component state
+/// - `Cache` for entity caching
+/// - `DiscordError` for error handling
+///
 public actor DiscordClient {
     /// The bot token used for authentication with Discord.
     ///
@@ -2478,19 +2478,19 @@ public actor DiscordClient {
 
     /// A typed reference to an emoji for reaction methods.
     ///
-    /// Use `.unicode("👍")` for standard Unicode emoji and `.custom(name:id:)` for guild custom emoji.
+    /// Use `.unicode("ðŸ‘")` for standard Unicode emoji and `.custom(name:id:)` for guild custom emoji.
     ///
     /// ## Example
     ///
     /// ```swift
     /// // Unicode emoji
-    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("🔥"))
+    /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("ðŸ”¥"))
     ///
     /// // Custom guild emoji
     /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .custom(name: "pepega", id: emojiId))
     /// ```
     public enum EmojiRef: Sendable {
-        /// A standard Unicode emoji, e.g., "👍" or "🔥".
+        /// A standard Unicode emoji, e.g., "ðŸ‘" or "ðŸ”¥".
         case unicode(String)
         
         /// A custom guild emoji.
@@ -2531,7 +2531,7 @@ public actor DiscordClient {
     ///
     /// ```swift
     /// // Unicode emoji
-    /// try await client.addReaction(channelId: channelId, messageId: messageId, emoji: "👍")
+    /// try await client.addReaction(channelId: channelId, messageId: messageId, emoji: "ðŸ‘")
     ///
     /// // Custom emoji (use the encoded format)
     /// try await client.addReaction(channelId: channelId, messageId: messageId, emoji: "pepega:123456789")
@@ -2556,7 +2556,7 @@ public actor DiscordClient {
     /// ## Example
     ///
     /// ```swift
-    /// try await client.removeOwnReaction(channelId: channelId, messageId: messageId, emoji: "👍")
+    /// try await client.removeOwnReaction(channelId: channelId, messageId: messageId, emoji: "ðŸ‘")
     /// ```
     ///
     /// - See Also: `addReaction(channelId:messageId:emoji:)`, `removeUserReaction(channelId:messageId:emoji:userId:)`
@@ -2581,7 +2581,7 @@ public actor DiscordClient {
     /// try await client.removeUserReaction(
     ///     channelId: channelId,
     ///     messageId: messageId,
-    ///     emoji: "👍",
+    ///     emoji: "ðŸ‘",
     ///     userId: userId
     /// )
     /// ```
@@ -2610,11 +2610,11 @@ public actor DiscordClient {
     /// let reactors = try await client.getReactions(
     ///     channelId: channelId,
     ///     messageId: messageId,
-    ///     emoji: "👍",
+    ///     emoji: "ðŸ‘",
     ///     limit: 50
     /// )
     /// for user in reactors {
-    ///     print("\(user.username) reacted with 👍")
+    ///     print("\(user.username) reacted with ðŸ‘")
     /// }
     /// ```
     ///
@@ -2661,7 +2661,7 @@ public actor DiscordClient {
     /// try await client.removeAllReactionsForEmoji(
     ///     channelId: channelId,
     ///     messageId: messageId,
-    ///     emoji: "👍"
+    ///     emoji: "ðŸ‘"
     /// )
     /// ```
     ///
@@ -2690,7 +2690,7 @@ public actor DiscordClient {
     /// try await client.addReaction(
     ///     channelId: channelId,
     ///     messageId: messageId,
-    ///     emoji: .unicode("🔥")
+    ///     emoji: .unicode("ðŸ”¥")
     /// )
     ///
     /// // Custom emoji
@@ -3543,14 +3543,14 @@ public actor DiscordClient {
     /// Get the raw CSV of user IDs allowed to accept a restricted invite.
     /// The response is CSV bytes with a `user_id` header column (not JSON).
     /// Decode with `String(data: result, encoding: .utf8)` to get the CSV text.
-    /// `GET /invites/{code}/users` — Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
+    /// `GET /invites/{code}/users` â€” Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
     public func getInviteTargetUsers(code: String) async throws -> Data {
         try await http.getRaw(path: "/invites/\(code)/users")
     }
 
     /// Replace the list of users allowed to accept a restricted invite by uploading a CSV file.
     /// The CSV must have a `user_id` column. Returns the async job status.
-    /// `PATCH /invites/{code}/users` — Added 2026-01-13.
+    /// `PATCH /invites/{code}/users` â€” Added 2026-01-13.
     public func updateInviteTargetUsers(code: String, file: FileAttachment) async throws -> InviteTargetUsersJobStatus {
         struct Empty: Encodable, Sendable {
         }
@@ -3558,7 +3558,7 @@ public actor DiscordClient {
     }
 
     /// Check the status of the background job that processes a target-users CSV upload.
-    /// `GET /invites/{code}/users/jobs/{job_id}` — Added 2026-01-13.
+    /// `GET /invites/{code}/users/jobs/{job_id}` â€” Added 2026-01-13.
     public func getInviteTargetUsersJobStatus(code: String, jobId: String) async throws -> InviteTargetUsersJobStatus {
         try await http.get(path: "/invites/\(code)/users/jobs/\(jobId)")
     }
