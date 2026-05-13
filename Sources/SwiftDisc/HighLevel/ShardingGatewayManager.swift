@@ -1,23 +1,72 @@
 import Foundation
 
+/// A Discord event with shard metadata.
+///
+/// Produced by the `ShardingGatewayManager`, this struct wraps a `DiscordEvent`
+/// with information about which shard produced it and the shard's latency.
 public struct ShardedEvent: Sendable {
+    /// The shard ID that produced this event.
     public let shardId: Int
+    
+    /// The Discord event.
     public let event: DiscordEvent
+    
+    /// When this event was received.
     public let receivedAt: Date
+    
+    /// The shard's heartbeat latency at the time of this event.
     public let shardLatency: TimeInterval?
 }
 
+/// Manages Discord gateway sharding for large bots.
+///
+/// Discord requires bots with many guilds to use sharding to distribute
+/// the load across multiple gateway connections. This actor manages shard
+/// lifecycle, connection strategies, and provides a unified event stream.
+///
+/// ## Example
+///
+/// ```swift
+/// let config = ShardingGatewayManager.Configuration(
+///     shardCount: .automatic,
+///     identifyConcurrency: .respectDiscordLimits
+/// )
+/// let manager = ShardingGatewayManager(
+///     token: token,
+///     configuration: config,
+///     intents: intents
+/// )
+/// try await manager.connect()
+/// for await event in manager.events {
+///     print("Shard \(event.shardId): \(event.event)")
+/// }
+/// ```
 public actor ShardingGatewayManager {
+    /// Configuration for the sharding manager.
     public struct Configuration: Sendable {
+        /// Strategy for determining the number of shards.
         public enum ShardCountStrategy: Sendable {
+            /// Let Discord determine the shard count automatically.
             case automatic
+            
+            /// Use an exact number of shards.
             case exact(Int)
         }
+        
+        /// Presence configuration for shards.
         public struct PresenceConfig: Sendable {
+            /// Activities to display.
             public let activities: [PresenceUpdatePayload.Activity]
+            
+            /// Status string (e.g., "online", "idle", "dnd").
             public let status: String
+            
+            /// Whether the user is AFK.
             public let afk: Bool
+            
+            /// Unix timestamp for when the user went AFK.
             public let since: Int?
+            
             public init(activities: [PresenceUpdatePayload.Activity], status: String, afk: Bool, since: Int? = nil) {
                 self.activities = activities
                 self.status = status
@@ -25,16 +74,34 @@ public actor ShardingGatewayManager {
                 self.since = since
             }
         }
+        
+        /// Connection delay strategy.
         public enum ConnectionDelay: Sendable {
+            /// Connect shards in parallel batches respecting rate limits.
             case none
+            
+            /// Connect shards one at a time with a delay between each.
             case staggered(interval: TimeInterval)
         }
+        
+        /// The shard count strategy.
         public let shardCount: ShardCountStrategy
+        
+        /// The identify concurrency strategy.
         public let identifyConcurrency: IdentifyConcurrency
+        
+        /// Optional function to customize intents per shard.
         public let makeIntents: (@Sendable (Int, Int) -> GatewayIntents)?
+        
+        /// Optional function to customize presence per shard.
         public let makePresence: (@Sendable (Int, Int) -> PresenceConfig)?
+        
+        /// Fallback presence for all shards.
         public let fallbackPresence: PresenceConfig?
+        
+        /// Connection delay strategy.
         public let connectionDelay: ConnectionDelay
+        
         public init(
             shardCount: ShardCountStrategy = .automatic,
             identifyConcurrency: IdentifyConcurrency = .respectDiscordLimits,
@@ -52,26 +119,63 @@ public actor ShardingGatewayManager {
         }
     }
 
-    public enum IdentifyConcurrency: Sendable { case respectDiscordLimits }
+    /// Identify concurrency strategy.
+    public enum IdentifyConcurrency: Sendable { 
+        /// Respect Discord's rate limits for identifying shards.
+        case respectDiscordLimits 
+    }
 
+    /// Snapshot of a shard's current status.
     public struct ShardStatusSnapshot: Sendable {
+        /// The shard ID.
         public let shardId: Int
+        
+        /// The shard's current status string.
         public let status: String
+        
+        /// Heartbeat latency in milliseconds.
         public let heartbeatLatencyMs: Int?
+        
+        /// The shard's session ID.
         public let sessionId: String?
+        
+        /// The last sequence number received.
         public let lastSequence: Int?
+        
+        /// Total number of resume attempts.
         public let resumeCount: Int
+        
+        /// Number of successful resumes.
         public let resumeSuccessCount: Int
+        
+        /// Number of failed resumes.
         public let resumeFailureCount: Int
+        
+        /// When the last resume attempt occurred.
         public let lastResumeAttemptAt: Date?
+        
+        /// When the last successful resume occurred.
         public let lastResumeSuccessAt: Date?
     }
+    
+    /// Overall health status of the sharding system.
     public struct ShardingHealth: Sendable {
+        /// Total number of shards.
         public let totalShards: Int
+        
+        /// Number of ready shards.
         public let readyShards: Int
+        
+        /// Number of connecting shards.
         public let connectingShards: Int
+        
+        /// Number of reconnecting shards.
         public let reconnectingShards: Int
+        
+        /// Average latency across all shards.
         public let averageLatency: TimeInterval?
+        
+        /// Total guilds across all shards.
         public let totalGuilds: Int
     }
 
@@ -101,6 +205,13 @@ public actor ShardingGatewayManager {
         let session_start_limit: SessionStartLimit
     }
 
+    /// Creates a new sharding gateway manager.
+    ///
+    /// - Parameters:
+    ///   - token: The bot token.
+    ///   - configuration: The sharding configuration.
+    ///   - intents: The gateway intents to use.
+    ///   - httpConfiguration: The HTTP configuration.
     public init(token: String, configuration: Configuration = .init(), intents: GatewayIntents, httpConfiguration: DiscordConfiguration = .init()) {
         self.token = token
         self.shardingConfiguration = configuration
@@ -111,6 +222,8 @@ public actor ShardingGatewayManager {
     // Unified event stream
     private var eventStream: AsyncStream<ShardedEvent>!
     private nonisolated(unsafe) var eventContinuation: AsyncStream<ShardedEvent>.Continuation!
+    
+    /// The unified event stream for all shards.
     public var events: AsyncStream<ShardedEvent> { eventStream }
 
     // Logging
@@ -121,10 +234,18 @@ public actor ShardingGatewayManager {
     }
 
     // Per-shard
+    
+    /// A handle for interacting with a specific shard.
     public struct ShardHandle: Sendable {
+        /// The shard ID.
         public let id: Int
+        
         fileprivate let client: GatewayClient
+        
+        /// Returns the shard's current heartbeat latency.
         public func heartbeatLatency() async -> TimeInterval? { await client.heartbeatLatency() }
+        
+        /// Returns the shard's current status as a string.
         public func status() async -> String {
             switch await client.currentStatus() {
             case .disconnected: return "disconnected"
@@ -136,6 +257,7 @@ public actor ShardingGatewayManager {
             }
         }
     }
+    
     private var shardHandles: [ShardHandle] = []
     private var maxIdentifyConcurrency: Int = 1
     private var guildsByShard: [Int: Set<String>] = [:]
@@ -145,9 +267,13 @@ public actor ShardingGatewayManager {
         isShuttingDown = true
     }
 
+    /// Returns all shard handles.
     public func shards() async -> [ShardHandle] { shardHandles }
+    
+    /// Returns the shard handle for a specific shard ID.
     public func shard(id: Int) async -> ShardHandle? { shardHandles.first { $0.id == id } }
 
+    /// Returns a status snapshot for a specific shard.
     public func shardHealth(id: Int) async -> ShardStatusSnapshot? {
         guard let handle = await shard(id: id) else { return nil }
         let status = await handle.status()
@@ -163,6 +289,7 @@ public actor ShardingGatewayManager {
         return .init(shardId: id, status: status, heartbeatLatencyMs: ms, sessionId: sess, lastSequence: seq, resumeCount: rc, resumeSuccessCount: rsc, resumeFailureCount: rfc, lastResumeAttemptAt: rla, lastResumeSuccessAt: rls)
     }
 
+    /// Returns the overall health status of the sharding system.
     public func healthCheck() async -> ShardingHealth {
         let total = shardHandles.count
         var ready = 0, connecting = 0, reconnecting = 0
@@ -193,6 +320,10 @@ public actor ShardingGatewayManager {
         return .init(totalShards: total, readyShards: ready, connectingShards: connecting, reconnectingShards: reconnecting, averageLatency: avg, totalGuilds: totalGuilds)
     }
 
+    /// Connects all shards to the Discord gateway.
+    ///
+    /// This method will connect all shards according to the configured strategy,
+    /// wait for them to become ready, and verify guild distribution.
     public func connect() async throws {
         // Prepare unified events
         self.eventStream = AsyncStream<ShardedEvent> { continuation in
@@ -256,6 +387,8 @@ public actor ShardingGatewayManager {
     }
 
     // MARK: - Per-shard event streams
+    
+    /// Returns an event stream for a specific shard.
     public func events(for shardId: Int) -> AsyncStream<ShardedEvent> {
         let total = shardHandles.count
         guard shardId >= 0 && shardId < total else {
@@ -272,6 +405,7 @@ public actor ShardingGatewayManager {
         }
     }
 
+    /// Disconnects all shards gracefully.
     public func disconnect() async {
         if isShuttingDown {
             log(.debug, "disconnect() called but already shutting down")
@@ -297,6 +431,7 @@ public actor ShardingGatewayManager {
         log(.info, "✅ All shards disconnected gracefully")
     }
 
+    /// Restarts a specific shard.
     public func restartShard(_ shardId: Int) async throws {
         guard let handle = shardHandles.first(where: { $0.id == shardId }) else { return }
         log(.info, "Restarting shard \(shardId)…")

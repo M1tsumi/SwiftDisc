@@ -5,6 +5,8 @@ import Foundation
 /// Chain builder methods to compose an embed, then call ``build()`` to produce
 /// the final `Embed` value ready for sending.
 ///
+/// ## Example
+///
 /// ```swift
 /// let embed = EmbedBuilder()
 ///     .title("Server Status")
@@ -13,7 +15,20 @@ import Foundation
 ///     .footer(text: "Last checked")
 ///     .timestamp(Date())
 ///     .build()
+/// try await client.sendMessage(channelId: channelId, embeds: [embed])
 /// ```
+///
+/// ## Limits
+/// - Title: 256 characters
+/// - Description: 4096 characters
+/// - Fields: Up to 25 fields
+/// - Field name: 256 characters
+/// - Field value: 1024 characters
+/// - Footer text: 2048 characters
+///
+/// ## See Also
+/// - `Embed`
+/// - `DiscordClient.sendMessage(channelId:embeds:)`
 public struct EmbedBuilder: Sendable {
     private var title: String?
     private var description: String?
@@ -27,6 +42,8 @@ public struct EmbedBuilder: Sendable {
     private var timestamp: String?
 
     /// Creates a new, empty `EmbedBuilder`.
+    ///
+    /// - Returns: A new builder instance ready for configuration.
     public init() {}
 
     /// Sets the embed title.
@@ -144,7 +161,10 @@ public struct EmbedBuilder: Sendable {
     }
     
     /// Validates the embed against Discord API limits.
-    /// - Throws: ValidationError if any limits are exceeded
+    ///
+    /// Use this method to ensure your embed complies with Discord's limits before sending.
+    ///
+    /// - Throws: `ValidationError` if any limits are exceeded.
     public func validate() throws {
         if let title = title, title.count > 256 {
             throw ValidationError.titleTooLong(length: title.count, max: 256)
@@ -166,20 +186,36 @@ public struct EmbedBuilder: Sendable {
     }
     
     /// Builds and validates the embed.
-    /// - Throws: ValidationError if any limits are exceeded
-    /// - Returns: A fully composed `Embed` value
+    ///
+    /// This is a convenience method that combines ``validate()`` and ``build()``.
+    ///
+    /// - Throws: `ValidationError` if any limits are exceeded.
+    /// - Returns: A fully composed `Embed` value.
     public func buildAndValidate() throws -> Embed {
         try validate()
         return build()
     }
     
+    /// Validation errors for embed building.
+    ///
+    /// These errors are thrown when an embed exceeds Discord's API limits.
     public enum ValidationError: Error, LocalizedDescription, Sendable {
+        /// The embed title exceeds the maximum length.
         case titleTooLong(length: Int, max: Int)
+        
+        /// The embed description exceeds the maximum length.
         case descriptionTooLong(length: Int, max: Int)
+        
+        /// The embed has too many fields.
         case tooManyFields(count: Int, max: Int)
+        
+        /// A field name exceeds the maximum length.
         case fieldNameTooLong(field: Int, length: Int, max: Int)
+        
+        /// A field value exceeds the maximum length.
         case fieldValueTooLong(field: Int, length: Int, max: Int)
         
+        /// A localized description of the error.
         public var errorDescription: String? {
             switch self {
             case .titleTooLong(let length, let max):

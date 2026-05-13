@@ -1,85 +1,186 @@
 import Foundation
 
-/// A full Discord Guild (server) object.
+/// Represents a Discord guild (server).
+///
+/// Guilds are the primary way users organize and communicate in Discord.
+///
+/// ## Field Availability
+///
 /// Fields such as `members`, `channels`, and `threads` are only populated
 /// in the `GUILD_CREATE` gateway event; REST responses return `nil` for them.
+///
+/// ## Example
+///
+/// ```swift
+/// await client.setOnReady { ready in
+///     for guild in ready.guilds {
+///         print("Guild: \(guild.name)")
+///         print("Members: \(guild.member_count ?? 0)")
+///         print("Boost level: \(guild.premium_tier ?? 0)")
+///     }
+/// }
+/// ```
+///
+/// ## See Also
+/// - `DiscordClient.getCurrentUserGuilds(before:after:limit:)`
+/// - `GuildMember`
+/// - `Role`
 public struct Guild: Codable, Hashable, Sendable {
     // MARK: - Core Identity
+    /// The unique ID of the guild.
     public let id: GuildID
+    
+    /// The name of the guild (2-100 characters).
     public let name: String
+    
+    /// The icon hash of the guild.
     public let icon: String?
+    
+    /// The icon hash, returned when in the template object.
     public let icon_hash: String?
+    
+    /// The splash hash of the guild.
     public let splash: String?
+    
+    /// The discovery splash hash of the guild.
     public let discovery_splash: String?
 
     // MARK: - Ownership
+    /// Whether the user is the owner of the guild.
     public let owner: Bool?
+    
+    /// The ID of the owner of the guild.
     public let owner_id: UserID?
+    
+    /// The total permissions for the user in the guild (excludes overwrites).
     public let permissions: String?
 
     // MARK: - AFK
+    /// The ID of the AFK channel.
     public let afk_channel_id: ChannelID?
+    
+    /// The AFK timeout in seconds.
     public let afk_timeout: Int?
 
     // MARK: - Widget
+    /// Whether the widget is enabled.
     public let widget_enabled: Bool?
+    
+    /// The channel ID for the widget.
     public let widget_channel_id: ChannelID?
 
     // MARK: - Moderation
+    /// The verification level required for the guild (0-5).
     public let verification_level: Int?
+    
+    /// The default message notifications level (0-1).
     public let default_message_notifications: Int?
+    
+    /// The explicit content filter level (0-4).
     public let explicit_content_filter: Int?
+    
+    /// The MFA level required for the guild (0-1).
     public let mfa_level: Int?
+    
+    /// The NSFW level of the guild (0-3).
     public let nsfw_level: Int?
 
     // MARK: - Content
+    /// The roles in the guild.
     public let roles: [Role]?
+    
+    /// The custom emojis in the guild.
     public let emojis: [Emoji]?
+    
+    /// The enabled guild features.
     public let features: [String]?
+    
+    /// The custom guild stickers.
     public let stickers: [Sticker]?
 
     // MARK: - System Channels
+    /// The ID of the application that created the guild (if applicable).
     public let application_id: ApplicationID?
+    
+    /// The ID of the channel where guild notices are sent.
     public let system_channel_id: ChannelID?
+    
+    /// The system channel flags.
     public let system_channel_flags: Int?
+    
+    /// The ID of the channel where community updates are posted.
     public let rules_channel_id: ChannelID?
 
     // MARK: - Size
+    /// The maximum number of presences for the guild.
     public let max_presences: Int?
+    
+    /// The maximum number of members for the guild.
     public let max_members: Int?
+    
+    /// The number of members in the guild (approximate for large guilds).
     public let member_count: Int?
+    
+    /// Whether the guild is considered large.
     public let large: Bool?
+    
+    /// Whether the guild is unavailable due to an outage.
     public let unavailable: Bool?
 
     // MARK: - Branding
+    /// The vanity URL code for the guild.
     public let vanity_url_code: String?
+    
+    /// The description of the guild (0-1000 characters).
     public let description: String?
+    
+    /// The banner hash of the guild.
     public let banner: String?
 
     // MARK: - Nitro / Boost
+    /// The premium tier of the guild (0-3).
     public let premium_tier: Int?
+    
+    /// The number of boosts the guild has.
     public let premium_subscription_count: Int?
+    
+    /// Whether the premium progress bar is enabled.
     public let premium_progress_bar_enabled: Bool?
 
     // MARK: - Locale & Update Channels
+    /// The preferred locale of the guild (ISO 639 code).
     public let preferred_locale: String?
+    
+    /// The ID of the channel where admins receive notices from Discord.
     public let public_updates_channel_id: ChannelID?
+    
+    /// The ID of the channel where safety alerts are sent.
     public let safety_alerts_channel_id: ChannelID?
 
     // MARK: - Capacity
+    /// The maximum number of users in a video channel.
     public let max_video_channel_users: Int?
+    
+    /// The maximum number of users in a stage video channel.
     public let max_stage_video_channel_users: Int?
+    
+    /// The approximate number of members in the guild (from REST).
     public let approximate_member_count: Int?
+    
+    /// The approximate number of online members in the guild (from REST).
     public let approximate_presence_count: Int?
 
     // MARK: - GUILD_CREATE-only fields
-    /// ISO 8601 timestamp for when the bot joined. Present only in GUILD_CREATE payloads.
+    /// ISO 8601 timestamp for when the bot joined (present only in GUILD_CREATE payloads).
     public let joined_at: String?
-    /// Member list included by the gateway. Not present in standard REST guild responses.
+    
+    /// Member list included by the gateway (not present in standard REST guild responses).
     public let members: [GuildMember]?
-    /// Channel list included by the gateway. Not present in standard REST guild responses.
+    
+    /// Channel list included by the gateway (not present in standard REST guild responses).
     public let channels: [Channel]?
-    /// Active threads included by the gateway. Not present in standard REST guild responses.
+    
+    /// Active threads included by the gateway (not present in standard REST guild responses).
     public let threads: [Channel]?
 
     // MARK: - Initializer for tests and cache seeding

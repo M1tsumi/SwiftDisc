@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-05-12
+
+### Overview
+SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, providing developer-friendly documentation for all public APIs including classes, structs, functions, and methods. This release includes detailed syntax examples, use cases, and edge case handling for improved developer experience.
+
+### Added
+- **DocC documentation** — added comprehensive DocC comments to all public APIs with detailed parameter descriptions, return values, throws documentation, and usage examples
+- **Swift-DocC plugin integration** — added Swift-DocC plugin dependency to Package.swift for automated documentation generation
+- **GitHub Actions workflow** — added workflow for automatic documentation generation and deployment to GitHub Pages
+- **Enhanced documentation** — improved developer experience with detailed syntax examples, use cases, and edge case handling
+
+### Changed
+- **Documentation infrastructure** — migrated to DocC for modern, Apple-style documentation generation
+- **Version references** — updated all version references to 2.3.1 across the codebase
+
 ## [2.3.0] - 2026-05-12
 
 ### Overview

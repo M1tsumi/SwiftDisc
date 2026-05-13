@@ -1,6 +1,21 @@
 import Foundation
 
+/// Internal event dispatcher for Discord gateway events.
+///
+/// This actor processes incoming Discord events from the gateway,
+/// updates the cache, and dispatches events to registered handlers.
+/// It is an internal implementation detail and not part of the public API.
 actor EventDispatcher {
+    /// Processes a Discord event.
+    ///
+    /// This method handles the event by:
+    /// 1. Updating the cache with relevant entities
+    /// 2. Dispatching to registered event callbacks
+    /// 3. Routing to command handlers if applicable
+    ///
+    /// - Parameters:
+    ///   - event: The Discord event to process.
+    ///   - client: The Discord client instance.
     func process(event: DiscordEvent, client: DiscordClient) async {
         switch event {
 

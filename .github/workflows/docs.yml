@@ -1,0 +1,51 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+
+jobs:
+  build-docs:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift 6.2
+        uses: compnerd/gha-setup-swift@main
+        with:
+          source: swift.org
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+
+      - name: Build Documentation
+        run: |
+          swift package --allow-writing-to-directory documentation resolve
+          swift package --allow-writing-to-directory documentation docc SwiftDisc
+
+      - name: Upload Documentation Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: documentation/
+
+  deploy-docs:
+    needs: build-docs
+    runs-on: macos-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Documentation Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: documentation/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./documentation

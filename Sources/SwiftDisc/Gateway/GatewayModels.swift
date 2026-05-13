@@ -1,103 +1,301 @@
 import Foundation
 
+/// Represents the HELLO gateway event.
+///
+/// Sent by the gateway when a connection is first established.
+/// Contains the heartbeat interval in milliseconds.
 public struct GatewayHello: Codable, Sendable {
+    /// The heartbeat interval in milliseconds.
+    ///
+    /// The client must send a heartbeat every `heartbeat_interval` milliseconds.
     public let heartbeat_interval: Int
 }
 
+/// Represents a THREAD_MEMBERS_UPDATE gateway event.
+///
+/// Sent when members are added to or removed from a thread.
 public struct ThreadMembersUpdate: Codable, Hashable, Sendable {
+    /// The ID of the thread.
     public let id: ChannelID
+    
+    /// The ID of the guild.
     public let guild_id: GuildID
+    
+    /// The approximate number of members in the thread.
     public let member_count: Int
+    
+    /// Members added to the thread.
     public let added_members: [ThreadMember]?
+    
+    /// IDs of members removed from the thread.
     public let removed_member_ids: [UserID]?
 }
 
+/// Represents a THREAD_LIST_SYNC gateway event.
+///
+/// Sent when the thread list for a guild is synced.
 public struct ThreadListSync: Codable, Hashable, Sendable {
+    /// The ID of the guild.
     public let guild_id: GuildID
+    
+    /// The IDs of the channels that are threads.
     public let channel_ids: [ChannelID]
+    
+    /// The thread objects.
     public let threads: [Channel]
+    
+    /// The thread member objects.
     public let members: [ThreadMember]
 }
 
+/// Gateway opcodes.
+///
+/// Opcodes are used to indicate the purpose of a gateway payload.
+///
+/// ## Opcode Values
+/// - `0`: DISPATCH - An event was dispatched.
+/// - `1`: HEARTBEAT - A heartbeat keep-alive.
+/// - `2`: IDENTIFY - Client identification.
+/// - `3`: PRESENCE_UPDATE - Client presence update.
+/// - `6`: RESUME - Resume a previous session.
+/// - `7`: RECONNECT - Request to reconnect.
+/// - `8`: REQUEST_GUILD_MEMBERS - Request guild members.
+/// - `9`: INVALID_SESSION - Invalid session.
+/// - `10`: HELLO - Hello from server.
+/// - `11`: HEARTBEAT_ACK - Heartbeat acknowledged.
+/// - `12`: RATE_LIMITED - Rate limited.
 public enum GatewayOpcode: Int, Codable, Sendable {
+    /// Dispatch (event).
     case dispatch = 0
+    
+    /// Heartbeat.
     case heartbeat = 1
-    case presenceUpdate = 3
+    
+    /// Identify.
     case identify = 2
+    
+    /// Presence update.
+    case presenceUpdate = 3
+    
+    /// Resume.
     case resume = 6
+    
+    /// Reconnect.
     case reconnect = 7
+    
+    /// Request guild members.
     case requestGuildMembers = 8
+    
+    /// Invalid session.
     case invalidSession = 9
+    
+    /// Hello.
     case hello = 10
+    
+    /// Heartbeat acknowledged.
     case heartbeatAck = 11
+    
+    /// Rate limited.
     case rateLimited = 12
 }
 
+/// Represents a gateway payload.
+///
+/// Gateway payloads are the messages sent between the client and Discord's gateway.
+///
+/// ## Fields
+/// - `op`: The opcode for this payload.
+/// - `d`: The event data (if applicable).
+/// - `s`: The sequence number (for dispatch events).
+/// - `t`: The event name (for dispatch events).
 public struct GatewayPayload<D: Codable>: Codable {
+    /// The opcode for this payload.
     public let op: GatewayOpcode
+    
+    /// The event data (if applicable).
     public let d: D?
+    
+    /// The sequence number (for dispatch events).
     public let s: Int?
+    
+    /// The event name (for dispatch events).
     public let t: String?
 }
 extension GatewayPayload: Sendable where D: Sendable {}
 
+/// Represents a Discord gateway event.
+///
+/// This enum covers all possible events that can be dispatched from Discord's gateway.
+///
+/// ## Example
+///
+/// ```swift
+/// await client.setOnReady { ready in
+///     print("Bot is ready!")
+/// }
+///
+/// await client.setOnMessage { message in
+///     print("Message: \(message.content ?? "")")
+/// }
+///
+/// await client.setOnInteraction { interaction in
+///     print("Interaction received")
+/// }
+/// ```
+///
+/// ## See Also
+/// - `DiscordClient.setOnReady(_:)`
+/// - `DiscordClient.setOnMessage(_:)`
+/// - `DiscordClient.setOnInteraction(_:)`
 public enum DiscordEvent: Hashable, Sendable {
+    /// The bot is ready to start receiving events.
     case ready(ReadyEvent)
+    
+    /// A message was created.
     case messageCreate(Message)
+    
+    /// A message was updated.
     case messageUpdate(Message)
+    
+    /// A message was deleted.
     case messageDelete(MessageDelete)
+    
+    /// Multiple messages were deleted.
     case messageDeleteBulk(MessageDeleteBulk)
+    
+    /// A reaction was added to a message.
     case messageReactionAdd(MessageReactionAdd)
+    
+    /// A reaction was removed from a message.
     case messageReactionRemove(MessageReactionRemove)
+    
+    /// All reactions were removed from a message.
     case messageReactionRemoveAll(MessageReactionRemoveAll)
+    
+    /// A specific emoji reaction was removed from a message.
     case messageReactionRemoveEmoji(MessageReactionRemoveEmoji)
+    
+    /// A guild was created or the bot joined a guild.
     case guildCreate(Guild)
+    
+    /// A guild was updated.
     case guildUpdate(Guild)
+    
+    /// A guild was deleted or the bot left a guild.
     case guildDelete(GuildDelete)
+    
+    /// A channel was created.
     case channelCreate(Channel)
+    
+    /// A channel was updated.
     case channelUpdate(Channel)
+    
+    /// A channel was deleted.
     case channelDelete(Channel)
+    
+    /// An interaction was created (slash command, button, etc.).
     case interactionCreate(Interaction)
+    
+    /// A member joined a guild.
     case guildMemberAdd(GuildMemberAdd)
+    
+    /// A member was removed from a guild.
     case guildMemberRemove(GuildMemberRemove)
+    
+    /// A guild member was updated.
     case guildMemberUpdate(GuildMemberUpdate)
+    
+    /// A guild role was created.
     case guildRoleCreate(GuildRoleCreate)
+    
+    /// A guild role was updated.
     case guildRoleUpdate(GuildRoleUpdate)
+    
+    /// A guild role was deleted.
     case guildRoleDelete(GuildRoleDelete)
+    
+    /// Guild emojis were updated.
     case guildEmojisUpdate(GuildEmojisUpdate)
+    
+    /// Guild stickers were updated.
     case guildStickersUpdate(GuildStickersUpdate)
+    
+    /// Guild members chunk was received.
     case guildMembersChunk(GuildMembersChunk)
+    
+    /// A user started typing.
     case typingStart(TypingStart)
+    
+    /// Channel pins were updated.
     case channelPinsUpdate(ChannelPinsUpdate)
+    
+    /// A user's presence was updated.
     case presenceUpdate(PresenceUpdate)
+    
+    /// A user was banned from a guild.
     case guildBanAdd(GuildBanAdd)
+    
+    /// A user was unbanned from a guild.
     case guildBanRemove(GuildBanRemove)
+    
+    /// Guild webhooks were updated.
     case webhooksUpdate(WebhooksUpdate)
+    
+    /// Guild integrations were updated.
     case guildIntegrationsUpdate(GuildIntegrationsUpdate)
+    
+    /// An invite was created.
     case inviteCreate(InviteCreate)
+    
+    /// An invite was deleted.
     case inviteDelete(InviteDelete)
-    // Catch-all for any gateway dispatch we don't model explicitly
+    
+    /// Catch-all for any gateway dispatch we don't model explicitly.
     case raw(String, Data)
-    // Threads
+    
+    /// A thread was created.
     case threadCreate(Channel)
+    
+    /// A thread was updated.
     case threadUpdate(Channel)
+    
+    /// A thread was deleted.
     case threadDelete(Channel)
+    
+    /// A thread member was updated.
     case threadMemberUpdate(ThreadMember)
+    
+    /// Thread members were updated.
     case threadMembersUpdate(ThreadMembersUpdate)
+    
+    /// Thread list was synced.
     case threadListSync(ThreadListSync)
-    // Application Commands
+    
+    /// Application command permissions were updated.
     case applicationCommandPermissionsUpdate(ApplicationCommandPermissionsUpdate)
-    // Channel Info
+    
+    /// Channel info was received.
     case channelInfo(Channel)
-    // Scheduled Events
+    
+    /// A scheduled event was created.
     case guildScheduledEventCreate(GuildScheduledEvent)
+    
+    /// A scheduled event was updated.
     case guildScheduledEventUpdate(GuildScheduledEvent)
+    
+    /// A scheduled event was deleted.
     case guildScheduledEventDelete(GuildScheduledEvent)
+    
+    /// A user was added to a scheduled event.
     case guildScheduledEventUserAdd(GuildScheduledEventUser)
+    
+    /// A user was removed from a scheduled event.
     case guildScheduledEventUserRemove(GuildScheduledEventUser)
-    // AutoMod
+    
+    /// An auto moderation rule was created.
     case autoModerationRuleCreate(AutoModerationRule)
-    case autoModerationRuleUpdate(AutoModerationRule)
+    
+    /// An auto moderation rule was updated.
     case autoModerationRuleDelete(AutoModerationRule)
     case autoModerationActionExecution(AutoModerationActionExecution)
     // Audit log

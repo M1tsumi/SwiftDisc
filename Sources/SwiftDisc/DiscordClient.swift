@@ -1,11 +1,237 @@
 import Foundation
 
-/// The primary client for interacting with the Discord API.
-///
-/// `DiscordClient` is an `actor`, giving every method and stored property
-/// automatic data-race safety. `let` stored properties (e.g. `token`, `cache`)
-/// are accessible from any context without `await`.
+# Documentation
+
+The primary client for interacting with the Discord API.
+
+`DiscordClient` is an `actor`, providing automatic data-race safety for all methods and stored properties. `let` stored properties (e.g., `token`, `cache`) are accessible from any context without `await`, while mutable operations require async/await.
+
+## Overview
+
+SwiftDisc is a Swift-first Discord API wrapper that provides:
+- **Gateway connectivity** for real-time event handling
+- **REST API** for HTTP-based operations
+- **High-level routers** for commands, slash commands, autocomplete, and components
+- **Typed models** for Discord entities (channels, guilds, messages, etc.)
+- **Automatic rate-limiting** and reconnect logic
+- **Actor-safe concurrency** with Swift 6.2
+
+## Quick Start
+
+```swift
+import Foundation
+import SwiftDisc
+
+let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
+let client = DiscordClient(token: token)
+
+await client.setOnReady { ready in
+    print("Logged in as \(ready.user.username)")
+}
+
+await client.setOnMessage { message in
+    guard message.content?.lowercased() == "ping" else { return }
+    try await message.reply(client: client, content: "Pong!")
+}
+
+try await client.loginAndConnect(intents: [.guilds, .guildMessages, .messageContent])
+for await event in await client.events {
+    // Handle events
+}
+```
+
+## Gateway Intents
+
+Discord requires you to specify which events you want to receive. Use `GatewayIntents` to configure this:
+
+```swift
+try await client.loginAndConnect(intents: [
+    .guilds,              // Guild events (create, update, delete)
+    .guildMessages,       // Message events in guilds
+    .messageContent,      // Message content (privileged intent)
+    .guildMembers,        // Member join/leave/update
+    .guildPresences       // User presence updates
+])
+```
+
+> **Note:** Some intents like `messageContent` and `guildPresences` are privileged and must be enabled in the Discord Developer Portal.
+
+## Event Handling
+
+You can handle events in two ways:
+
+1. **Using callback properties** (simple for basic bots):
+```swift
+await client.setOnMessage { message in
+    print("Received: \(message.content ?? "")")
+}
+```
+
+2. **Using the event stream** (for advanced event processing):
+```swift
+for await event in await client.events {
+    switch event {
+    case .messageCreate(let message):
+        print("Message: \(message.content ?? "")")
+    case .ready(let ready):
+        print("Ready as \(ready.user.username)")
+    default:
+        break
+    }
+}
+```
+
+## High-Level Routers
+
+SwiftDisc provides high-level routers for common bot patterns:
+
+### Command Router (Prefix-based commands)
+```swift
+let commands = CommandRouter()
+await commands.register("!ping") { ctx in
+    try await ctx.message.reply(client: client, content: "Pong!")
+}
+await client.useCommands(commands)
+```
+
+### Slash Command Router
+```swift
+let slash = SlashCommandRouter()
+await slash.register("ping") { ctx in
+    try await ctx.client.createInteractionResponse(
+        interactionId: ctx.interaction.id,
+        token: ctx.interaction.token,
+        content: "Pong!"
+    )
+}
+await client.useSlashCommands(slash)
+```
+
+### Autocomplete Router
+```swift
+let autocomplete = AutocompleteRouter()
+await autocomplete.register("search") { ctx in
+    let choices = ctx.focusedValue.map { value in
+        AutocompleteChoice(name: value, value: value)
+    }
+    try await ctx.respond(choices: choices)
+}
+await client.useAutocomplete(autocomplete)
+```
+
+### View Manager (Persistent Components)
+```swift
+let viewManager = ViewManager()
+await viewManager.register("my_view") { ctx in
+    try await ctx.respond(content: "View clicked!")
+}
+await client.useViewManager(viewManager)
+```
+
+## REST API
+
+All Discord REST endpoints are available as methods on `DiscordClient`:
+
+```swift
+// Send a message
+try await client.sendMessage(
+    channelId: channelId,
+    content: "Hello, world!"
+)
+
+// Edit a message
+try await client.editMessage(
+    channelId: channelId,
+    messageId: messageId,
+    content: "Updated message"
+)
+
+// Delete a message
+try await client.deleteMessage(
+    channelId: channelId,
+    messageId: messageId
+)
+```
+
+## Cache
+
+The client includes a built-in cache that stores Discord entities:
+
+```swift
+let cache = await client.cache
+
+// Access cached data
+if let guild = cache.guilds[guildId] {
+    print("Guild: \(guild.name)")
+}
+```
+
+## Error Handling
+
+All operations can throw `DiscordError`:
+
+```swift
+do {
+    try await client.sendMessage(channelId: channelId, content: "Hello")
+} catch let error as DiscordError {
+    print("Discord error: \(error)")
+    if let context = error.debugContext {
+        print("Debug context: \(context)")
+    }
+}
+```
+
+## Configuration
+
+Customize client behavior with `DiscordConfiguration`:
+
+```swift
+let config = DiscordConfiguration(
+    apiBaseURL: URL(string: "https://discord.com/api")!,
+    apiVersion: 10,
+    gatewayBaseURL: URL(string: "wss://gateway.discord.gg")!
+)
+let client = DiscordClient(token: token, configuration: config)
+```
+
+## Sharding
+
+For large bots, use sharding to distribute load:
+
+```swift
+// Connect as shard 0 of 5 total shards
+try await client.loginAndConnectSharded(
+    index: 0,
+    total: 5,
+    intents: [.guilds, .guildMessages]
+)
+```
+
+## Thread Safety
+
+As an `actor`, `DiscordClient` provides automatic thread safety:
+- All methods are serialized and safe to call from any context
+- `let` properties can be accessed without `await`
+- Mutable operations require `await`
+- No data races possible
+
+## See Also
+- `DiscordConfiguration` for client configuration options
+- `GatewayIntents` for gateway event subscription
+- `CommandRouter` for prefix-based commands
+- `SlashCommandRouter` for slash commands
+- `AutocompleteRouter` for autocomplete handling
+- `ViewManager` for persistent component state
+- `Cache` for entity caching
+- `DiscordError` for error handling
+
 public actor DiscordClient {
+    /// The bot token used for authentication with Discord.
+    ///
+    /// This is a non-isolated `let` property, so it can be accessed from any context without `await`.
+    /// The token should be kept secure and never committed to version control.
+    ///
+    /// - Note: Obtain your bot token from the Discord Developer Portal.
     public nonisolated let token: String
     let http: HTTPClient
     private let gateway: GatewayClient
@@ -21,11 +247,44 @@ public actor DiscordClient {
     }()
     private nonisolated(unsafe) var eventContinuation: AsyncStream<DiscordEvent>.Continuation?
 
+    /// The cache that stores Discord entities (guilds, channels, members, etc.).
+    ///
+    /// The cache is automatically populated as events are received from the gateway.
+    /// This is a non-isolated `let` property, so it can be accessed from any context without `await`.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let cache = await client.cache
+    /// if let guild = cache.guilds[guildId] {
+    ///     print("Guild name: \(guild.name)")
+    /// }
+    /// ```
     public let cache = Cache()
 
     // Loaded extensions are tracked so they can be unloaded cleanly.
     private var loadedExtensions: [SwiftDiscExtension] = []
 
+    /// A stream of all Discord gateway events.
+    ///
+    /// Use this to handle events in a unified way, or use the individual callback properties like `onMessage`, `onReady`, etc.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// for await event in await client.events {
+    ///     switch event {
+    ///     case .messageCreate(let message):
+    ///         print("Message: \(message.content ?? "")")
+    ///     case .ready(let ready):
+    ///         print("Ready as \(ready.user.username)")
+    ///     default:
+    ///         break
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Note: The stream is infinite and will continue until the client disconnects.
     public var events: AsyncStream<DiscordEvent> { eventStream }
 
     // MARK: - Event Callbacks
@@ -105,26 +364,188 @@ public actor DiscordClient {
     public var onSoundboardSoundUpdate: (@Sendable (SoundboardSound) async -> Void)?
     public var onSoundboardSoundDelete: (@Sendable (SoundboardSound) async -> Void)?
 
-    // Command framework entry point.
+    /// The command router for prefix-based commands.
+    ///
+    /// Set this to enable prefix-based command handling. Use `useCommands(_:)` to assign a router.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let commands = CommandRouter()
+    /// await commands.register("!ping") { ctx in
+    ///     try await ctx.message.reply(client: client, content: "Pong!")
+    /// }
+    /// await client.useCommands(commands)
+    /// ```
+    ///
+    /// - See Also: `CommandRouter`
     public var commands: CommandRouter?
+    
+    /// Sets the command router for prefix-based commands.
+    ///
+    /// - Parameter router: The `CommandRouter` instance to use for command handling.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let commands = CommandRouter()
+    /// await commands.register("!ping") { ctx in
+    ///     try await ctx.message.reply(client: client, content: "Pong!")
+    /// }
+    /// await client.useCommands(commands)
+    /// ```
+    ///
+    /// - See Also: `CommandRouter`
     public func useCommands(_ router: CommandRouter) { self.commands = router }
 
-    // View manager handles persistent component state and dispatch.
+    /// The view manager for persistent component state.
+    ///
+    /// Set this to enable persistent component state handling for message components.
+    /// Use `useViewManager(_:)` to assign a manager.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let viewManager = ViewManager()
+    /// await viewManager.register("my_view") { ctx in
+    ///     try await ctx.respond(content: "View clicked!")
+    /// }
+    /// await client.useViewManager(viewManager)
+    /// ```
+    ///
+    /// - See Also: `ViewManager`
     public var viewManager: ViewManager?
+    
+    /// Sets the view manager for persistent component state.
+    ///
+    /// - Parameter manager: The `ViewManager` instance to use for component state handling.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let viewManager = ViewManager()
+    /// await viewManager.register("my_view") { ctx in
+    ///     try await ctx.respond(content: "View clicked!")
+    /// }
+    /// await client.useViewManager(viewManager)
+    /// ```
+    ///
+    /// - See Also: `ViewManager`
     public func useViewManager(_ manager: ViewManager) {
         self.viewManager = manager
         manager.start(client: self)
     }
 
-    // Slash command router entry point.
+    /// The slash command router for Discord slash commands.
+    ///
+    /// Set this to enable slash command handling. Use `useSlashCommands(_:)` to assign a router.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let slash = SlashCommandRouter()
+    /// await slash.register("ping") { ctx in
+    ///     try await ctx.client.createInteractionResponse(
+    ///         interactionId: ctx.interaction.id,
+    ///         token: ctx.interaction.token,
+    ///         content: "Pong!"
+    ///     )
+    /// }
+    /// await client.useSlashCommands(slash)
+    /// ```
+    ///
+    /// - See Also: `SlashCommandRouter`
     public var slashCommands: SlashCommandRouter?
+    
+    /// Sets the slash command router for Discord slash commands.
+    ///
+    /// - Parameter router: The `SlashCommandRouter` instance to use for slash command handling.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let slash = SlashCommandRouter()
+    /// await slash.register("ping") { ctx in
+    ///     try await ctx.client.createInteractionResponse(
+    ///         interactionId: ctx.interaction.id,
+    ///         token: ctx.interaction.token,
+    ///         content: "Pong!"
+    ///     )
+    /// }
+    /// await client.useSlashCommands(slash)
+    /// ```
+    ///
+    /// - See Also: `SlashCommandRouter`
     public func useSlashCommands(_ router: SlashCommandRouter) { self.slashCommands = router }
 
-    // Autocomplete router for slash option suggestions.
+    /// The autocomplete router for slash command option suggestions.
+    ///
+    /// Set this to enable autocomplete handling for slash command options.
+    /// Use `useAutocomplete(_:)` to assign a router.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let autocomplete = AutocompleteRouter()
+    /// await autocomplete.register("search") { ctx in
+    ///     let choices = ctx.focusedValue.map { value in
+    ///         AutocompleteChoice(name: value, value: value)
+    ///     }
+    ///     try await ctx.respond(choices: choices)
+    /// }
+    /// await client.useAutocomplete(autocomplete)
+    /// ```
+    ///
+    /// - See Also: `AutocompleteRouter`
     public var autocomplete: AutocompleteRouter?
+    
+    /// Sets the autocomplete router for slash command option suggestions.
+    ///
+    /// - Parameter router: The `AutocompleteRouter` instance to use for autocomplete handling.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let autocomplete = AutocompleteRouter()
+    /// await autocomplete.register("search") { ctx in
+    ///     let choices = ctx.focusedValue.map { value in
+    ///         AutocompleteChoice(name: value, value: value)
+    ///     }
+    ///     try await ctx.respond(choices: choices)
+    /// }
+    /// await client.useAutocomplete(autocomplete)
+    /// ```
+    ///
+    /// - See Also: `AutocompleteRouter`
     public func useAutocomplete(_ router: AutocompleteRouter) { self.autocomplete = router }
 
 
+    /// Creates a new Discord client with the specified bot token.
+    ///
+    /// - Parameters:
+    ///   - token: The bot token obtained from the Discord Developer Portal.
+    ///   - configuration: The client configuration. Defaults to a standard configuration.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? ""
+    /// let client = DiscordClient(token: token)
+    /// ```
+    ///
+    /// ## Custom Configuration
+    ///
+    /// ```swift
+    /// let config = DiscordConfiguration(
+    ///     apiBaseURL: URL(string: "https://discord.com/api")!,
+    ///     apiVersion: 10,
+    ///     gatewayBaseURL: URL(string: "wss://gateway.discord.gg")!
+    /// )
+    /// let client = DiscordClient(token: token, configuration: config)
+    /// ```
+    ///
+    /// - Important: Keep your bot token secure and never commit it to version control.
+    /// - See Also: `DiscordConfiguration`
     public init(token: String, configuration: DiscordConfiguration = .init()) {
         self.token = token
         self.http = HTTPClient(token: token, configuration: configuration)
@@ -132,12 +553,46 @@ public actor DiscordClient {
         self.configuration = configuration
     }
 
-    // MARK: - Extensions/Cogs
+    /// Loads an extension (cog) into the client.
+    ///
+    /// Extensions are reusable modules that can add commands, event handlers, and other functionality to your bot.
+    ///
+    /// - Parameter ext: The extension to load.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// class MyExtension: SwiftDiscExtension {
+    ///     func onRegister(client: DiscordClient) async {
+    ///         print("Extension registered!")
+    ///     }
+    ///     
+    ///     func onUnload(client: DiscordClient) async {
+    ///         print("Extension unloaded!")
+    ///     }
+    /// }
+    ///
+    /// let ext = MyExtension()
+    /// await client.loadExtension(ext)
+    /// ```
+    ///
+    /// - See Also: `SwiftDiscExtension`, `unloadExtensions()`
     public func loadExtension(_ ext: SwiftDiscExtension) async {
         loadedExtensions.append(ext)
         await ext.onRegister(client: self)
     }
 
+    /// Unloads all loaded extensions.
+    ///
+    /// This calls `onUnload(client:)` on each extension before removing it.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// await client.unloadExtensions()
+    /// ```
+    ///
+    /// - See Also: `SwiftDiscExtension`, `loadExtension(_:)`
     public func unloadExtensions() async {
         let exts = loadedExtensions
         loadedExtensions.removeAll()
@@ -146,16 +601,68 @@ public actor DiscordClient {
     // MARK: - REST: Bulk Messages and Crosspost
 
     /// Sets the callback invoked when the READY event is received.
+    ///
+    /// The READY event is sent when the client successfully connects to the gateway.
+    ///
+    /// - Parameter handler: The async callback to invoke when the READY event is received.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// await client.setOnReady { ready in
+    ///     print("Logged in as \(ready.user.username)")
+    ///     print("Guilds: \(ready.guilds.count)")
+    /// }
+    /// ```
+    ///
+    /// - See Also: `ReadyEvent`, `onReady`
     public func setOnReady(_ handler: (@Sendable (ReadyEvent) async -> Void)?) {
         self.onReady = handler
     }
 
     /// Sets the callback invoked for MESSAGE_CREATE events.
+    ///
+    /// This callback is invoked for every new message in guilds where the bot has access.
+    ///
+    /// - Parameter handler: The async callback to invoke when a message is created.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// await client.setOnMessage { message in
+    ///     guard message.content?.lowercased() == "ping" else { return }
+    ///     try await message.reply(client: client, content: "Pong!")
+    /// }
+    /// ```
+    ///
+    /// - Note: Requires the `guildMessages` and `messageContent` intents.
+    /// - See Also: `Message`, `onMessage`
     public func setOnMessage(_ handler: (@Sendable (Message) async -> Void)?) {
         self.onMessage = handler
     }
 
-    // Bulk delete supports 2...100 messages that are newer than Discord's 14-day limit.
+    /// Bulk deletes multiple messages from a channel.
+    ///
+    /// This method deletes 2-100 messages in a single API call. All messages must be newer than 14 days old.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to delete messages from.
+    ///   - messageIds: An array of message IDs to delete (2-100 messages).
+    ///
+    /// - Throws: `DiscordError` if the request fails, if fewer than 2 or more than 100 messages are provided,
+    ///            or if any message is older than 14 days.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.bulkDeleteMessages(
+    ///     channelId: channelId,
+    ///     messageIds: [msgId1, msgId2, msgId3]
+    /// )
+    /// ```
+    ///
+    /// - Important: Messages older than 14 days cannot be bulk deleted and must be deleted individually.
+    /// - Note: This endpoint has a rate limit of 1 request per channel per second.
     public func bulkDeleteMessages(channelId: ChannelID, messageIds: [MessageID]) async throws {
         struct Body: Encodable, Sendable {
             let messages: [MessageID]
@@ -166,28 +673,121 @@ public actor DiscordClient {
         let _: Ack = try await http.post(path: "/channels/\(channelId)/messages/bulk-delete", body: body)
     }
 
-    // Publish a news-channel message to follower channels.
+    /// Crossposts a message from a news channel to its follower channels.
+    ///
+    /// This method publishes a message in a news channel to all channels that follow it.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the news channel containing the message.
+    ///   - messageId: The ID of the message to crosspost.
+    ///
+    /// - Returns: The crossposted message.
+    /// - Throws: `DiscordError` if the request fails or if the channel is not a news channel.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let message = try await client.crosspostMessage(
+    ///     channelId: newsChannelId,
+    ///     messageId: messageId
+    /// )
+    /// ```
+    ///
+    /// - Note: Only messages in news channels can be crossposted.
     public func crosspostMessage(channelId: ChannelID, messageId: MessageID) async throws -> Message {
         struct Empty: Encodable, Sendable {
         }
         return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/crosspost", body: Empty())
     }
 
-    // MARK: - REST: Pins
+    /// Retrieves all pinned messages from a channel.
+    ///
+    /// - Parameter channelId: The ID of the channel to get pinned messages from.
+    ///
+    /// - Returns: An array of pinned messages.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let pinnedMessages = try await client.getPinnedMessages(channelId: channelId)
+    /// for message in pinnedMessages {
+    ///     print("Pinned: \(message.content ?? "")")
+    /// }
+    /// ```
+    ///
+    /// - See Also: `pinMessage(channelId:messageId:)`, `unpinMessage(channelId:messageId:)`
     public func getPinnedMessages(channelId: ChannelID) async throws -> [Message] {
         try await http.get(path: "/channels/\(channelId)/pins")
     }
 
+    /// Pins a message to a channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to pin the message in.
+    ///   - messageId: The ID of the message to pin.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the channel has reached the pin limit (50 pins).
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.pinMessage(channelId: channelId, messageId: messageId)
+    /// ```
+    ///
+    /// - Note: Channels are limited to 50 pinned messages.
+    /// - See Also: `unpinMessage(channelId:messageId:)`, `getPinnedMessages(channelId:)`
     public func pinMessage(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.put(path: "/channels/\(channelId)/pins/\(messageId)")
     }
 
+    /// Unpins a message from a channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to unpin the message from.
+    ///   - messageId: The ID of the message to unpin.
+    ///
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.unpinMessage(channelId: channelId, messageId: messageId)
+    /// ```
+    ///
+    /// - See Also: `pinMessage(channelId:messageId:)`, `getPinnedMessages(channelId:)`
     public func unpinMessage(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.delete(path: "/channels/\(channelId)/pins/\(messageId)")
     }
 
-    // MARK: - REST: Paginated Pins (new endpoints)
-    /// Uses the paginated pins endpoint: `GET /channels/{channel.id}/messages/pins`.
+    /// Retrieves pinned messages from a channel using the paginated pins endpoint.
+    ///
+    /// This method uses the newer paginated endpoint `GET /channels/{channel.id}/messages/pins`
+    /// which supports pagination for channels with many pinned messages.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to get pinned messages from.
+    ///   - limit: The maximum number of messages to return (1-100). Defaults to Discord's default.
+    ///   - after: Get pinned messages after this message ID for pagination.
+    ///
+    /// - Returns: An array of pinned messages.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Get first 50 pinned messages
+    /// let pins = try await client.getChannelPinsPaginated(channelId: channelId, limit: 50)
+    ///
+    /// // Get pinned messages after a specific message
+    /// let morePins = try await client.getChannelPinsPaginated(
+    ///     channelId: channelId,
+    ///     limit: 50,
+    ///     after: lastMessageId
+    /// )
+    /// ```
+    ///
+    /// - See Also: `streamChannelPins(channelId:pageLimit:)`
     public func getChannelPinsPaginated(channelId: ChannelID, limit: Int? = nil, after: MessageID? = nil) async throws -> [Message] {
         var query = ""
         if let limit { query += (query.isEmpty ? "?" : "&") + "limit=\(limit)" }
@@ -195,11 +795,46 @@ public actor DiscordClient {
         return try await http.get(path: "/channels/\(channelId)/messages/pins\(query)")
     }
 
-    /// Typed wrappers for newer pin endpoints, kept alongside legacy routes for compatibility.
+    /// Pins a message using the newer V2 endpoint.
+    ///
+    /// This is a typed wrapper for the newer pin endpoint `PUT /channels/{channel.id}/messages/pins/{message.id}`.
+    /// It's kept alongside the legacy route for compatibility.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to pin the message in.
+    ///   - messageId: The ID of the message to pin.
+    ///
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.pinMessageV2(channelId: channelId, messageId: messageId)
+    /// ```
+    ///
+    /// - See Also: `pinMessage(channelId:messageId:)`
     public func pinMessageV2(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.put(path: "/channels/\(channelId)/messages/pins/\(messageId)")
     }
 
+    /// Unpins a message using the newer V2 endpoint.
+    ///
+    /// This is a typed wrapper for the newer unpin endpoint `DELETE /channels/{channel.id}/messages/pins/{message.id}`.
+    /// It's kept alongside the legacy route for compatibility.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to unpin the message from.
+    ///   - messageId: The ID of the message to unpin.
+    ///
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.unpinMessageV2(channelId: channelId, messageId: messageId)
+    /// ```
+    ///
+    /// - See Also: `unpinMessage(channelId:messageId:)`
     public func unpinMessageV2(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.delete(path: "/channels/\(channelId)/messages/pins/\(messageId)")
     }
@@ -437,15 +1072,68 @@ public actor DiscordClient {
         return try await http.patch(path: "/guilds/\(guildId)/widget", body: Body(enabled: enabled, channel_id: channelId))
     }
 
-    // MARK: - REST: Emojis
+    /// Lists all emojis in a guild.
+    ///
+    /// - Parameter guildId: The guild ID to list emojis from.
+    ///
+    /// - Returns: An array of emoji objects.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let emojis = try await client.listGuildEmojis(guildId: guildId)
+    /// for emoji in emojis {
+    ///     print("Emoji: \(emoji.name)")
+    /// }
+    /// ```
     public func listGuildEmojis(guildId: GuildID) async throws -> [Emoji] {
         try await http.get(path: "/guilds/\(guildId)/emojis")
     }
 
+    /// Retrieves a specific emoji from a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID containing the emoji.
+    ///   - emojiId: The emoji ID to retrieve.
+    ///
+    /// - Returns: The emoji object.
+    /// - Throws: `DiscordError` if the request fails or if the emoji doesn't exist.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let emoji = try await client.getGuildEmoji(guildId: guildId, emojiId: emojiId)
+    /// print("Emoji name: \(emoji.name)")
+    /// ```
     public func getGuildEmoji(guildId: GuildID, emojiId: EmojiID) async throws -> Emoji {
         try await http.get(path: "/guilds/\(guildId)/emojis/\(emojiId)")
     }
 
+    /// Creates a new emoji in a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to create the emoji in.
+    ///   - name: The emoji name (2-32 characters).
+    ///   - image: The emoji image as a base64 data URI.
+    ///   - roles: An array of role IDs that can use this emoji (optional).
+    ///
+    /// - Returns: The created emoji object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let emoji = try await client.createGuildEmoji(
+    ///     guildId: guildId,
+    ///     name: "pepega",
+    ///     image: "data:image/png;base64,...",
+    ///     roles: [roleId]
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
+    /// - See Also: `modifyGuildEmoji(guildId:emojiId:name:roles:)`
     public func createGuildEmoji(guildId: GuildID, name: String, image: String, roles: [RoleID]? = nil) async throws -> Emoji {
         struct Body: Encodable, Sendable {
             let name: String
@@ -455,6 +1143,28 @@ public actor DiscordClient {
         return try await http.post(path: "/guilds/\(guildId)/emojis", body: Body(name: name, image: image, roles: roles))
     }
 
+    /// Modifies an existing emoji in a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID containing the emoji.
+    ///   - emojiId: The emoji ID to modify.
+    ///   - name: The new emoji name (optional).
+    ///   - roles: The new array of role IDs that can use this emoji (optional).
+    ///
+    /// - Returns: The modified emoji object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let updated = try await client.modifyGuildEmoji(
+    ///     guildId: guildId,
+    ///     emojiId: emojiId,
+    ///     name: "newname"
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
     public func modifyGuildEmoji(guildId: GuildID, emojiId: EmojiID, name: String? = nil, roles: [RoleID]? = nil) async throws -> Emoji {
         struct Body: Encodable, Sendable {
             let name: String?
@@ -463,12 +1173,42 @@ public actor DiscordClient {
         return try await http.patch(path: "/guilds/\(guildId)/emojis/\(emojiId)", body: Body(name: name, roles: roles))
     }
 
+    /// Deletes an emoji from a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID containing the emoji.
+    ///   - emojiId: The emoji ID to delete.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.deleteGuildEmoji(guildId: guildId, emojiId: emojiId)
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
     public func deleteGuildEmoji(guildId: GuildID, emojiId: EmojiID) async throws {
         try await http.delete(path: "/guilds/\(guildId)/emojis/\(emojiId)")
     }
 
-    // MARK: - REST: Guild member advanced operations
-    // Adds a user to a guild with an OAuth2 access token.
+    /// Adds a user to a guild using an OAuth2 access token.
+    ///
+    /// This method is used for adding users to a guild via OAuth2 authorization flow.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to add the user to.
+    ///   - userId: The user ID to add to the guild.
+    ///   - accessToken: The OAuth2 access token for the user.
+    ///   - nick: The nickname to assign to the user (optional).
+    ///   - roles: An array of role IDs to assign to the user (optional).
+    ///   - mute: Whether to mute the user in voice channels (optional).
+    ///   - deaf: Whether to deafen the user in voice channels (optional).
+    ///
+    /// - Returns: The guild member object.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Note: This method requires a valid OAuth2 access token with the `guilds.join` scope.
     public func addGuildMember(guildId: GuildID, userId: UserID, accessToken: String, nick: String? = nil, roles: [RoleID]? = nil, mute: Bool? = nil, deaf: Bool? = nil) async throws -> GuildMember {
         struct Body: Encodable, Sendable {
             let access_token: String
@@ -480,15 +1220,49 @@ public actor DiscordClient {
         return try await http.put(path: "/guilds/\(guildId)/members/\(userId)", body: Body(access_token: accessToken, nick: nick, roles: roles, mute: mute, deaf: deaf))
     }
 
-    // Kicks a member from the guild.
+    /// Removes (kicks) a member from a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to remove the member from.
+    ///   - userId: The user ID to remove.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeGuildMember(guildId: guildId, userId: userId)
+    /// ```
+    ///
+    /// - Note: Requires the `KICK_MEMBERS` permission.
     public func removeGuildMember(guildId: GuildID, userId: UserID) async throws {
         try await http.delete(path: "/guilds/\(guildId)/members/\(userId)")
     }
 
-    // Updates the current bot member profile inside a guild.
-    /// Supports `nick`, `avatar`, `banner`, and `bio` fields.
-    /// `avatar` and `banner` should be base64 data URIs (e.g. `data:image/png;base64,...`).
-    /// Availability of `avatar`, `banner`, and `bio` added 2025-09-10.
+    /// Updates the current bot member's profile in a guild.
+    ///
+    /// Supports nickname, avatar, banner, and bio fields.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to update the member profile in.
+    ///   - nick: The new nickname (optional, 1-32 characters).
+    ///   - avatar: The new avatar as a base64 data URI (optional, e.g., `data:image/png;base64,...`).
+    ///   - banner: The new banner as a base64 data URI (optional).
+    ///   - bio: The new bio (optional, up to 190 characters).
+    ///
+    /// - Returns: The updated guild member object.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let updated = try await client.modifyCurrentMember(
+    ///     guildId: guildId,
+    ///     nick: "NewNickname"
+    /// )
+    /// ```
+    ///
+    /// - Note: Avatar, banner, and bio fields were added in 2025-09-10.
     public func modifyCurrentMember(
         guildId: GuildID,
         nick: String? = nil,
@@ -505,7 +1279,24 @@ public actor DiscordClient {
         return try await http.patch(path: "/guilds/\(guildId)/members/@me", body: Body(nick: nick, avatar: avatar, banner: banner, bio: bio))
     }
 
-    // Legacy nickname endpoint kept for compatibility.
+    /// Updates the current bot member's nickname in a guild (legacy endpoint).
+    ///
+    /// This is a legacy endpoint kept for compatibility. Use `modifyCurrentMember(guildId:nick:avatar:banner:bio:)` for newer features.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to update the nickname in.
+    ///   - nick: The new nickname (optional).
+    ///
+    /// - Returns: The updated nickname.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let newNick = try await client.modifyCurrentUserNick(guildId: guildId, nick: "NewNick")
+    /// ```
+    ///
+    /// - See Also: `modifyCurrentMember(guildId:nick:avatar:banner:bio:)`
     public func modifyCurrentUserNick(guildId: GuildID, nick: String?) async throws -> String {
         struct Body: Encodable, Sendable {
             let nick: String?
@@ -517,17 +1308,69 @@ public actor DiscordClient {
         return resp.nick
     }
 
-    // Grants a role to a member.
+    /// Adds a role to a guild member.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID.
+    ///   - userId: The user ID to add the role to.
+    ///   - roleId: The role ID to add.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.addGuildMemberRole(guildId: guildId, userId: userId, roleId: roleId)
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_ROLES` permission. The bot must be able to assign this role (role hierarchy).
+    /// - See Also: `removeGuildMemberRole(guildId:userId:roleId:)`
     public func addGuildMemberRole(guildId: GuildID, userId: UserID, roleId: RoleID) async throws {
         try await http.put(path: "/guilds/\(guildId)/members/\(userId)/roles/\(roleId)")
     }
 
-    // Removes a role from a member.
+    /// Removes a role from a guild member.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID.
+    ///   - userId: The user ID to remove the role from.
+    ///   - roleId: The role ID to remove.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeGuildMemberRole(guildId: guildId, userId: userId, roleId: roleId)
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_ROLES` permission.
+    /// - See Also: `addGuildMemberRole(guildId:userId:roleId:)`
     public func removeGuildMemberRole(guildId: GuildID, userId: UserID, roleId: RoleID) async throws {
         try await http.delete(path: "/guilds/\(guildId)/members/\(userId)/roles/\(roleId)")
     }
 
-    // Searches guild members by prefix match using POST endpoint (2024+)
+    /// Searches for guild members by username/nickname prefix.
+    ///
+    /// This uses the newer POST endpoint for member search (2024+).
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to search in.
+    ///   - query: The search query (matches username or nickname prefix).
+    ///   - limit: Maximum number of results to return (default 1).
+    ///
+    /// - Returns: An array of matching guild members.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let members = try await client.searchGuildMembers(
+    ///     guildId: guildId,
+    ///     query: "john",
+    ///     limit: 10
+    /// )
+    /// ```
     public func searchGuildMembers(guildId: GuildID, query: String, limit: Int = 1) async throws -> [GuildMember] {
         struct Body: Encodable, Sendable {
             let query: String
@@ -536,13 +1379,47 @@ public actor DiscordClient {
         return try await http.post(path: "/guilds/\(guildId)/members/search", body: Body(query: query, limit: limit))
     }
 
-    // MARK: - REST: User and bot profile
-    // Fetches any user by ID.
+    /// Fetches a user by their ID.
+    ///
+    /// - Parameter userId: The user ID to fetch.
+    ///
+    /// - Returns: The user object.
+    /// - Throws: `DiscordError` if the request fails or if the user doesn't exist.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let user = try await client.getUser(userId: userId)
+    /// print("Username: \(user.username)")
+    /// ```
+    ///
+    /// - See Also: `getCurrentUser()`
     public func getUser(userId: UserID) async throws -> User {
         try await http.get(path: "/users/\(userId)")
     }
 
-    // Updates username/avatar for the current bot user.
+    /// Updates the current bot user's username and/or avatar.
+    ///
+    /// - Parameters:
+    ///   - username: The new username (2-32 characters, optional).
+    ///   - avatar: The new avatar as a base64 data URI (optional).
+    ///
+    /// - Returns: The updated user object.
+    /// - Throws: `DiscordError` if the request fails or if the values are invalid.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Update username only
+    /// let updated = try await client.modifyCurrentUser(username: "NewBotName")
+    ///
+    /// // Update avatar only (base64 data URI)
+    /// let avatarDataURI = "data:image/png;base64,iVBORw0KGgo..."
+    /// let withAvatar = try await client.modifyCurrentUser(avatar: avatarDataURI)
+    /// ```
+    ///
+    /// - Note: Username changes are rate-limited (2 changes per hour).
+    /// - See Also: `getCurrentUser()`
     public func modifyCurrentUser(username: String? = nil, avatar: String? = nil) async throws -> User {
         struct Body: Encodable, Sendable {
             let username: String?
@@ -551,7 +1428,26 @@ public actor DiscordClient {
         return try await http.patch(path: "/users/@me", body: Body(username: username, avatar: avatar))
     }
 
-    // Lists guilds visible to the current user/bot account.
+    /// Lists guilds visible to the current bot user.
+    ///
+    /// - Parameters:
+    ///   - before: Get guilds before this guild ID for pagination.
+    ///   - after: Get guilds after this guild ID for pagination.
+    ///   - limit: Maximum number of guilds to return (1-200, default 200).
+    ///
+    /// - Returns: An array of partial guild objects.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let guilds = try await client.getCurrentUserGuilds(limit: 100)
+    /// for guild in guilds {
+    ///     print("Guild: \(guild.name)")
+    /// }
+    /// ```
+    ///
+    /// - Note: Returns partial guild objects with limited information.
     public func getCurrentUserGuilds(before: GuildID? = nil, after: GuildID? = nil, limit: Int = 200) async throws -> [PartialGuild] {
         var parts: [String] = ["limit=\(limit)"]
         if let before { parts.append("before=\(before)") }
@@ -560,12 +1456,39 @@ public actor DiscordClient {
         return try await http.get(path: "/users/@me/guilds\(q)")
     }
 
-    // Leaves a guild as the current user/bot.
+    /// Makes the bot leave a guild.
+    ///
+    /// - Parameter guildId: The ID of the guild to leave.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot is not in the guild.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.leaveGuild(guildId: guildId)
+    /// ```
+    ///
+    /// - Note: The bot cannot be the owner of the guild.
     public func leaveGuild(guildId: GuildID) async throws {
         try await http.delete(path: "/users/@me/guilds/\(guildId)")
     }
 
-    // Opens a direct-message channel with the target user.
+    /// Opens a direct message channel with a user.
+    ///
+    /// - Parameter recipientId: The ID of the user to open a DM with.
+    ///
+    /// - Returns: The DM channel object.
+    /// - Throws: `DiscordError` if the request fails or if the bot cannot DM the user.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let dm = try await client.createDM(recipientId: userId)
+    /// try await client.sendMessage(channelId: dm.id, content: "Hello!")
+    /// ```
+    ///
+    /// - Note: The bot must share a guild with the user or the user must have DMs enabled for the bot.
+    /// - See Also: `sendDM(userId:content:embeds:components:)`
     public func createDM(recipientId: UserID) async throws -> Channel {
         struct Body: Encodable, Sendable {
             let recipient_id: UserID
@@ -573,10 +1496,30 @@ public actor DiscordClient {
         return try await http.post(path: "/users/@me/channels", body: Body(recipient_id: recipientId))
     }
 
-    /// Open a DM channel with `userId` and send a message in one call.
+    /// Opens a DM channel with a user and sends a message in one call.
     ///
-    /// Internally calls `createDM(recipientId:)` followed by `sendMessage(...)`.
-    /// - Returns: The sent `Message`.
+    /// This is a convenience method that combines `createDM(recipientId:)` and `sendMessage(...)`.
+    ///
+    /// - Parameters:
+    ///   - userId: The ID of the user to DM.
+    ///   - content: The message content (optional, up to 2000 characters).
+    ///   - embeds: An array of embed objects (optional, up to 10 embeds).
+    ///   - components: An array of message components (optional).
+    ///
+    /// - Returns: The sent message object.
+    /// - Throws: `DiscordError` if the request fails or if the bot cannot DM the user.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let message = try await client.sendDM(
+    ///     userId: userId,
+    ///     content: "Hello from the bot!"
+    /// )
+    /// ```
+    ///
+    /// - Note: The bot must share a guild with the user or the user must have DMs enabled for the bot.
+    /// - See Also: `createDM(recipientId:)`
     @discardableResult
     public func sendDM(
         userId: UserID,
@@ -593,7 +1536,18 @@ public actor DiscordClient {
         )
     }
 
-    // Creates a group DM using user OAuth2 access tokens.
+    /// Creates a group DM using OAuth2 access tokens.
+    ///
+    /// This method is for user OAuth2 applications, not bot applications.
+    ///
+    /// - Parameters:
+    ///   - accessTokens: An array of OAuth2 access tokens for the users to add.
+    ///   - nicks: A dictionary mapping user IDs to their nicknames in the group DM.
+    ///
+    /// - Returns: The group DM channel object.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Note: This method is only available for user OAuth2 applications, not bot applications.
     public func createGroupDM(accessTokens: [String], nicks: [UserID: String]) async throws -> Channel {
         struct Body: Encodable, Sendable {
             let access_tokens: [String]
@@ -647,23 +1601,119 @@ public actor DiscordClient {
     }
     
 
+    /// Connects the client to the Discord gateway with the specified intents.
+    ///
+    /// This method establishes a WebSocket connection to Discord's gateway and begins receiving events.
+    /// You must specify which events you want to receive using `GatewayIntents`.
+    ///
+    /// - Parameter intents: The gateway intents specifying which events to receive.
+    ///
+    /// - Throws: `DiscordError` if the connection fails or if the token is invalid.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.loginAndConnect(intents: [
+    ///     .guilds,              // Guild events
+    ///     .guildMessages,       // Message events in guilds
+    ///     .messageContent       // Message content (privileged)
+    /// ])
+    ///
+    /// // Listen for events
+    /// for await event in await client.events {
+    ///     switch event {
+    ///     case .ready(let ready):
+    ///         print("Connected as \(ready.user.username)")
+    ///     case .messageCreate(let message):
+    ///         print("Message: \(message.content ?? "")")
+    ///     default:
+    ///         break
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Important: Some intents like `messageContent` and `guildPresences` are privileged and must be enabled in the Discord Developer Portal.
+    /// - Note: After calling this method, you should iterate over `client.events` to handle incoming events.
+    /// - See Also: `loginAndConnectSharded(index:total:intents:)`, `GatewayIntents`
     public func loginAndConnect(intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: nil, eventSink: { @Sendable event in
             Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
-    // Connects this client as a specific shard index.
+    /// Connects the client to the Discord gateway as a specific shard.
+    ///
+    /// Sharding is used to distribute bot load across multiple WebSocket connections for large bots.
+    /// Each shard handles a subset of guilds.
+    ///
+    /// - Parameters:
+    ///   - index: The shard index (0-based).
+    ///   - total: The total number of shards.
+    ///   - intents: The gateway intents specifying which events to receive.
+    ///
+    /// - Throws: `DiscordError` if the connection fails or if the token is invalid.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Connect as shard 0 of 5 total shards
+    /// try await client.loginAndConnectSharded(
+    ///     index: 0,
+    ///     total: 5,
+    ///     intents: [.guilds, .guildMessages]
+    /// )
+    /// ```
+    ///
+    /// - Note: Discord recommends sharding for bots in 2,500+ guilds.
+    /// - See Also: `loginAndConnect(intents:)`
     public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
         try await gateway.connect(intents: intents, shard: (index, total), eventSink: { @Sendable event in
             Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
     }
 
+    /// Retrieves the current bot user information.
+    ///
+    /// - Returns: The bot user object.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let user = try await client.getCurrentUser()
+    /// print("Bot username: \(user.username)")
+    /// print("Bot ID: \(user.id)")
+    /// ```
+    ///
+    /// - See Also: `getUser(userId:)`
     public func getCurrentUser() async throws -> User {
         try await http.get(path: "/users/@me")
     }
 
+    /// Sends a simple text message to a channel.
+    ///
+    /// This is a convenience method for sending a message with only text content.
+    /// For more control over message formatting, use the overloads that accept embeds, components, etc.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to send the message to.
+    ///   - content: The message content (up to 2000 characters).
+    ///
+    /// - Returns: The created message object.
+    /// - Throws: `DiscordError` if the request fails, if the channel doesn't exist, or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let message = try await client.sendMessage(
+    ///     channelId: channelId,
+    ///     content: "Hello, world!"
+    /// )
+    /// print("Sent message with ID: \(message.id)")
+    /// ```
+    ///
+    /// - Note: Messages are limited to 2000 characters. For longer content, consider using embeds or splitting into multiple messages.
+    /// - See Also: `sendMessage(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:)`
     public func sendMessage(channelId: ChannelID, content: String) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: String
@@ -671,7 +1721,31 @@ public actor DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: Body(content: content))
     }
 
-    // Overload for content plus embeds.
+    /// Sends a message with content and embeds to a channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to send the message to.
+    ///   - content: The message content (optional, up to 2000 characters).
+    ///   - embeds: An array of embed objects (up to 10 embeds).
+    ///
+    /// - Returns: The created message object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let embed = Embed(
+    ///     title: "Hello",
+    ///     description: "This is an embedded message"
+    /// )
+    /// let message = try await client.sendMessage(
+    ///     channelId: channelId,
+    ///     content: "Check this out:",
+    ///     embeds: [embed]
+    /// )
+    /// ```
+    ///
+    /// - See Also: `Embed`, `sendMessage(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:)`
     public func sendMessage(channelId: ChannelID, content: String? = nil, embeds: [Embed]) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: String?
@@ -680,7 +1754,49 @@ public actor DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: Body(content: content, embeds: embeds))
     }
 
-    // Full send overload that exposes all common Discord message fields.
+    /// Sends a message with full control over all Discord message fields.
+    ///
+    /// This is the most comprehensive message sending method, allowing you to specify all available message options.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to send the message to.
+    ///   - content: The message content (optional, up to 2000 characters).
+    ///   - embeds: An array of embed objects (optional, up to 10 embeds).
+    ///   - components: An array of message components (buttons, select menus, etc.).
+    ///   - allowedMentions: Controls which user and role mentions are allowed to trigger notifications.
+    ///   - messageReference: A reference to another message to reply to or forward.
+    ///   - tts: Whether this message should be sent as text-to-speech.
+    ///   - flags: Message flags (e.g., 64 for ephemeral messages).
+    ///   - stickerIds: An array of sticker IDs to include in the message.
+    ///   - attachments: An array of attachment objects for file attachments.
+    ///   - poll: A poll object to include in the message.
+    ///
+    /// - Returns: The created message object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let embed = Embed(
+    ///     title: "Poll",
+    ///     description: "Vote below!"
+    /// )
+    /// let button = MessageComponent.button(
+    ///     style: .primary,
+    ///     label: "Click me",
+    ///     customId: "my_button"
+    /// )
+    ///
+    /// let message = try await client.sendMessage(
+    ///     channelId: channelId,
+    ///     content: "Here's a poll:",
+    ///     embeds: [embed],
+    ///     components: [button]
+    /// )
+    /// ```
+    ///
+    /// - Note: For file attachments, use `sendMessageWithFiles(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:files:)`.
+    /// - See Also: `MessageComponent`, `Embed`, `Poll`, `sendMessageWithFiles(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:files:)`
     public func sendMessage(
         channelId: ChannelID,
         content: String? = nil,
@@ -745,35 +1861,130 @@ public actor DiscordClient {
         return try await http.post(path: "/channels/\(channelId)/messages", body: body)
     }
 
-    /// End a poll attached to a message (closes voting).
+    /// Ends a poll attached to a message, closing voting.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the poll.
+    ///   - messageId: The ID of the message containing the poll.
+    ///   - pollId: The ID of the poll to end.
+    ///
+    /// - Returns: The updated poll object.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let poll = try await client.endPoll(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     pollId: pollId
+    /// )
+    /// print("Poll ended with \(poll.results?.count ?? 0) answers")
+    /// ```
+    ///
+    /// - Note: Only the poll creator or users with the `MANAGE_MESSAGES` permission can end polls.
     public func endPoll(channelId: ChannelID, messageId: MessageID, pollId: String) async throws -> Poll {
         struct Empty: Encodable, Sendable {}
         return try await http.post(path: "/channels/\(channelId)/messages/\(messageId)/polls/\(pollId)/expire", body: Empty())
     }
 
-    /// Get paginated list of users who voted for a specific poll answer
+    /// Retrieves a paginated list of users who voted for a specific poll answer.
+    ///
     /// - Parameters:
-    ///   - channelId: The channel containing the poll message
-    ///   - messageId: The message ID containing the poll
-    ///   - answerId: The answer ID to get voters for
-    ///   - after: Get users after this user ID for pagination
-    ///   - limit: Maximum number of users to return (1-100)
-    /// - Returns: Paginated list of poll answer users
+    ///   - channelId: The ID of the channel containing the poll message.
+    ///   - messageId: The ID of the message containing the poll.
+    ///   - answerId: The ID of the poll answer to get voters for.
+    ///   - after: Get users after this user ID for pagination.
+    ///   - limit: Maximum number of users to return (1-100, default 25).
+    ///
+    /// - Returns: A paginated list of users who voted for the specified answer.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let voters = try await client.getPollAnswerVoters(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     answerId: 1,
+    ///     limit: 50
+    /// )
+    /// print("\(voters.users.count) users voted for this answer")
+    /// ```
     public func getPollAnswerVoters(channelId: ChannelID, messageId: MessageID, answerId: Int, after: UserID? = nil, limit: Int = 25) async throws -> PollAnswerUsers {
         var query: [String: String] = ["limit": String(limit)]
         if let after { query["after"] = after.rawValue }
         return try await http.get(path: "/channels/\(channelId)/polls/\(messageId)/answers/\(answerId)", query: query)
     }
 
-    // Presence updates for status and activity changes.
+    /// Updates the bot's presence status and activities.
+    ///
+    /// - Parameters:
+    ///   - status: The status to set (e.g., "online", "idle", "dnd", "invisible").
+    ///   - activities: An array of activity objects to display.
+    ///   - afk: Whether the bot is AFK (away from keyboard).
+    ///   - since: Unix timestamp (in milliseconds) of when the bot went AFK.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Set status to "Do Not Disturb" with an activity
+    /// let activity = PresenceUpdatePayload.Activity(
+    ///     name: "Playing Swift",
+    ///     type: 0  // Playing
+    /// )
+    /// await client.setPresence(
+    ///     status: "dnd",
+    ///     activities: [activity]
+    /// )
+    /// ```
+    ///
+    /// - Note: This requires the `guildPresences` intent for status updates to be visible.
+    /// - See Also: `setStatus(_:)`, `setActivity(name:type:state:details:buttons:)`
     public func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
         await gateway.setPresence(status: status, activities: activities, afk: afk, since: since)
     }
 
+    /// Sets the bot's status without changing activities.
+    ///
+    /// - Parameter status: The status to set (e.g., "online", "idle", "dnd", "invisible").
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// await client.setStatus("online")
+    /// ```
+    ///
+    /// - See Also: `setPresence(status:activities:afk:since:)`
     public func setStatus(_ status: String) async {
         await gateway.setPresence(status: status, activities: [], afk: false, since: nil)
     }
 
+    /// Sets a single activity for the bot with the specified type.
+    ///
+    /// - Parameters:
+    ///   - name: The activity name (e.g., "Playing Minecraft", "Listening to Spotify").
+    ///   - type: The activity type (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 5=Competing).
+    ///   - state: The activity's state or additional info.
+    ///   - details: Additional details about the activity.
+    ///   - buttons: An array of button labels for rich presence.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Set "Playing" activity
+    /// await client.setActivity(name: "Playing Swift", type: 0)
+    ///
+    /// // Set "Listening to" activity with state
+    /// await client.setActivity(
+    ///     name: "Music",
+    ///     type: 2,
+    ///     state: "Lo-fi beats"
+    /// )
+    /// ```
+    ///
+    /// - Note: This automatically sets the status to "online".
+    /// - See Also: `setPresence(status:activities:afk:since:)`
     public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
         let act = PresenceUpdatePayload.Activity(
             name: name,
@@ -800,47 +2011,220 @@ public actor DiscordClient {
         eventContinuation?.yield(event)
     }
 
-    // MARK: - Raw REST passthroughs for endpoints not yet wrapped
+    /// Performs a raw GET request to the Discord API.
+    ///
+    /// This is a low-level method for accessing Discord API endpoints that haven't been wrapped yet.
+    /// Use typed methods when available.
+    ///
+    /// - Parameter path: The API path (e.g., "/channels/123").
+    /// - Returns: The decoded response of type `T`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let channel: Channel = try await client.rawGET("/channels/\(channelId)")
+    /// ```
+    ///
+    /// - Warning: Use typed methods when available for better type safety and documentation.
     public func rawGET<T: Decodable>(_ path: String) async throws -> T { try await http.get(path: path) }
+
+    /// Performs a raw POST request to the Discord API.
+    ///
+    /// This is a low-level method for accessing Discord API endpoints that haven't been wrapped yet.
+    /// Use typed methods when available.
+    ///
+    /// - Parameters:
+    ///   - path: The API path.
+    ///   - body: The request body to send.
+    /// - Returns: The decoded response of type `T`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Warning: Use typed methods when available for better type safety and documentation.
     public func rawPOST<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.post(path: path, body: body) }
+
+    /// Performs a raw PATCH request to the Discord API.
+    ///
+    /// This is a low-level method for accessing Discord API endpoints that haven't been wrapped yet.
+    /// Use typed methods when available.
+    ///
+    /// - Parameters:
+    ///   - path: The API path.
+    ///   - body: The request body to send.
+    /// - Returns: The decoded response of type `T`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Warning: Use typed methods when available for better type safety and documentation.
     public func rawPATCH<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.patch(path: path, body: body) }
+
+    /// Performs a raw PUT request to the Discord API.
+    ///
+    /// This is a low-level method for accessing Discord API endpoints that haven't been wrapped yet.
+    /// Use typed methods when available.
+    ///
+    /// - Parameters:
+    ///   - path: The API path.
+    ///   - body: The request body to send.
+    /// - Returns: The decoded response of type `T`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Warning: Use typed methods when available for better type safety and documentation.
     public func rawPUT<B: Encodable & Sendable, T: Decodable>(_ path: String, body: B) async throws -> T { try await http.put(path: path, body: body) }
+
+    /// Performs a raw DELETE request to the Discord API.
+    ///
+    /// This is a low-level method for accessing Discord API endpoints that haven't been wrapped yet.
+    /// Use typed methods when available.
+    ///
+    /// - Parameter path: The API path.
+    /// - Returns: The decoded response of type `T`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// - Warning: Use typed methods when available for better type safety and documentation.
     public func rawDELETE<T: Decodable>(_ path: String) async throws -> T { try await http.delete(path: path) }
 
-    // MARK: - Generic application-scoped endpoints
+    /// Performs a POST request to an application-scoped resource endpoint.
+    ///
+    /// This is a generic method for accessing application-specific endpoints that follow the pattern
+    /// `/applications/{application.id}/{relativePath}`.
+    ///
+    /// - Parameters:
+    ///   - applicationId: The application ID.
+    ///   - relativePath: The relative path after the application ID (e.g., "role-connections/metadata").
+    ///   - payload: The JSON payload to send.
+    ///
+    /// - Returns: The response as a `JSONValue`.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let payload: [String: JSONValue] = [
+    ///     "platform_name": .string("My App"),
+    ///     "platform_username": .string("user123")
+    /// ]
+    /// let response = try await client.postApplicationResource(
+    ///     applicationId: appId,
+    ///     relativePath: "role-connections/123",
+    ///     payload: payload
+    /// )
+    /// ```
     public func postApplicationResource(applicationId: ApplicationID, relativePath: String, payload: [String: JSONValue]) async throws -> JSONValue {
         try await http.post(path: "/applications/\(applicationId)/\(relativePath)", body: payload)
     }
 
+    /// Performs a PATCH request to an application-scoped resource endpoint.
+    ///
+    /// - Parameters:
+    ///   - applicationId: The application ID.
+    ///   - relativePath: The relative path after the application ID.
+    ///   - payload: The JSON payload to send.
+    ///
+    /// - Returns: The response as a `JSONValue`.
+    /// - Throws: `DiscordError` if the request fails.
     public func patchApplicationResource(applicationId: ApplicationID, relativePath: String, payload: [String: JSONValue]) async throws -> JSONValue {
         try await http.patch(path: "/applications/\(applicationId)/\(relativePath)", body: payload)
     }
 
+    /// Performs a DELETE request to an application-scoped resource endpoint.
+    ///
+    /// - Parameters:
+    ///   - applicationId: The application ID.
+    ///   - relativePath: The relative path after the application ID.
+    ///
+    /// - Throws: `DiscordError` if the request fails.
     public func deleteApplicationResource(applicationId: ApplicationID, relativePath: String) async throws {
         try await http.delete(path: "/applications/\(applicationId)/\(relativePath)")
     }
 
-    // MARK: - REST: Channels
+    /// Retrieves a channel by its ID.
+    ///
+    /// - Parameter id: The channel ID.
+    ///
+    /// - Returns: The channel object.
+    /// - Throws: `DiscordError` if the request fails or if the channel doesn't exist.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let channel = try await client.getChannel(id: channelId)
+    /// print("Channel name: \(channel.name ?? "DM")")
+    /// ```
+    ///
+    /// - See Also: `modifyChannel(id:topic:nsfw:position:parentId:)`
     public func getChannel(id: ChannelID) async throws -> Channel {
         try await http.get(path: "/channels/\(id)")
     }
 
-    // MARK: - REST: Guild endpoints
-    /// Get counts of members per-role using the new role member counts endpoint.
-    /// Endpoint: GET /guilds/{guild.id}/roles/member-counts
+    /// Retrieves member counts for all roles in a guild.
+    ///
+    /// This uses the newer role member counts endpoint `GET /guilds/{guild.id}/roles/member-counts`.
+    ///
+    /// - Parameter guildId: The guild ID.
+    ///
+    /// - Returns: An array of `RoleMemberCount` objects containing role IDs and member counts.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let counts = try await client.getGuildRoleMemberCounts(guildId: guildId)
+    /// for count in counts {
+    ///     print("Role \(count.role_id): \(count.count) members")
+    /// }
+    /// ```
+    ///
+    /// - See Also: `getGuildRoleMemberCount(guildId:roleId:)`
     public func getGuildRoleMemberCounts(guildId: GuildID) async throws -> [RoleMemberCount] {
         try await http.get(path: "/guilds/\(guildId)/roles/member-counts")
     }
 
-    /// Returns the count for a single role, or `0` when the role is absent in the response.
+    /// Retrieves the member count for a specific role in a guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID.
+    ///   - roleId: The role ID.
+    ///
+    /// - Returns: The member count for the role, or `0` if the role is not found or has no members.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let count = try await client.getGuildRoleMemberCount(
+    ///     guildId: guildId,
+    ///     roleId: roleId
+    /// )
+    /// print("Role has \(count) members")
+    /// ```
+    ///
+    /// - See Also: `getGuildRoleMemberCounts(guildId:)`
     public func getGuildRoleMemberCount(guildId: GuildID, roleId: RoleID) async throws -> Int {
         let counts = try await getGuildRoleMemberCounts(guildId: guildId)
         return counts.first(where: { $0.role_id == roleId })?.count ?? 0
     }
 
-    // MARK: - Stream utilities
-    /// Stream pinned messages for a channel using the paginated pins endpoint.
-    /// This returns an `AsyncStream<Message>` that fetches pages under the hood.
+    /// Creates an async stream that yields all pinned messages in a channel.
+    ///
+    /// This method automatically handles pagination, fetching pinned messages in batches.
+    /// It uses the paginated pins endpoint internally.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to stream pinned messages from.
+    ///   - pageLimit: The number of messages to fetch per page (default 50).
+    ///
+    /// - Returns: An `AsyncStream<Message>` that yields pinned messages.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// for await pinnedMessage in client.streamChannelPins(channelId: channelId) {
+    ///     print("Pinned: \(pinnedMessage.content ?? "")")
+    /// }
+    /// ```
+    ///
+    /// - Note: The stream will automatically terminate when all pinned messages have been yielded.
+    /// - See Also: `getChannelPinsPaginated(channelId:limit:after:)`
     public func streamChannelPins(channelId: ChannelID, pageLimit: Int = 50) -> AsyncStream<Message> {
         AsyncStream(Message.self) { @Sendable continuation in
             Task { @Sendable in
@@ -871,6 +2255,26 @@ public actor DiscordClient {
         }
     }
 
+    /// Modifies a channel's name.
+    ///
+    /// - Parameters:
+    ///   - id: The channel ID.
+    ///   - name: The new channel name (1-100 characters).
+    ///
+    /// - Returns: The updated channel object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let updated = try await client.modifyChannelName(
+    ///     id: channelId,
+    ///     name: "new-name"
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_CHANNELS` permission.
+    /// - See Also: `modifyChannel(id:topic:nsfw:position:parentId:)`
     public func modifyChannelName(id: ChannelID, name: String) async throws -> Channel {
         struct Body: Encodable, Sendable {
             let name: String
@@ -878,7 +2282,30 @@ public actor DiscordClient {
         return try await http.patch(path: "/channels/\(id)", body: Body(name: name))
     }
 
-    // General channel patch endpoint for common mutable fields.
+    /// Modifies common mutable fields of a channel.
+    ///
+    /// - Parameters:
+    ///   - id: The channel ID.
+    ///   - topic: The new channel topic (0-1024 characters, for text channels only).
+    ///   - nsfw: Whether the channel is NSFW (age-restricted).
+    ///   - position: The sorting position of the channel.
+    ///   - parentId: The parent category ID (for moving channels between categories).
+    ///
+    /// - Returns: The updated channel object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let updated = try await client.modifyChannel(
+    ///     id: channelId,
+    ///     topic: "New topic",
+    ///     nsfw: false
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_CHANNELS` permission.
+    /// - See Also: `modifyChannelName(id:name:)`, `getChannel(id:)`
     public func modifyChannel(id: ChannelID, topic: String? = nil, nsfw: Bool? = nil, position: Int? = nil, parentId: ChannelID? = nil) async throws -> Channel {
         struct Body: Encodable, Sendable {
             let topic: String?
@@ -889,16 +2316,82 @@ public actor DiscordClient {
         return try await http.patch(path: "/channels/\(id)", body: Body(topic: topic, nsfw: nsfw, position: position, parent_id: parentId))
     }
 
+    /// Deletes a message from a channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to delete.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.deleteMessage(
+    ///     channelId: channelId,
+    ///     messageId: messageId
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_MESSAGES` permission to delete messages from other users.
+    ///       Bots can delete their own messages without this permission.
+    /// - Important: Messages older than 14 days cannot be deleted individually by bots.
+    /// - See Also: `bulkDeleteMessages(channelId:messageIds:)`
     public func deleteMessage(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)")
     }
 
-    // Fetches a single message by ID.
+    /// Retrieves a single message by its ID.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to retrieve.
+    ///
+    /// - Returns: The message object.
+    /// - Throws: `DiscordError` if the request fails or if the message doesn't exist.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let message = try await client.getMessage(
+    ///     channelId: channelId,
+    ///     messageId: messageId
+    /// )
+    /// print("Message content: \(message.content ?? "")")
+    /// ```
+    ///
+    /// - Note: Requires the `READ_MESSAGE_HISTORY` permission.
+    /// - See Also: `listChannelMessages(channelId:limit:)`
     public func getMessage(channelId: ChannelID, messageId: MessageID) async throws -> Message {
         try await http.get(path: "/channels/\(channelId)/messages/\(messageId)")
     }
 
-    // Edits message content, embeds, and/or components.
+    /// Edits a message's content, embeds, and/or components.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to edit.
+    ///   - content: The new message content (optional, up to 2000 characters).
+    ///   - embeds: The new embeds (optional, up to 10 embeds).
+    ///   - components: The new message components (optional).
+    ///
+    /// - Returns: The edited message object.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let updated = try await client.editMessage(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     content: "Updated content"
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_MESSAGES` permission to edit messages from other users.
+    ///       Bots can edit their own messages without this permission.
+    /// - Important: All fields are optional; only provided fields will be updated.
+    /// - See Also: `sendMessage(channelId:content:)`
     public func editMessage(channelId: ChannelID, messageId: MessageID, content: String? = nil, embeds: [Embed]? = nil, components: [MessageComponent]? = nil) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: String?
@@ -908,12 +2401,68 @@ public actor DiscordClient {
         return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components))
     }
 
-    // Lists recent channel messages with a simple `limit` query.
+    /// Lists recent messages from a channel.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel to list messages from.
+    ///   - limit: The maximum number of messages to return (1-100, default 50).
+    ///
+    /// - Returns: An array of message objects, ordered from newest to oldest.
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let messages = try await client.listChannelMessages(
+    ///     channelId: channelId,
+    ///     limit: 25
+    /// )
+    /// for message in messages {
+    ///     print("\(message.author.username): \(message.content ?? "")")
+    /// }
+    /// ```
+    ///
+    /// - Note: Requires the `READ_MESSAGE_HISTORY` permission.
+    /// - See Also: `getMessage(channelId:messageId:)`
     public func listChannelMessages(channelId: ChannelID, limit: Int = 50) async throws -> [Message] {
         try await http.get(path: "/channels/\(channelId)/messages?limit=\(limit)")
     }
 
-    // Searches messages within a guild. Requires READ_MESSAGE_HISTORY and MESSAGE_CONTENT intents.
+    /// Searches for messages within a guild.
+    ///
+    /// This method requires the `READ_MESSAGE_HISTORY` and `MESSAGE_CONTENT` intents.
+    ///
+    /// - Parameters:
+    ///   - guildId: The guild ID to search in.
+    ///   - query: The search query string.
+    ///   - authorId: Filter by message author ID.
+    ///   - minId: Only return messages after this message ID.
+    ///   - maxId: Only return messages before this message ID.
+    ///   - has: Filter by message attributes (e.g., "link", "embed", "file", "video", "image", "sound").
+    ///   - limit: Maximum number of results to return.
+    ///   - offset: Offset for pagination.
+    ///
+    /// - Returns: An array of matching messages.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Search for messages containing "hello"
+    /// let results = try await client.searchGuildMessages(
+    ///     guildId: guildId,
+    ///     query: "hello",
+    ///     limit: 25
+    /// )
+    ///
+    /// // Search for messages with attachments
+    /// let withFiles = try await client.searchGuildMessages(
+    ///     guildId: guildId,
+    ///     has: "file"
+    /// )
+    /// ```
+    ///
+    /// - Note: Message search has rate limits and may not return all results for large searches.
     public func searchGuildMessages(guildId: GuildID, query: String? = nil, authorId: UserID? = nil, minId: MessageID? = nil, maxId: MessageID? = nil, has: String? = nil, limit: Int? = nil, offset: Int? = nil) async throws -> [Message] {
         var queryParams: [String] = []
         if let q = query { queryParams.append("content=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)") }
@@ -927,24 +2476,33 @@ public actor DiscordClient {
         return try await http.get(path: "/guilds/\(guildId)/messages/search\(queryString)")
     }
 
-    // MARK: - Message Reactions
-
-    /// Typed emoji reference for reaction methods.
+    /// A typed reference to an emoji for reaction methods.
     ///
-    /// Use `.unicode("👍")` for standard Unicode emoji and
-    /// `.custom(name:id:)` for guild custom emoji.
+    /// Use `.unicode("👍")` for standard Unicode emoji and `.custom(name:id:)` for guild custom emoji.
+    ///
+    /// ## Example
     ///
     /// ```swift
+    /// // Unicode emoji
     /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .unicode("🔥"))
+    ///
+    /// // Custom guild emoji
     /// try await client.addReaction(channelId: cid, messageId: mid, emoji: .custom(name: "pepega", id: emojiId))
     /// ```
     public enum EmojiRef: Sendable {
-        /// A standard Unicode emoji, e.g. `"👍"` or `"🔥"`.
+        /// A standard Unicode emoji, e.g., "👍" or "🔥".
         case unicode(String)
-        /// A custom guild emoji. `name` is the emoji name and `id` is its snowflake.
+        
+        /// A custom guild emoji.
+        ///
+        /// - Parameters:
+        ///   - name: The emoji name (e.g., "pepega").
+        ///   - id: The emoji's snowflake ID.
         case custom(name: String, id: EmojiID)
 
         /// The percent-encoded string Discord expects in reaction URL paths.
+        ///
+        /// This property automatically handles URL encoding for both Unicode and custom emoji.
         public var encoded: String {
             switch self {
             case .unicode(let char):
@@ -960,37 +2518,155 @@ public actor DiscordClient {
         emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? emoji
     }
 
-    // Adds the bot's reaction to a message.
+    /// Adds the bot's reaction to a message.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to react to.
+    ///   - emoji: The emoji to react with (either Unicode string or custom emoji format "name:id").
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Unicode emoji
+    /// try await client.addReaction(channelId: channelId, messageId: messageId, emoji: "👍")
+    ///
+    /// // Custom emoji (use the encoded format)
+    /// try await client.addReaction(channelId: channelId, messageId: messageId, emoji: "pepega:123456789")
+    /// ```
+    ///
+    /// - Note: Requires the `READ_MESSAGE_HISTORY` and `ADD_REACTIONS` permissions.
+    /// - See Also: `removeOwnReaction(channelId:messageId:emoji:)`, `removeUserReaction(channelId:messageId:emoji:userId:)`
     public func addReaction(channelId: ChannelID, messageId: MessageID, emoji: String) async throws {
         let e = encodeEmoji(emoji)
         try await http.put(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)/@me")
     }
 
-    // Removes the bot's own reaction from a message.
+    /// Removes the bot's own reaction from a message.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to remove the reaction from.
+    ///   - emoji: The emoji to remove (either Unicode string or custom emoji format "name:id").
+    ///
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeOwnReaction(channelId: channelId, messageId: messageId, emoji: "👍")
+    /// ```
+    ///
+    /// - See Also: `addReaction(channelId:messageId:emoji:)`, `removeUserReaction(channelId:messageId:emoji:userId:)`
     public func removeOwnReaction(channelId: ChannelID, messageId: MessageID, emoji: String) async throws {
         let e = encodeEmoji(emoji)
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)/@me")
     }
 
-    // Removes another user's reaction from a message.
+    /// Removes another user's reaction from a message.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to remove the reaction from.
+    ///   - emoji: The emoji to remove (either Unicode string or custom emoji format "name:id").
+    ///   - userId: The ID of the user whose reaction to remove.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeUserReaction(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     emoji: "👍",
+    ///     userId: userId
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_MESSAGES` permission to remove other users' reactions.
+    /// - See Also: `addReaction(channelId:messageId:emoji:)`, `removeOwnReaction(channelId:messageId:emoji:)`
     public func removeUserReaction(channelId: ChannelID, messageId: MessageID, emoji: String, userId: UserID) async throws {
         let e = encodeEmoji(emoji)
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)/\(userId)")
     }
 
-    // Returns users who reacted with a specific emoji.
+    /// Retrieves users who reacted with a specific emoji.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to get reactions from.
+    ///   - emoji: The emoji to get users for (either Unicode string or custom emoji format "name:id").
+    ///   - limit: The maximum number of users to return (1-100, default 25).
+    ///
+    /// - Returns: An array of users who reacted with the specified emoji.
+    /// - Throws: `DiscordError` if the request fails.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let reactors = try await client.getReactions(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     emoji: "👍",
+    ///     limit: 50
+    /// )
+    /// for user in reactors {
+    ///     print("\(user.username) reacted with 👍")
+    /// }
+    /// ```
+    ///
+    /// - Note: Requires the `READ_MESSAGE_HISTORY` permission.
+    /// - See Also: `addReaction(channelId:messageId:emoji:)`
     public func getReactions(channelId: ChannelID, messageId: MessageID, emoji: String, limit: Int? = 25) async throws -> [User] {
         let e = encodeEmoji(emoji)
         let q = limit != nil ? "?limit=\(limit!)" : ""
         return try await http.get(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)\(q)")
     }
 
-    // Removes every reaction on the message.
+    /// Removes all reactions from a message.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to remove all reactions from.
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeAllReactions(channelId: channelId, messageId: messageId)
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_MESSAGES` permission.
+    /// - See Also: `removeAllReactionsForEmoji(channelId:messageId:emoji:)`
     public func removeAllReactions(channelId: ChannelID, messageId: MessageID) async throws {
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions")
     }
 
-    // Removes all reactions for one specific emoji.
+    /// Removes all reactions for a specific emoji from a message.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to remove reactions from.
+    ///   - emoji: The emoji to remove all reactions for (either Unicode string or custom emoji format "name:id").
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// try await client.removeAllReactionsForEmoji(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     emoji: "👍"
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `MANAGE_MESSAGES` permission.
+    /// - See Also: `removeAllReactions(channelId:messageId:)`
     public func removeAllReactionsForEmoji(channelId: ChannelID, messageId: MessageID, emoji: String) async throws {
         let e = encodeEmoji(emoji)
         try await http.delete(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(e)")
@@ -998,7 +2674,35 @@ public actor DiscordClient {
 
     // MARK: Typed EmojiRef reaction overloads
 
-    /// Add a reaction using a typed ``EmojiRef``.
+    /// Adds a reaction using a typed `EmojiRef`.
+    ///
+    /// - Parameters:
+    ///   - channelId: The ID of the channel containing the message.
+    ///   - messageId: The ID of the message to react to.
+    ///   - emoji: The typed emoji reference (`.unicode()` or `.custom()`).
+    ///
+    /// - Throws: `DiscordError` if the request fails or if the bot lacks permissions.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Unicode emoji
+    /// try await client.addReaction(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     emoji: .unicode("🔥")
+    /// )
+    ///
+    /// // Custom emoji
+    /// try await client.addReaction(
+    ///     channelId: channelId,
+    ///     messageId: messageId,
+    ///     emoji: .custom(name: "pepega", id: emojiId)
+    /// )
+    /// ```
+    ///
+    /// - Note: Requires the `READ_MESSAGE_HISTORY` and `ADD_REACTIONS` permissions.
+    /// - See Also: `EmojiRef`
     public func addReaction(channelId: ChannelID, messageId: MessageID, emoji: EmojiRef) async throws {
         try await http.put(path: "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji.encoded)/@me")
     }

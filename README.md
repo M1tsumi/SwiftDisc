@@ -163,7 +163,7 @@ swift run FileUploadBotExample
 
 ## Reliability and DX notes
 
-SwiftDisc v2.3.0 is a correctness and reliability patch release that fixes critical compilation issues for Swift 6.2, resolves gateway connection and disconnect handling bugs, corrects multipart attachment handling, and improves WebSocket message size limits. This release ensures stability and proper behavior across gateway, REST, and WebSocket layers.
+SwiftDisc v2.3.1 adds comprehensive API documentation with DocC, providing developer-friendly documentation for all public APIs including classes, structs, functions, and methods. This release includes detailed syntax examples, use cases, and edge case handling for improved developer experience.
 
 ### Debugging capabilities
 
