@@ -29,9 +29,9 @@ import Foundation
 /// - Footer text: 2048 characters
 /// - Author name: 256 characters
 ///
-/// ## See Also
-/// - `EmbedBuilder`
-/// - `DiscordClient.sendMessage(channelId:content:embeds:)`
+/// ## Related Topics
+/// - ``EmbedBuilder``
+/// - ``DiscordClient/sendMessage(channelId:content:embeds:)``
 public struct Embed: Codable, Hashable, Sendable {
     /// Represents a footer for an embed.
     ///

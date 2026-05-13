@@ -26,9 +26,9 @@ import Foundation
 /// - Field value: 1024 characters
 /// - Footer text: 2048 characters
 ///
-/// ## See Also
-/// - `Embed`
-/// - `DiscordClient.sendMessage(channelId:embeds:)`
+/// ## Related Topics
+/// - ``Embed``
+/// - ``DiscordClient/sendMessage(channelId:embeds:)``
 public struct EmbedBuilder: Sendable {
     private var title: String?
     private var description: String?

@@ -19,9 +19,9 @@ import Foundation
 /// let client = DiscordClient(token: token, configuration: config)
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.init(token:configuration:)`
-/// - `RateLimitEvent`
+/// ## Related Topics
+/// - ``DiscordClient/init(token:configuration:)``
+/// - ``RateLimitEvent``
 public struct DiscordConfiguration: Sendable {
     /// SwiftDisc library version for User-Agent header and Discord tracking.
     public static let version = "2.3.1"

@@ -22,10 +22,10 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.slashCommands`
-/// - `CommandRouter`
-/// - `AutocompleteRouter`
+/// ## Related Topics
+/// - ``DiscordClient/slashCommands``
+/// - ``CommandRouter``
+/// - ``AutocompleteRouter``
 public struct Interaction: Codable, Hashable, Sendable {
     /// The ID of the interaction.
     public let id: InteractionID

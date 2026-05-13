@@ -35,10 +35,10 @@ public final class Box<T: Codable & Hashable>: Codable, Hashable, @unchecked Sen
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.sendMessage(channelId:content:)`
-/// - `DiscordClient.editMessage(channelId:messageId:content:embeds:components:)`
-/// - `DiscordClient.deleteMessage(channelId:messageId:)`
+/// ## Related Topics
+/// - ``DiscordClient/sendMessage(channelId:content:)``
+/// - ``DiscordClient/editMessage(channelId:messageId:content:embeds:components:)``
+/// - ``DiscordClient/deleteMessage(channelId:messageId:)``
 public struct Message: Codable, Hashable, Sendable {
     /// The unique ID of the message.
     public let id: MessageID

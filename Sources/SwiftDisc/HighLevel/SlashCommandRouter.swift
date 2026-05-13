@@ -33,10 +33,10 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.useCommands(_:)`
-/// - `CommandRouter`
-/// - `SlashCommandBuilder`
+/// ## Related Topics
+/// - ``DiscordClient/useCommands(_:)``
+/// - ``CommandRouter``
+/// - ``SlashCommandBuilder``
 public actor SlashCommandRouter {
     /// Per-invocation context provided to every slash-command handler.
     ///

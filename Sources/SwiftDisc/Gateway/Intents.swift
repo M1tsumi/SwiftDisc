@@ -35,9 +35,9 @@ import Foundation
 /// ])
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.loginAndConnect(intents:)`
-/// - `DiscordClient.loginAndConnectSharded(index:total:intents:)`
+/// ## Related Topics
+/// - ``DiscordClient/loginAndConnect(intents:)``
+/// - ``DiscordClient/loginAndConnectSharded(index:total:intents:)``
 public struct GatewayIntents: OptionSet, Codable, Hashable, Sendable {
     public let rawValue: UInt64
     public init(rawValue: UInt64) { self.rawValue = rawValue }

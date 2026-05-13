@@ -21,10 +21,10 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.getCurrentUserGuilds(before:after:limit:)`
-/// - `GuildMember`
-/// - `Role`
+/// ## Related Topics
+/// - ``DiscordClient/getCurrentUserGuilds(before:after:limit:)``
+/// - ``GuildMember``
+/// - ``Role``
 public struct Guild: Codable, Hashable, Sendable {
     // MARK: - Core Identity
     /// The unique ID of the guild.

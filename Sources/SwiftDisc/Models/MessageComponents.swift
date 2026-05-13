@@ -28,10 +28,10 @@ import Foundation
 /// try await client.sendMessage(channelId: channelId, components: [row])
 /// ```
 ///
-/// ## See Also
-/// - `ComponentsBuilder`
-/// - `ButtonBuilder`
-/// - `SelectMenuBuilder`
+/// ## Related Topics
+/// - ``ComponentsBuilder``
+/// - ``ButtonBuilder``
+/// - ``SelectMenuBuilder``
 public enum MessageComponent: Codable, Hashable, Sendable {
     /// An action row container for other components.
     case actionRow(ActionRow)

@@ -215,15 +215,15 @@
 /// - Mutable operations require `await`
 /// - No data races possible
 ///
-/// ## See Also
-/// - `DiscordConfiguration` for client configuration options
-/// - `GatewayIntents` for gateway event subscription
-/// - `CommandRouter` for prefix-based commands
-/// - `SlashCommandRouter` for slash commands
-/// - `AutocompleteRouter` for autocomplete handling
-/// - `ViewManager` for persistent component state
-/// - `Cache` for entity caching
-/// - `DiscordError` for error handling
+/// ## Related Topics
+/// - ``DiscordConfiguration``: Client configuration options
+/// - ``GatewayIntents``: Gateway event subscription
+/// - ``CommandRouter``: Prefix-based commands
+/// - ``SlashCommandRouter``: Slash commands
+/// - ``AutocompleteRouter``: Autocomplete handling
+/// - ``ViewManager``: Persistent component state
+/// - ``Cache``: Entity caching
+/// - ``DiscordError``: Error handling
 ///
 public actor DiscordClient {
     /// The bot token used for authentication with Discord.

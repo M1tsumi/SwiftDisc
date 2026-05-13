@@ -33,9 +33,9 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.useCommands(_:)`
-/// - `SlashCommandRouter`
+/// ## Related Topics
+/// - ``DiscordClient/useCommands(_:)``
+/// - ``SlashCommandRouter``
 public actor CommandRouter {
     private var commands: [String: HandlerWrapper] = [:]
     private var aliases: [String: String] = [:]

@@ -46,11 +46,11 @@ import Foundation
 /// - `14`: Guild directory
 /// - `15`: Guild forum channel
 ///
-/// ## See Also
-/// - `DiscordClient.getChannel(id:)`
-/// - `DiscordClient.modifyChannel(id:topic:nsfw:position:parentId:)`
-/// - `ThreadMetadata`
-/// - `ForumTag`
+/// ## Related Topics
+/// - ``DiscordClient/getChannel(id:)``
+/// - ``DiscordClient/modifyChannel(id:topic:nsfw:position:parentId:)``
+/// - ``ThreadMetadata``
+/// - ``ForumTag``
 public struct Channel: Codable, Hashable, Sendable {
     /// The unique ID of the channel.
     public let id: ChannelID

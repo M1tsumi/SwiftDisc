@@ -27,10 +27,10 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.loadExtension(_:)`
-/// - `DiscordClient.unloadExtensions()`
-/// - `Cog`
+/// ## Related Topics
+/// - ``DiscordClient/loadExtension(_:)``
+/// - ``DiscordClient/unloadExtensions()``
+/// - ``Cog``
 public protocol SwiftDiscExtension: Sendable {
     /// Called when the extension is registered with the client.
     ///
@@ -76,9 +76,9 @@ public extension SwiftDiscExtension {
 /// try await client.loadExtension(moderationCog)
 /// ```
 ///
-/// ## See Also
-/// - `SwiftDiscExtension`
-/// - `DiscordClient.loadExtension(_:)`
+/// ## Related Topics
+/// - ``SwiftDiscExtension``
+/// - ``DiscordClient/loadExtension(_:)``
 public final class Cog: SwiftDiscExtension, Sendable {
     /// The name of the cog.
     public let name: String

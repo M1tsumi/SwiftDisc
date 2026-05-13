@@ -15,9 +15,9 @@ import Foundation
 ///     .build()
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.createGlobalApplicationCommand(_:)`
-/// - `SlashCommandRouter`
+/// ## Related Topics
+/// - ``DiscordClient/createGlobalApplicationCommand(_:)``
+/// - ``SlashCommandRouter``
 public final class SlashCommandBuilder: @unchecked Sendable {
     /// A builder for command options.
     public final class OptionBuilder: @unchecked Sendable {

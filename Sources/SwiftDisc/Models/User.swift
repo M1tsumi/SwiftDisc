@@ -49,10 +49,10 @@ public struct UserPrimaryGuild: Codable, Hashable, Sendable {
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `DiscordClient.getUser(userId:)`
-/// - `DiscordClient.getCurrentUser()`
-/// - `GuildMember`
+/// ## Related Topics
+/// - ``DiscordClient/getUser(userId:)``
+/// - ``DiscordClient/getCurrentUser()``
+/// - ``GuildMember``
 public struct User: Codable, Hashable, Sendable {
     /// The unique ID of the user.
     public let id: UserID

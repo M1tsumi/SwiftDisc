@@ -21,9 +21,9 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## See Also
-/// - `SlashCommandRouter`
-/// - `DiscordClient.createAutocompleteResponse(interactionId:token:choices:)`
+/// ## Related Topics
+/// - ``SlashCommandRouter``
+/// - ``DiscordClient/createAutocompleteResponse(interactionId:token:choices:)``
 public actor AutocompleteRouter {
     /// Per-invocation context provided to every autocomplete provider.
     ///
