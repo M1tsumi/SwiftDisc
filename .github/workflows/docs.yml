@@ -23,11 +23,14 @@ jobs:
         run: |
           swift package --allow-writing-to-directory documentation generate-documentation --target SwiftDisc --output-path documentation
 
-      - name: Upload Documentation Artifacts
+      - name: Archive Documentation
+        run: tar -czf documentation.tar.gz documentation/
+
+      - name: Upload Documentation Artifact
         uses: actions/upload-artifact@v4
         with:
           name: documentation
-          path: documentation/
+          path: documentation.tar.gz
 
   deploy-docs:
     needs: build-docs
@@ -37,11 +40,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Documentation Artifacts
+      - name: Download Documentation Artifact
         uses: actions/download-artifact@v4
         with:
           name: documentation
-          path: documentation/
+
+      - name: Extract Documentation
+        run: tar -xzf documentation.tar.gz
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
