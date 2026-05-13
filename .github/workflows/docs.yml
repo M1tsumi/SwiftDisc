@@ -21,7 +21,6 @@ jobs:
 
       - name: Build Documentation
         run: |
-          swift package --allow-writing-to-directory documentation resolve
           swift package --allow-writing-to-directory documentation docc SwiftDisc
 
       - name: Upload Documentation Artifacts
