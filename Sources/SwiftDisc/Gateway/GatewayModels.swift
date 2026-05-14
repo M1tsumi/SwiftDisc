@@ -788,3 +788,29 @@ public struct ApplicationCommandPermissions: Codable, Hashable, Sendable {
     public let type: Int
     public let permissions: String
 }
+
+// MARK: - Gateway Bot
+
+/// Response from GET /gateway/bot.
+///
+/// Contains the recommended gateway URL, shard count, and session start limits.
+public struct GatewayBotResponse: Codable, Sendable {
+    /// The WebSocket URL for the gateway.
+    public let url: String
+    /// The recommended number of shards.
+    public let shards: Int
+    /// Information about the session start limit.
+    public let session_start_limit: SessionStartLimit
+}
+
+/// Session start limit information from GET /gateway/bot.
+public struct SessionStartLimit: Codable, Sendable {
+    /// Total number of session starts allowed in the current window.
+    public let total: Int
+    /// Remaining session starts in the current window.
+    public let remaining: Int
+    /// Milliseconds until the session start limit resets.
+    public let reset_after: Int
+    /// Maximum number of concurrent identify requests allowed.
+    public let max_concurrency: Int
+}

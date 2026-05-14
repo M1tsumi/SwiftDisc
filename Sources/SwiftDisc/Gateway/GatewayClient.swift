@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 actor GatewayClient {
     private struct SeqProbe: Decodable { let s: Int? }
@@ -21,6 +24,7 @@ actor GatewayClient {
     private var lastResumeAttemptAt: Date?
     private var lastResumeSuccessAt: Date?
     private var lastIdentifyAt: Date?
+    private var cachedGatewayUrl: String?
     private var allowReconnect: Bool = true
     private var connectReadyContinuation: CheckedContinuation<Void, Never>?
     private var maxReconnectAttempts: Int = 10
@@ -71,9 +75,20 @@ actor GatewayClient {
         guard configuration.apiVersion >= 8 && configuration.apiVersion <= 10 else {
             throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
         }
-        // Use resume_gateway_url from READY if available, otherwise use default gateway URL
+        // Fetch gateway URL from REST on first connect
+        if cachedGatewayUrl == nil && resumeGatewayUrl == nil {
+            do {
+                let botInfo = try await fetchGatewayBot()
+                cachedGatewayUrl = botInfo.url
+            } catch {
+                // Fall back to configuration default
+            }
+        }
+        // Use resume_gateway_url from READY if available, otherwise cached or default
         let baseURL: URL
         if let resumeUrl = resumeGatewayUrl, let url = URL(string: resumeUrl) {
+            baseURL = url
+        } else if let cachedUrl = cachedGatewayUrl, let url = URL(string: cachedUrl) {
             baseURL = url
         } else {
             baseURL = configuration.gatewayBaseURL
@@ -612,6 +627,25 @@ actor GatewayClient {
         case 4014: return "Disallowed intents"
         default: return "Unknown error"
         }
+    }
+
+    // MARK: - Gateway URL fetch
+
+    private func fetchGatewayBot() async throws -> GatewayBotResponse {
+        let url = configuration.apiBaseURL
+            .appendingPathComponent("v\(configuration.apiVersion)")
+            .appendingPathComponent("gateway/bot")
+        var request = URLRequest(url: url)
+        request.setValue("Bot \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("SwiftDisc/\(DiscordConfiguration.version)", forHTTPHeaderField: "User-Agent")
+
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw DiscordError.gateway("Failed to fetch gateway bot info")
+        }
+        return try JSONDecoder().decode(GatewayBotResponse.self, from: data)
     }
 
     func close() async {
