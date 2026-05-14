@@ -31,9 +31,9 @@ public struct ButtonBuilder: Sendable {
         /// Link (requires URL).
         case link = 5
         
-        /// Premium button style (style 10). Requires sku_id for premium subscription gating.
+        /// Premium button style (style 6). Requires sku_id for premium subscription gating.
         /// Introduced for Discord Premium Apps monetization.
-        case premium = 10
+        case premium = 6
     }
     
     private var style: Int = Style.primary.rawValue
