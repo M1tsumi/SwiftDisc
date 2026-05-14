@@ -72,6 +72,7 @@ actor EventDispatcher {
             if let cb = await client.onGuildUpdate { await cb(guild) }
 
         case .guildDelete(let ev):
+            await client.cache.removeGuild(id: ev.id)
             if let cb = await client.onGuildDelete { await cb(ev) }
 
         // MARK: Members
