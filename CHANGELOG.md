@@ -5,20 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.1] - 2026-05-12
+## [2.3.1] - 2026-05-14
 
 ### Overview
-SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, providing developer-friendly documentation for all public APIs including classes, structs, functions, and methods. This release includes detailed syntax examples, use cases, and edge case handling for improved developer experience.
+SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, provides developer-friendly documentation for all public APIs, and delivers new REST endpoints, correctness fixes, and builder improvements.
 
 ### Added
 - **DocC documentation** — added comprehensive DocC comments to all public APIs with detailed parameter descriptions, return values, throws documentation, and usage examples
 - **Swift-DocC plugin integration** — added Swift-DocC plugin dependency to Package.swift for automated documentation generation
 - **GitHub Actions workflow** — added workflow for automatic documentation generation and deployment to GitHub Pages
+- **Application command localization** — `localization` parameter support when creating application commands
+- **Soundboard playback endpoint** — `playSoundboardSound` REST endpoint for soundboard audio playback
+- **Poll voter pagination** — poll voter pagination endpoint with `Snowflake.rawValue` cursor support
+- **Guild bulk ban** — `bulkBanMembers` REST endpoint for banning multiple members at once
+- **X-Audit-Log-Reason header** — support for supplying an audit log reason header on applicable REST calls
 - **Enhanced documentation** — improved developer experience with detailed syntax examples, use cases, and edge case handling
 
 ### Changed
 - **Documentation infrastructure** — migrated to DocC for modern, Apple-style documentation generation
 - **Version references** — updated all version references to 2.3.1 across the codebase
+- **Guild member search** — updated to use the POST endpoint instead of GET
+- **Route key normalization** — refactored route key generation for improved reliability and clarity
+
+### Fixed
+- **Sticker upload multipart format** — corrected multipart body formatting for sticker file uploads
+- **Application emoji endpoint paths** — fixed incorrect URL paths for application emoji REST endpoints
+- **Rate-limit bucket keying** — resolved concurrency and parameter keying issues in rate-limit bucket handling
+- **Poll voter pagination cursor** — now correctly uses `Snowflake.rawValue` for the pagination cursor
+- **Slash option `Choice` construction** — builds `Choice` with `name_localizations` and `JSONValue` properly
+- **Missing `autoModerationRuleUpdate` event** — added missing `DiscordEvent` case for auto moderation rule updates
+- **`ChannelSelectMenu` and `TextInput` builders** — corrected builder type signatures and argument ordering
+- **`ViewManager.ChannelSelect` init** — reordered initialization arguments to match expected call sites
+- **Missing type annotations** — restored type annotations and definitions inadvertently removed during DocC edits
+- **CI build failures** — fixed compilation failures introduced by incomplete DocC additions
+- **Docs workflow** — corrected `swift-docc-plugin` command, removed invalid `swift package resolve` step, and tarred docs before artifact upload to avoid colon-in-filename errors
+- **SPM warnings** — dropped bogus excludes and silenced unhandled-file warnings in the Examples target
 
 ## [2.3.0] - 2026-05-12
 
