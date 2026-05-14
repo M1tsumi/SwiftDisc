@@ -1,17 +1,21 @@
 import Foundation
 
+/// Represents a guild audit log.
 public struct AuditLog: Codable, Hashable, Sendable {
     public let audit_log_entries: [AuditLogEntry]
     public let users: [User]?
     public let webhooks: [Webhook]?
 }
 
+/// A single entry in a guild audit log.
 public struct AuditLogEntry: Codable, Hashable, Sendable {
+    /// Describes a property change for an audit log entry.
     public struct Change: Codable, Hashable, Sendable {
         public let key: String
         public let new_value: CodableValue?
         public let old_value: CodableValue?
     }
+    /// Optional additional information for an audit log entry.
     public struct OptionalInfo: Codable, Hashable, Sendable {
         public let channel_id: ChannelID?
         public let count: String?
@@ -32,6 +36,7 @@ public struct AuditLogEntry: Codable, Hashable, Sendable {
     public let reason: String?
 }
 
+/// A dynamically-typed JSON value used in audit log entries.
 public enum CodableValue: Codable, Hashable, Sendable {
     case string(String)
     case int(Int)

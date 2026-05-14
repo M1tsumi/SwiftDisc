@@ -124,6 +124,7 @@ public struct SelectMenuBuilder: Sendable {
 
 // MARK: - String Select Menu Builder (Discord's newer select menu type)
 
+/// A builder for Discord string select menus (text-based options).
 public struct StringSelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.SelectMenu.Option] = []
@@ -149,6 +150,7 @@ public struct StringSelectMenuBuilder: Sendable {
 
 // MARK: - Channel Select Menu Builder
 
+/// A builder for Discord channel select menus.
 public struct ChannelSelectMenuBuilder: Sendable {
     private var customId: String = ""
     private var placeholder: String?
@@ -244,6 +246,7 @@ public struct TextInputBuilder: Sendable {
 
 // MARK: - Modal Component Builders (added 2026)
 
+/// A builder for modal label layout components.
 public struct LabelBuilder: Sendable {
     private var label: String = ""
     private var description: String?
@@ -257,6 +260,7 @@ public struct LabelBuilder: Sendable {
     }
 }
 
+/// A builder for modal radio group components.
 public struct RadioGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.RadioGroup.RadioOption] = []
@@ -274,6 +278,7 @@ public struct RadioGroupBuilder: Sendable {
     }
 }
 
+/// A builder for modal checkbox group components.
 public struct CheckboxGroupBuilder: Sendable {
     private var customId: String = ""
     private var options: [MessageComponent.CheckboxGroup.CheckboxOption] = []
@@ -293,6 +298,7 @@ public struct CheckboxGroupBuilder: Sendable {
     }
 }
 
+/// A builder for modal checkbox toggle components.
 public struct CheckboxBuilder: Sendable {
     private var customId: String = ""
     private var required: Bool?
@@ -306,6 +312,7 @@ public struct CheckboxBuilder: Sendable {
     }
 }
 
+/// A builder for modal file upload components.
 public struct FileUploadBuilder: Sendable {
     private var customId: String = ""
     private var label: String = ""

@@ -1556,7 +1556,7 @@ public actor DiscordClient {
         return try await http.post(path: "/users/@me/channels", body: Body(access_tokens: accessTokens, nicks: nicks))
     }
 
-    // Typed request/response payloads for guild prune operations.
+    /// Request payload for guild prune operations.
     public struct PrunePayload: Codable, Sendable {
         public let days: Int
         public let compute_prune_count: Bool?
@@ -1569,6 +1569,7 @@ public actor DiscordClient {
         }
     }
 
+    /// Response from a guild prune operation.
     public struct PruneResponse: Codable, Sendable {
         public let pruned: Int
 
@@ -2811,6 +2812,7 @@ public actor DiscordClient {
         try await http.get(path: "/guilds/\(guildId)/roles/\(roleId)")
     }
 
+    /// Request payload for creating a guild role.
     public struct RoleCreate: Codable, Sendable {
         public let name: String
         public let permissions: String?
@@ -2839,6 +2841,7 @@ public actor DiscordClient {
         }
     }
 
+    /// Request payload for updating a guild role.
     public struct RoleUpdate: Codable, Sendable {
         public let name: String?
         public let permissions: String?
@@ -3164,6 +3167,7 @@ public actor DiscordClient {
         let _: Ack = try await http.post(path: "/interactions/\(interactionId)/\(token)/callback", body: body)
     }
 
+    /// Discord interaction callback response types.
     public enum InteractionResponseType: Int, Codable, Sendable {
         case pong = 1
         case channelMessageWithSource = 4
@@ -3192,7 +3196,7 @@ public actor DiscordClient {
         let _: Ack = try await http.post(path: "/interactions/\(interactionId)/\(token)/callback", body: body)
     }
 
-    // Type 8 autocomplete response payload.
+    /// A choice for an autocomplete interaction response.
     public struct AutocompleteChoice: Codable, Sendable {
         public let name: String
         public let value: String
@@ -3242,6 +3246,7 @@ public actor DiscordClient {
     }
 
     // MARK: - Slash command REST endpoints
+    /// Represents a registered application (slash) command.
     public struct ApplicationCommand: Codable, Sendable {
         public let id: ApplicationCommandID
         public let application_id: ApplicationID
@@ -3249,7 +3254,9 @@ public actor DiscordClient {
         public let description: String
     }
 
+    /// An option for an application (slash) command.
     public struct ApplicationCommandOption: Codable, Sendable {
+        /// The data type of an application command option.
         public enum ApplicationCommandOptionType: Int, Codable, Sendable {
             case subCommand = 1
             case subCommandGroup = 2
@@ -3269,6 +3276,7 @@ public actor DiscordClient {
         public let description: String
         public let description_localizations: [String: String]?
         public let required: Bool?
+        /// A predefined choice for a string/integer/number option.
         public struct Choice: Codable, Sendable {
             public let name: String
             public let name_localizations: [String: String]?
@@ -3286,6 +3294,7 @@ public actor DiscordClient {
         }
     }
 
+    /// Request payload for creating a new application command.
     public struct ApplicationCommandCreate: Encodable, Sendable {
         public let name: String
         public let name_localizations: [String: String]?

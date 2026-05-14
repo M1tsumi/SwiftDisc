@@ -542,6 +542,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         public let custom_id: String
         public let options: [RadioOption]
         public let required: Bool?
+        /// An option within a radio group component.
         public struct RadioOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
@@ -569,6 +570,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         public let options: [CheckboxOption]
         public let min_values: Int?
         public let max_values: Int?
+        /// An option within a checkbox group component.
         public struct CheckboxOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
