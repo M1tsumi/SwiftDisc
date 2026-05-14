@@ -15,6 +15,7 @@ actor GatewayClient {
     private var seq: Int?
     private var sessionId: String?
     private var resumeGatewayUrl: String?
+    private var resumeGatewayUrlReceivedAt: Date?
     private var missedHeartbeatAckCount: Int = 0
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
@@ -95,7 +96,22 @@ actor GatewayClient {
         }
         // Use resume_gateway_url from READY if available, otherwise cached or default
         let baseURL: URL
-        if let resumeUrl = resumeGatewayUrl, let url = URL(string: resumeUrl) {
+        // Discord's resume_gateway_url expires after ~7 days; check before using
+        let resumeUrlExpired: Bool
+        if let receivedAt = resumeGatewayUrlReceivedAt {
+            let age = Date().timeIntervalSince(receivedAt)
+            resumeUrlExpired = age > 7 * 24 * 60 * 60 // 7 days in seconds
+        } else {
+            resumeUrlExpired = true
+        }
+        if resumeUrlExpired, resumeGatewayUrl != nil {
+            // Clear expired resume URL and session to force fresh identify
+            self.resumeGatewayUrl = nil
+            self.resumeGatewayUrlReceivedAt = nil
+            self.sessionId = nil
+            self.seq = nil
+        }
+        if let resumeUrl = resumeGatewayUrl, !resumeUrlExpired, let url = URL(string: resumeUrl) {
             baseURL = url
         } else if let cachedUrl = cachedGatewayUrl, let url = URL(string: cachedUrl) {
             baseURL = url
@@ -224,6 +240,7 @@ actor GatewayClient {
                                 // Save session ID and resume gateway URL for reconnects.
                                 self.sessionId = ready.session_id
                                 self.resumeGatewayUrl = ready.resume_gateway_url
+                                self.resumeGatewayUrlReceivedAt = Date()
                                 self.status = .ready
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
