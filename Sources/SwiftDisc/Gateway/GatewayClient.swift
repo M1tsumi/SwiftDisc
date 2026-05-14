@@ -447,6 +447,19 @@ actor GatewayClient {
                             // Unknown events are forwarded as raw payloads so callers still get visibility.
                             eventSink(.raw(t, data))
                         }
+                    case .heartbeat:
+                        // Discord requested an immediate heartbeat (op 1)
+                        do {
+                            let hb: HeartbeatPayload = seq
+                            let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
+                            let data = try JSONEncoder().encode(payload)
+                            try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+                            missedHeartbeatAckCount += 1
+                            lastHeartbeatSentAt = Date()
+                        } catch {
+                            await attemptReconnect()
+                        }
+                        break
                     case .heartbeatAck:
                         missedHeartbeatAckCount = 0
                         lastHeartbeatAckAt = Date()
