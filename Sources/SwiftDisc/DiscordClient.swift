@@ -1636,10 +1636,19 @@ public actor DiscordClient {
     /// - Important: Some intents like `messageContent` and `guildPresences` are privileged and must be enabled in the Discord Developer Portal.
     /// - Note: After calling this method, you should iterate over `client.events` to handle incoming events.
     /// - See Also: `loginAndConnectSharded(index:total:intents:)`, `GatewayIntents`
-    public func loginAndConnect(intents: GatewayIntents) async throws {
+    public func loginAndConnect(
+        intents: GatewayIntents,
+        status: String? = nil,
+        activities: [PresenceUpdatePayload.Activity] = [],
+        afk: Bool = false,
+        since: Int? = nil
+    ) async throws {
         try await gateway.connect(intents: intents, shard: nil, eventSink: { @Sendable event in
             Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
+        if let status {
+            await setPresence(status: status, activities: activities, afk: afk, since: since)
+        }
     }
 
     /// Connects the client to the Discord gateway as a specific shard.
@@ -1651,6 +1660,10 @@ public actor DiscordClient {
     ///   - index: The shard index (0-based).
     ///   - total: The total number of shards.
     ///   - intents: The gateway intents specifying which events to receive.
+    ///   - status: Optional initial status (e.g. "online", "idle", "dnd", "invisible").
+    ///   - activities: Optional initial activities to display.
+    ///   - afk: Whether the bot should be marked as AFK on connect.
+    ///   - since: Optional Unix timestamp for when the bot went AFK.
     ///
     /// - Throws: `DiscordError` if the connection fails or if the token is invalid.
     ///
@@ -1667,10 +1680,21 @@ public actor DiscordClient {
     ///
     /// - Note: Discord recommends sharding for bots in 2,500+ guilds.
     /// - See Also: `loginAndConnect(intents:)`
-    public func loginAndConnectSharded(index: Int, total: Int, intents: GatewayIntents) async throws {
+    public func loginAndConnectSharded(
+        index: Int,
+        total: Int,
+        intents: GatewayIntents,
+        status: String? = nil,
+        activities: [PresenceUpdatePayload.Activity] = [],
+        afk: Bool = false,
+        since: Int? = nil
+    ) async throws {
         try await gateway.connect(intents: intents, shard: (index, total), eventSink: { @Sendable event in
             Task { [self] in await self.dispatcher.process(event: event, client: self) }
         })
+        if let status {
+            await setPresence(status: status, activities: activities, afk: afk, since: since)
+        }
     }
 
     /// Retrieves the current bot user information.
@@ -3243,6 +3267,14 @@ public actor DiscordClient {
     public func shutdown() async {
         await gateway.close()
         eventContinuation?.finish()
+    }
+
+    /// Disconnects the client from the Discord gateway.
+    ///
+    /// This is an alias for ``shutdown()`` and closes the WebSocket connection,
+    /// terminating the event stream.
+    public func disconnect() async {
+        await shutdown()
     }
 
     // MARK: - Slash command REST endpoints

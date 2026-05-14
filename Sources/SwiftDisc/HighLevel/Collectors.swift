@@ -152,7 +152,7 @@ public extension DiscordClient {
             }
         }
     }
-    
+
     // MARK: - New event collectors
     
     /// A filtered `AsyncStream` that yields thread create events.

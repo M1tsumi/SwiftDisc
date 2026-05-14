@@ -63,7 +63,13 @@ public enum DiscordError: Error, Sendable {
     /// - `String`: The error message.
     /// - `debugContext`: Optional debug context for troubleshooting.
     case gateway(String, debugContext: String? = nil)
-    
+
+    /// The bot token was rejected by Discord (close code 4004).
+    ///
+    /// This occurs when the token is missing, malformed, or does not belong to a valid bot.
+    /// Verify your token in the Discord Developer Portal.
+    case authenticationFailed
+
     /// The task was cancelled before the request completed.
     case cancelled
     
@@ -108,6 +114,8 @@ extension DiscordError: CustomStringConvertible, LocalizedError {
             var desc = "Gateway error: \(message)"
             if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
+        case .authenticationFailed:
+            return "Authentication failed: invalid or missing bot token (close code 4004)"
         case .cancelled:
             return "Operation cancelled"
         case .validation(let message, let debugContext):

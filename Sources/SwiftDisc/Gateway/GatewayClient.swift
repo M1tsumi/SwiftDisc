@@ -29,7 +29,7 @@ actor GatewayClient {
     private var sessionStartLimit: SessionStartLimit?
     private var recommendedShards: Int?
     private var allowReconnect: Bool = true
-    private var connectReadyContinuation: CheckedContinuation<Void, Never>?
+    private var connectReadyContinuation: CheckedContinuation<Void, any Error>?
     private var maxReconnectAttempts: Int = 10
     private var maxReconnectDelayNs: UInt64 = 16_000_000_000
 
@@ -204,7 +204,7 @@ actor GatewayClient {
         }
         // Wait until the socket is actually usable before returning to callers.
         // Use a single atomic check to avoid race condition with readLoop setting status.
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, any Error>) in
             if self.status == .ready {
                 cont.resume()
             } else {
@@ -609,6 +609,14 @@ actor GatewayClient {
         if let code = closeCode, isFatalCloseCode(code) {
             status = .disconnected
             let reason = fatalCloseCodeDescription(code)
+            if let cont = connectReadyContinuation {
+                connectReadyContinuation = nil
+                let error: DiscordError = (code == 4004)
+                    ? .authenticationFailed
+                    : .gateway("Fatal close code \(code): \(reason)")
+                cont.resume(throwing: error)
+                return
+            }
             guard let sink = lastEventSink else { return }
             sink(.disconnected(reason: "Fatal close code \(code): \(reason)"))
             return
@@ -641,7 +649,12 @@ actor GatewayClient {
         }
         // Max reconnect attempts reached - surface fatal disconnect
         status = .disconnected
-        sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        if let cont = connectReadyContinuation {
+            connectReadyContinuation = nil
+            cont.resume(throwing: DiscordError.gateway("Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        } else {
+            sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        }
     }
     
     private func isFatalCloseCode(_ code: Int) -> Bool {

@@ -231,7 +231,7 @@ public enum DiscordEvent: Hashable, Sendable {
     
     /// A user's presence was updated.
     case presenceUpdate(PresenceUpdate)
-    
+
     /// A user was banned from a guild.
     case guildBanAdd(GuildBanAdd)
     
