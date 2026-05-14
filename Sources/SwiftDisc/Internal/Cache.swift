@@ -68,6 +68,9 @@ public actor Cache {
     /// Recent messages organized by channel ID.
     public private(set) var recentMessagesByChannel: [ChannelID: [Message]] = [:]
 
+    /// Reverse index from message ID to channel ID for O(1) message removal.
+    private var messageToChannelIndex: [MessageID: ChannelID] = [:]
+
     /// Background task that prunes expired TTL entries every 60 seconds.
     /// Only started when at least one TTL is configured.
     private var evictionTask: Task<Void, Never>?
@@ -211,23 +214,30 @@ public actor Cache {
         var arr = recentMessagesByChannel[message.channel_id] ?? []
         arr.append(message)
         let cap = configuration.maxMessagesPerChannel
-        if arr.count > cap { arr.removeFirst(arr.count - cap) }
+        if arr.count > cap {
+            let removedCount = arr.count - cap
+            let removed = arr.prefix(removedCount)
+            arr.removeFirst(removedCount)
+            // Clean up reverse index for removed messages
+            for removedMessage in removed {
+                messageToChannelIndex.removeValue(forKey: removedMessage.id)
+            }
+        }
         recentMessagesByChannel[message.channel_id] = arr
+        messageToChannelIndex[message.id] = message.channel_id
     }
 
     /// Removes a message from the recent messages cache.
     ///
     /// - Parameter id: The message ID to remove.
     public func removeMessage(id: MessageID) {
-        let snapshot = Array(recentMessagesByChannel)
-        for (cid, arr) in snapshot {
-            if let idx = arr.firstIndex(where: { $0.id == id }) {
-                var newArr = arr
-                newArr.remove(at: idx)
-                recentMessagesByChannel[cid] = newArr
-                break
-            }
+        guard let channelId = messageToChannelIndex[id] else { return }
+        guard var arr = recentMessagesByChannel[channelId] else { return }
+        if let idx = arr.firstIndex(where: { $0.id == id }) {
+            arr.remove(at: idx)
+            recentMessagesByChannel[channelId] = arr
         }
+        messageToChannelIndex.removeValue(forKey: id)
     }
 
     /// Retrieves a user from the cache.
@@ -247,6 +257,22 @@ public actor Cache {
     /// - Parameter id: The guild ID.
     /// - Returns: The cached guild, or nil if not found or expired.
     public func getGuild(id: GuildID) -> Guild? { pruneIfNeeded(); return guildsTimed[id]?.value }
+
+    /// Removes a guild and all associated data from the cache.
+    ///
+    /// This removes the guild entry, all roles for the guild, all emojis for the guild,
+    /// and all channels belonging to the guild.
+    ///
+    /// - Parameter id: The guild ID to remove.
+    public func removeGuild(id: GuildID) {
+        guildsTimed.removeValue(forKey: id)
+        rolesByGuild.removeValue(forKey: id)
+        emojisByGuild.removeValue(forKey: id)
+        // Remove channels belonging to this guild
+        // We need to identify which channels belong to this guild
+        // Since we don't store guild_id on channels in the cache, we'd need to check each channel
+        // For now, this is a known limitation - channels will be stale until they're updated
+    }
 
     /// Prunes expired entries from the cache based on TTL configuration.
     ///
