@@ -38,9 +38,8 @@ actor GatewayClient {
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
         guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
-        let enc = JSONEncoder()
-        let data = try enc.encode(payload)
-        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+        let data = try JSONEncoder().encode(payload)
+        try await sendGatewayData(data)
     }
 
     private var status: Status = .disconnected
@@ -48,6 +47,7 @@ actor GatewayClient {
     private var lastIntents: GatewayIntents = []
     private var lastEventSink: (@Sendable (DiscordEvent) -> Void)?
     private var lastShard: (index: Int, total: Int)?
+    private let rateLimiter = GatewaySendRateLimiter()
 
     init(token: String, configuration: DiscordConfiguration) {
         self.token = token
@@ -132,16 +132,14 @@ actor GatewayClient {
             self.lastResumeAttemptAt = Date()
             let resume = ResumePayload(token: token, session_id: sessionId, seq: seq)
             let payload = GatewayPayload(op: .resume, d: resume, s: nil, t: nil)
-            let data = try enc.encode(payload)
-            try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+            try await sendGatewayPayload(payload)
         } else {
             self.status = .identifying
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
             let compress = configuration.gatewayPayloadCompression ? true : nil
             let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
             let payload = GatewayPayload(op: .identify, d: identify, s: nil, t: nil)
-            let data = try enc.encode(payload)
-            try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+            try await sendGatewayPayload(payload)
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
@@ -452,8 +450,7 @@ actor GatewayClient {
                         do {
                             let hb: HeartbeatPayload = seq
                             let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
-                            let data = try JSONEncoder().encode(payload)
-                            try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+                            try await sendGatewayPayload(payload)
                             missedHeartbeatAckCount += 1
                             lastHeartbeatSentAt = Date()
                         } catch {
@@ -533,8 +530,7 @@ actor GatewayClient {
             do {
                 let hb: HeartbeatPayload = seq
                 let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
-                let data = try JSONEncoder().encode(payload)
-                try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+                try await sendGatewayPayload(payload)
                 missedHeartbeatAckCount += 1
                 lastHeartbeatSentAt = Date()
             } catch {
@@ -621,9 +617,7 @@ actor GatewayClient {
         guard let socket = self.socket else { return }
         let p = PresenceUpdatePayload(d: .init(since: since, activities: activities, status: status, afk: afk))
         let payload = GatewayPayload(op: .presenceUpdate, d: p, s: nil, t: nil)
-        if let data = try? JSONEncoder().encode(payload) {
-            try? await socket.send(.string(String(decoding: data, as: UTF8.self)))
-        }
+        try? await sendGatewayPayload(payload)
     }
 
     // MARK: - Health and telemetry accessors
@@ -642,6 +636,21 @@ actor GatewayClient {
   func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
   func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
   func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
+
+    // MARK: - Gateway send helpers
+
+    private func sendGatewayPayload<T: Encodable & Sendable>(_ payload: GatewayPayload<T>) async throws {
+        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
+        let data = try JSONEncoder().encode(payload)
+        await rateLimiter.acquire()
+        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+    }
+
+    private func sendGatewayData(_ data: Data) async throws {
+        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
+        await rateLimiter.acquire()
+        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+    }
 }
 
 // MARK: - Lightweight decode utilities
@@ -649,4 +658,38 @@ actor GatewayClient {
 private struct GatewayOpBox: Codable, Sendable {
     let op: GatewayOpcode
     let t: String?
+}
+
+// MARK: - Gateway send rate limiter
+
+/// Enforces Discord's gateway send rate limit: 120 events per 60 seconds.
+private actor GatewaySendRateLimiter {
+    private var tokens: Double
+    private var lastRefill: Date
+    private let maxTokens: Double = 120
+    private let refillRate: Double = 2.0 // tokens per second (120 per 60s)
+
+    init() {
+        self.tokens = maxTokens
+        self.lastRefill = Date()
+    }
+
+    func acquire() async {
+        refill()
+        if tokens >= 1 {
+            tokens -= 1
+            return
+        }
+        let waitSeconds = (1 - tokens) / refillRate
+        try? await Task.sleep(nanoseconds: UInt64(waitSeconds * 1_000_000_000))
+        refill()
+        tokens = max(0, tokens - 1)
+    }
+
+    private func refill() {
+        let now = Date()
+        let elapsed = now.timeIntervalSince(lastRefill)
+        tokens = min(maxTokens, tokens + elapsed * refillRate)
+        lastRefill = now
+    }
 }
