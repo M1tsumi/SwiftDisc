@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.1] - 2026-05-14
 
 ### Overview
-SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, provides developer-friendly documentation for all public APIs, and delivers new REST endpoints, correctness fixes, and builder improvements.
+SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, provides developer-friendly documentation for all public APIs, delivers new REST endpoints, correctness fixes, builder improvements, and internal utility infrastructure for improved error handling, JSON encoding consistency, token security, retry policies, and cache performance.
 
 ### Added
 - **DocC documentation** — added comprehensive DocC comments to all public APIs with detailed parameter descriptions, return values, throws documentation, and usage examples
@@ -23,12 +23,32 @@ SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framewor
 - **`disconnect()` alias** — added `public func disconnect()` as a conventional alias for `shutdown()` on `DiscordClient`
 - **Initial presence at connect** — `loginAndConnect(intents:)` and `loginAndConnectSharded(index:total:intents:)` now accept optional `status`, `activities`, `afk`, and `since` parameters to set bot presence immediately after connecting
 - **`DiscordError.authenticationFailed`** — added typed error case for Gateway close code 4004 (invalid/missing bot token)
+- **JSONCoders** — shared JSONEncoder/JSONDecoder instances used across Gateway, REST, and Webhook layers for consistent encoding behavior and reduced overhead
+- **OptionalField** — three-state enum (absent, null, value) for distinguishing between field omission, explicit null, and value in PATCH payloads
+- **RetryPolicy** — configurable retry behavior for transient failures with exponential backoff and max attempt limits
+- **RedactedToken** — token wrapper that prevents accidental leakage in logs and errors by redacting string representations
+- **DiscordAPIErrorBody** — parses Discord's nested validation error responses and flattens them into a list of per-field validation failures
+- **Cache reverse index** — messageToChannelIndex for O(1) message removal instead of O(n) channel scan
+- **Cache.removeGuild()** — method to clear guild entry, roles, emojis, and associated data from cache
+- **DiscordError.apiValidation** — new error case for structured validation errors with flattened per-field failures
+- **DiscordError convenience properties** — httpStatusCode, apiErrorCode, validationErrors, isRateLimited, isAuthenticationFailure, isCancelled, isTransient for easy error introspection
+- **MessagePayload.clearContent()** — method to explicitly send null to Discord for clearing message content
+- **InternalTests.swift** — comprehensive unit tests for new internal utility types
 
 ### Changed
 - **Documentation infrastructure** — migrated to DocC for modern, Apple-style documentation generation
 - **Version references** — updated all version references to 2.3.1 across the codebase
 - **Guild member search** — updated to use the POST endpoint instead of GET
 - **Route key normalization** — refactored route key generation for improved reliability and clarity
+- **GatewayClient** — uses RedactedToken instead of raw String for token, uses shared JSONCoders, updated User-Agent header to DiscordBot format
+- **WebhookClient** — uses shared JSONCoders instead of local instances (fixes decoding issue with snake_case property names)
+- **HTTPClient** — uses shared JSONCoders, integrates RetryPolicy for configurable backoff, uses makeAPIError helper for improved error parsing
+- **RateLimiter** — added proactive global rate limiting (50 req/sec sliding window), Discord bucket ID tracking with routeKeyToBucket mapping, scope detection (user/global/shared), fallback to X-RateLimit-Reset epoch timestamp
+- **Cache** — message removal now uses reverse index for O(1) lookup, message cap enforcement cleans up reverse index, guild delete event triggers cache cleanup
+- **DiscordClient.editMessage** — content parameter changed from String? to OptionalField<String> to support explicit null for clearing content
+- **MessagePayload** — content field changed from String? to OptionalField<String> with default .absent
+- **DiscordUtils** — improved documentation for all utility enums, fixed MessageFormat.escapeSpecialCharacters() to only escape Discord's actual markdown metacharacters
+- **EventDispatcher** — calls cache.removeGuild() on guildDelete events
 
 ### Fixed
 - **Sticker upload multipart format** — corrected multipart body formatting for sticker file uploads
@@ -54,9 +74,10 @@ SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framewor
 - **Discord-initiated heartbeats** — added handling for op 1 Heartbeat requests sent by Discord to request immediate heartbeat responses
 - **Gateway socket guard cleanup** — removed unused and redundant socket guards in `requestGuildMembers` and `setPresence` methods
 - **Voice intent removal** — removed `guildVoiceStates` intent since voice support is not planned
-
-### Fixed
 - **Fatal gateway close code propagation** — `GatewayClient.connectReadyContinuation` is now a throwing continuation so fatal close codes (e.g., 4004 Authentication Failed) during initial connect propagate as typed `DiscordError` instead of hanging indefinitely
+- **WebhookClient decoding** — previous local coders applied .convertFromSnakeCase which silently broke Message decoding since models declare snake_case property names directly
+- **Cache message removal** — was O(n) channel scan, now O(1) via reverse index
+- **Markdown escaping** — MessageFormat.escapeSpecialCharacters() was escaping unnecessary characters (parentheses, brackets, etc.), now only escapes Discord's actual metacharacters
 
 ## [2.3.0] - 2026-05-12
 
