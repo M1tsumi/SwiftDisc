@@ -41,7 +41,6 @@ actor GatewayClient {
 
     // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
-        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
         let data = try JSONEncoder().encode(payload)
         try await sendGatewayData(data)
