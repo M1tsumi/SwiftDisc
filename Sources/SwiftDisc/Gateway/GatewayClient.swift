@@ -25,6 +25,7 @@ actor GatewayClient {
     private var lastResumeSuccessAt: Date?
     private var lastIdentifyAt: Date?
     private var cachedGatewayUrl: String?
+    private var sessionStartLimit: SessionStartLimit?
     private var allowReconnect: Bool = true
     private var connectReadyContinuation: CheckedContinuation<Void, Never>?
     private var maxReconnectAttempts: Int = 10
@@ -79,6 +80,7 @@ actor GatewayClient {
             do {
                 let botInfo = try await fetchGatewayBot()
                 cachedGatewayUrl = botInfo.url
+                sessionStartLimit = botInfo.session_start_limit
             } catch {
                 // Fall back to configuration default
             }
@@ -157,6 +159,12 @@ actor GatewayClient {
                     let delayNs = UInt64((5 - elapsed) * 1_000_000_000)
                     try? await Task.sleep(nanoseconds: delayNs)
                 }
+            }
+            // Check session start limit to avoid hitting identify rate limits
+            if let limit = sessionStartLimit, limit.remaining <= 0 {
+                let delayMs = limit.reset_after
+                let delayNs = UInt64(delayMs) * 1_000_000
+                try? await Task.sleep(nanoseconds: delayNs)
             }
             self.lastIdentifyAt = Date()
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
