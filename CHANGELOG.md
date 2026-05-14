@@ -20,6 +20,9 @@ SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framewor
 - **Guild bulk ban** — `bulkBanMembers` REST endpoint for banning multiple members at once
 - **X-Audit-Log-Reason header** — support for supplying an audit log reason header on applicable REST calls
 - **Enhanced documentation** — improved developer experience with detailed syntax examples, use cases, and edge case handling
+- **`disconnect()` alias** — added `public func disconnect()` as a conventional alias for `shutdown()` on `DiscordClient`
+- **Initial presence at connect** — `loginAndConnect(intents:)` and `loginAndConnectSharded(index:total:intents:)` now accept optional `status`, `activities`, `afk`, and `since` parameters to set bot presence immediately after connecting
+- **`DiscordError.authenticationFailed`** — added typed error case for Gateway close code 4004 (invalid/missing bot token)
 
 ### Changed
 - **Documentation infrastructure** — migrated to DocC for modern, Apple-style documentation generation
@@ -51,6 +54,9 @@ SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framewor
 - **Discord-initiated heartbeats** — added handling for op 1 Heartbeat requests sent by Discord to request immediate heartbeat responses
 - **Gateway socket guard cleanup** — removed unused and redundant socket guards in `requestGuildMembers` and `setPresence` methods
 - **Voice intent removal** — removed `guildVoiceStates` intent since voice support is not planned
+
+### Fixed
+- **Fatal gateway close code propagation** — `GatewayClient.connectReadyContinuation` is now a throwing continuation so fatal close codes (e.g., 4004 Authentication Failed) during initial connect propagate as typed `DiscordError` instead of hanging indefinitely
 
 ## [2.3.0] - 2026-05-12
 
