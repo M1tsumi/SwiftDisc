@@ -884,17 +884,29 @@ public actor DiscordClient {
     public func editMessageWithFiles(
         channelId: ChannelID,
         messageId: MessageID,
-        content: String? = nil,
+        content: OptionalField<String> = .absent,
         embeds: [Embed]? = nil,
         components: [MessageComponent]? = nil,
         files: [FileAttachment]? = nil,
         attachments: [PartialAttachment]? = nil
     ) async throws -> Message {
         struct Payload: Encodable, Sendable {
-            let content: String?
+            let content: OptionalField<String>
             let embeds: [Embed]?
             let components: [MessageComponent]?
             let attachments: [PartialAttachment]?
+
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(content, forKey: .content)
+                if let embeds = embeds { try container.encode(embeds, forKey: .embeds) }
+                if let components = components { try container.encode(components, forKey: .components) }
+                if let attachments = attachments { try container.encode(attachments, forKey: .attachments) }
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case content, embeds, components, attachments
+            }
         }
         let body = Payload(content: content, embeds: embeds, components: components, attachments: attachments)
         return try await http.patchMultipart(path: "/channels/\(channelId)/messages/\(messageId)", jsonBody: body, files: files)
@@ -2416,12 +2428,24 @@ public actor DiscordClient {
     /// - Note: Requires the `MANAGE_MESSAGES` permission to edit messages from other users.
     ///       Bots can edit their own messages without this permission.
     /// - Important: All fields are optional; only provided fields will be updated.
+    ///           To explicitly clear the content field, pass `OptionalField.null`.
     /// - See Also: `sendMessage(channelId:content:)`
-    public func editMessage(channelId: ChannelID, messageId: MessageID, content: String? = nil, embeds: [Embed]? = nil, components: [MessageComponent]? = nil) async throws -> Message {
+    public func editMessage(channelId: ChannelID, messageId: MessageID, content: OptionalField<String> = .absent, embeds: [Embed]? = nil, components: [MessageComponent]? = nil) async throws -> Message {
         struct Body: Encodable, Sendable {
-            let content: String?
+            let content: OptionalField<String>
             let embeds: [Embed]?
             let components: [MessageComponent]?
+
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(content, forKey: .content)
+                if let embeds = embeds { try container.encode(embeds, forKey: .embeds) }
+                if let components = components { try container.encode(components, forKey: .components) }
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case content, embeds, components
+            }
         }
         return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components))
     }

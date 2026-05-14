@@ -16,7 +16,7 @@ import Foundation
 /// try await client.send(to: channelId, payload)
 /// ```
 public struct MessagePayload: Sendable {
-    public var content: String?
+    public var content: OptionalField<String>
     public var embeds: [Embed]?
     public var components: [MessageComponent]?
     public var allowedMentions: AllowedMentions?
@@ -29,12 +29,17 @@ public struct MessagePayload: Sendable {
     public var threadName: String?
     public var threadId: ChannelID?
 
-    public init() {}
+    public init() {
+        self.content = .absent
+    }
 
     // MARK: - Content
 
     /// Set the plain-text message content.
-    public func content(_ text: String) -> Self { var c = self; c.content = text; return c }
+    public func content(_ text: String) -> Self { var c = self; c.content = .value(text); return c }
+
+    /// Clear the message content (sends explicit null to Discord).
+    public func clearContent() -> Self { var c = self; c.content = .null; return c }
 
     /// Append a single `Embed` to the message.
     public func embed(_ embed: Embed) -> Self {
@@ -161,7 +166,7 @@ public extension DiscordClient {
         if let files = payload.files, !files.isEmpty {
             return try await sendMessageWithFiles(
                 channelId: channelId,
-                content: payload.content,
+                content: payload.content.wrappedValue,
                 embeds: payload.embeds,
                 components: payload.components,
                 tts: payload.tts,
@@ -172,7 +177,7 @@ public extension DiscordClient {
         }
         return try await sendMessage(
             channelId: channelId,
-            content: payload.content,
+            content: payload.content.wrappedValue,
             embeds: payload.embeds,
             components: payload.components,
             allowedMentions: payload.allowedMentions,
@@ -231,7 +236,7 @@ public extension DiscordClient {
             let data: DataObj
         }
         let data = DataObj(
-            content: payload.content,
+            content: payload.content.wrappedValue,
             embeds: payload.embeds,
             components: payload.components,
             flags: payload.flags,
