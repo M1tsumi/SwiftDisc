@@ -6,7 +6,7 @@ import FoundationNetworking
 actor GatewayClient {
     private struct SeqProbe: Decodable { let s: Int? }
     
-    private let token: String
+    private let token: RedactedToken
     private let configuration: DiscordConfiguration
 
     private var socket: WebSocketClient?
@@ -45,7 +45,7 @@ actor GatewayClient {
     // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
-        let data = try JSONEncoder().encode(payload)
+        let data = try JSONCoders.encoder.encode(payload)
         try await sendGatewayData(data)
     }
 
@@ -57,7 +57,7 @@ actor GatewayClient {
     private let rateLimiter = GatewaySendRateLimiter()
 
     init(token: String, configuration: DiscordConfiguration) {
-        self.token = token
+        self.token = RedactedToken(token)
         self.configuration = configuration
     }
 
@@ -159,7 +159,7 @@ actor GatewayClient {
             throw DiscordError.gateway("Expected HELLO string frame")
         }
         let helloData = Data(helloText.utf8)
-        let hello = try JSONDecoder().decode(GatewayPayload<GatewayHello>.self, from: helloData)
+        let hello = try JSONCoders.decoder.decode(GatewayPayload<GatewayHello>.self, from: helloData)
         guard hello.op == .hello, let d = hello.d else { throw DiscordError.gateway("Invalid HELLO payload") }
         heartbeatIntervalMs = d.heartbeat_interval
 
@@ -167,11 +167,10 @@ actor GatewayClient {
         startHeartbeat()
 
         // Resume when we have a saved session, otherwise perform a fresh identify.
-        let enc = JSONEncoder()
         if let sessionId, let seq {
             self.status = .resuming
             self.lastResumeAttemptAt = Date()
-            let resume = ResumePayload(token: token, session_id: sessionId, seq: seq)
+            let resume = ResumePayload(token: token.rawValue, session_id: sessionId, seq: seq)
             let payload = GatewayPayload(op: .resume, d: resume, s: nil, t: nil)
             try await sendGatewayPayload(payload)
         } else {
@@ -193,7 +192,7 @@ actor GatewayClient {
             self.lastIdentifyAt = Date()
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
             let compress = configuration.gatewayPayloadCompression ? true : nil
-            let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
+            let identify = IdentifyPayload(token: token.rawValue, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
             let payload = GatewayPayload(op: .identify, d: identify, s: nil, t: nil)
             try await sendGatewayPayload(payload)
         }
@@ -215,7 +214,7 @@ actor GatewayClient {
 
     private func readLoop(eventSink: @escaping @Sendable (DiscordEvent) -> Void) async {
         guard let socket = self.socket else { return }
-        let dec = JSONDecoder()
+        let dec = JSONCoders.decoder
         var lastFrameData: Data?
         while true {
             do {
@@ -681,8 +680,8 @@ actor GatewayClient {
             .appendingPathComponent("v\(configuration.apiVersion)")
             .appendingPathComponent("gateway/bot")
         var request = URLRequest(url: url)
-        request.setValue("Bot \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("SwiftDisc/\(DiscordConfiguration.version)", forHTTPHeaderField: "User-Agent")
+        request.setValue(token.authorizationHeaderValue, forHTTPHeaderField: "Authorization")
+        request.setValue("DiscordBot (https://github.com/M1tsumi/SwiftDisc, \(DiscordConfiguration.version))", forHTTPHeaderField: "User-Agent")
 
         let session = URLSession(configuration: .ephemeral)
         defer { session.finishTasksAndInvalidate() }
@@ -690,7 +689,7 @@ actor GatewayClient {
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw DiscordError.gateway("Failed to fetch gateway bot info")
         }
-        return try JSONDecoder().decode(GatewayBotResponse.self, from: data)
+        return try JSONCoders.decoder.decode(GatewayBotResponse.self, from: data)
     }
 
     func close() async {
@@ -729,7 +728,7 @@ actor GatewayClient {
 
     private func sendGatewayPayload<T: Encodable & Sendable>(_ payload: GatewayPayload<T>) async throws {
         guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
-        let data = try JSONEncoder().encode(payload)
+        let data = try JSONCoders.encoder.encode(payload)
         await rateLimiter.acquire()
         try await socket.send(.string(String(decoding: data, as: UTF8.self)))
     }
