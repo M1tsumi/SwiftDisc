@@ -26,6 +26,7 @@ actor GatewayClient {
     private var lastIdentifyAt: Date?
     private var cachedGatewayUrl: String?
     private var sessionStartLimit: SessionStartLimit?
+    private var recommendedShards: Int?
     private var allowReconnect: Bool = true
     private var connectReadyContinuation: CheckedContinuation<Void, Never>?
     private var maxReconnectAttempts: Int = 10
@@ -81,8 +82,15 @@ actor GatewayClient {
                 let botInfo = try await fetchGatewayBot()
                 cachedGatewayUrl = botInfo.url
                 sessionStartLimit = botInfo.session_start_limit
+                recommendedShards = botInfo.shards
             } catch {
                 // Fall back to configuration default
+            }
+        }
+        // Validate shard count against recommended shards from gateway bot
+        if let shard = shard, let recommended = recommendedShards {
+            if shard.total > recommended {
+                logDecodeDiagnostic("Shard count \(shard.total) exceeds recommended \(recommended) from gateway bot endpoint")
             }
         }
         // Use resume_gateway_url from READY if available, otherwise cached or default
