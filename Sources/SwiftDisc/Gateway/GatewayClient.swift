@@ -547,10 +547,11 @@ actor GatewayClient {
     }
 
     private func attemptReconnect() async {
-        // Reconnect strategy: close current socket, then retry with bounded exponential backoff with jitter.
+        // Reconnect strategy: drop the current socket without a clean close,
+        // then retry with bounded exponential backoff with jitter.
         if !allowReconnect { return }
-        
-        // Check for fatal close codes that should not trigger reconnection
+
+        // Capture close code before closing so we can detect fatal codes
         let closeCode = await socket?.closeCode
         if let code = closeCode, isFatalCloseCode(code) {
             status = .disconnected
@@ -559,8 +560,10 @@ actor GatewayClient {
             sink(.disconnected(reason: "Fatal close code \(code): \(reason)"))
             return
         }
-        
-        await socket?.close()
+
+        // Use forceClose to avoid sending 1000/1001, which Discord treats as
+        // session-invalidating and would prevent resume.
+        await socket?.forceClose()
         socket = nil
         heartbeatTask?.cancel()
         heartbeatTask = nil
