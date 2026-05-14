@@ -525,8 +525,8 @@ actor GatewayClient {
         let jitterNs = UInt64.random(in: 0..<UInt64(heartbeatIntervalMs)) * 1_000_000
         try? await Task.sleep(nanoseconds: jitterNs)
         while !Task.isCancelled {
-            // Allow tolerance for delayed ACKs - reconnect after 3 missed heartbeats
-            if missedHeartbeatAckCount >= 3 {
+            // Discord spec: treat connection as zombied after a single missed ACK
+            if missedHeartbeatAckCount >= 1 {
                 await attemptReconnect()
                 break
             }
