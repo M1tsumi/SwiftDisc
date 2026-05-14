@@ -20,6 +20,7 @@ actor GatewayClient {
     private var resumeFailureCount: Int = 0
     private var lastResumeAttemptAt: Date?
     private var lastResumeSuccessAt: Date?
+    private var lastIdentifyAt: Date?
     private var allowReconnect: Bool = true
     private var connectReadyContinuation: CheckedContinuation<Void, Never>?
     private var maxReconnectAttempts: Int = 10
@@ -135,6 +136,15 @@ actor GatewayClient {
             try await sendGatewayPayload(payload)
         } else {
             self.status = .identifying
+            // Discord enforces 1 identify per 5 seconds per token.
+            if let last = lastIdentifyAt {
+                let elapsed = Date().timeIntervalSince(last)
+                if elapsed < 5 {
+                    let delayNs = UInt64((5 - elapsed) * 1_000_000_000)
+                    try? await Task.sleep(nanoseconds: delayNs)
+                }
+            }
+            self.lastIdentifyAt = Date()
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
             let compress = configuration.gatewayPayloadCompression ? true : nil
             let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
