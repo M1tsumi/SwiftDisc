@@ -20,16 +20,12 @@ public struct WebhookClient: Sendable {
     public let token: String
 
     private static let apiBase = "https://discord.com/api/v10"
-    private static let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.keyDecodingStrategy = .convertFromSnakeCase
-        return d
-    }()
-    private static let encoder: JSONEncoder = {
-        let e = JSONEncoder()
-        e.keyEncodingStrategy = .convertToSnakeCase
-        return e
-    }()
+    /// Use the package-wide JSON coders so webhook payloads round-trip with the
+    /// same key strategy as the rest of the library. The previous local coders
+    /// applied `.convertFromSnakeCase`, which silently broke `Message` decoding
+    /// because the model declares snake_case Swift property names directly.
+    private static var decoder: JSONDecoder { JSONCoders.decoder }
+    private static var encoder: JSONEncoder { JSONCoders.encoder }
     
     // Rate limiter: Discord allows 5 webhook executions per second per webhook
     private static let rateLimiter = WebhookRateLimiter()
