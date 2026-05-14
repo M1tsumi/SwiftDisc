@@ -40,6 +40,17 @@ SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framewor
 - **CI build failures** — fixed compilation failures introduced by incomplete DocC additions
 - **Docs workflow** — corrected `swift-docc-plugin` command, removed invalid `swift package resolve` step, and tarred docs before artifact upload to avoid colon-in-filename errors
 - **SPM warnings** — dropped bogus excludes and silenced unhandled-file warnings in the Examples target
+- **Gateway heartbeat ACK tolerance** — reduced tolerance from 3 to 1 missed ACK to comply with Discord spec and detect zombied connections immediately
+- **Gateway session-invalidating close codes** — added `forceClose()` to WebSocketClient to drop connections without sending clean close frames (1000/1001), preserving sessions for resume
+- **Gateway send rate limiting** — implemented token-bucket rate limiter enforcing Discord's 120 events per 60 seconds limit on all outgoing gateway sends
+- **Identify rate limiting** — enforced Discord's 1 identify per 5 seconds per token rate limit with cooldown before sending Identify payloads
+- **Gateway URL fetching** — added `GET /gateway/bot` REST endpoint call to fetch recommended gateway URL and session start limits before connecting
+- **Session start limit enforcement** — check and wait if session start limit is reached before identifying to avoid hitting Discord's identify rate limits
+- **Shard count validation** — validate user-provided shard parameters against recommended shard count from gateway bot endpoint and warn if exceeded
+- **Resume URL expiration** — track resume gateway URL age and clear expired URLs (~7 days) to force fresh identify instead of failing resume attempts
+- **Discord-initiated heartbeats** — added handling for op 1 Heartbeat requests sent by Discord to request immediate heartbeat responses
+- **Gateway socket guard cleanup** — removed unused and redundant socket guards in `requestGuildMembers` and `setPresence` methods
+- **Voice intent removal** — removed `guildVoiceStates` intent since voice support is not planned
 
 ## [2.3.0] - 2026-05-12
 
