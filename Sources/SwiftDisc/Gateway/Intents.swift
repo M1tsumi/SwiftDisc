@@ -78,11 +78,6 @@ public struct GatewayIntents: OptionSet, Codable, Hashable, Sendable {
     /// Required for tracking invite creates and deletes.
     public static let guildInvites = GatewayIntents(rawValue: 1 << 6)
     
-    /// Enables guild voice state events.
-    ///
-    /// Required for tracking users joining/leaving voice channels.
-    public static let guildVoiceStates = GatewayIntents(rawValue: 1 << 7)
-    
     /// Enables guild presence events (privileged).
     ///
     /// - **Privileged**: Must be enabled in the Discord Developer Portal.
