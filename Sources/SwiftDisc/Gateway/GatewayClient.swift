@@ -657,7 +657,6 @@ actor GatewayClient {
 
     // Sends a gateway presence update payload for status/activity changes.
     func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
-        guard let socket = self.socket else { return }
         let p = PresenceUpdatePayload(d: .init(since: since, activities: activities, status: status, afk: afk))
         let payload = GatewayPayload(op: .presenceUpdate, d: p, s: nil, t: nil)
         try? await sendGatewayPayload(payload)
