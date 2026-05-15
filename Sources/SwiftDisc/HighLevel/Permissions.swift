@@ -1,5 +1,25 @@
 import Foundation
 
+/// Utility for working with Discord permissions.
+///
+/// Provides permission flag constants and helper methods for checking
+/// and calculating effective permissions for users in guilds and channels.
+///
+/// ## Example
+///
+/// ```swift
+/// // Check if a user has a specific permission
+/// let hasAdmin = PermissionsUtil.hasPermission(permissions, PermissionsUtil.administrator)
+///
+/// // Calculate effective permissions in a channel
+/// let effective = PermissionsUtil.effectivePermissions(
+///     userId: userId,
+///     memberRoleIds: roleIds,
+///     guildRoles: guildRoles,
+///     channel: channel,
+///     everyoneRoleId: guildId
+/// )
+/// ```
 public enum PermissionsUtil: Sendable {
     // MARK: - Permission Flag Constants
     

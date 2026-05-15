@@ -1,5 +1,8 @@
 import Foundation
 
+/// A dynamically-typed JSON value for flexible decoding.
+///
+/// Used when Discord returns values whose type varies by context.
 public enum JSONValue: Codable, Hashable, Sendable {
     case string(String)
     case number(Double)

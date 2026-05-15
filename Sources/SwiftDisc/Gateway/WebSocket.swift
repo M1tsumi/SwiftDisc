@@ -14,6 +14,9 @@ protocol WebSocketClient: Sendable {
     func send(_ message: WebSocketMessage) async throws
     func receive() async throws -> WebSocketMessage
     func close() async
+    /// Drop the connection without sending a clean WebSocket close frame.
+    /// Used when reconnecting and resuming so Discord does not invalidate the session.
+    func forceClose() async
     var closeCode: Int? { get }
 }
 
@@ -65,6 +68,12 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
         closeCode = Int(task.closeCode.rawValue)
         session.invalidateAndCancel()
     }
+
+    func forceClose() async {
+        // Cancel the session without sending a clean close frame (1000/1001)
+        // so Discord preserves the session for resume.
+        session.invalidateAndCancel()
+    }
 }
 
 final class UnavailableWebSocketAdapter: WebSocketClient, Sendable {
@@ -72,4 +81,5 @@ final class UnavailableWebSocketAdapter: WebSocketClient, Sendable {
     func send(_ message: WebSocketMessage) async throws { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func receive() async throws -> WebSocketMessage { throw DiscordError.gateway("WebSocket unavailable on this platform") }
     func close() async { }
+    func forceClose() async { }
 }

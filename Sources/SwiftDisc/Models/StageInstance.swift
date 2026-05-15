@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents a live stage instance in a stage channel.
 public struct StageInstance: Codable, Hashable, Sendable {
     public let id: StageInstanceID
     public let guild_id: GuildID

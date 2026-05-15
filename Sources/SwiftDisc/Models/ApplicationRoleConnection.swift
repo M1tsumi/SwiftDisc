@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents a user's application-specific role connection metadata.
 public struct ApplicationRoleConnection: Codable, Hashable, Sendable {
     public let platformName: String?
     public let platformUsername: String?
@@ -18,6 +19,7 @@ public struct ApplicationRoleConnection: Codable, Hashable, Sendable {
     }
 }
 
+/// Metadata definition for an application role connection.
 public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     public let type: RoleConnectionMetadataType
     public let key: String
@@ -42,6 +44,7 @@ public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     }
 }
 
+/// Comparison types for role connection metadata values.
 public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIterable {
     case integerLessThanOrEqual = 1
     case integerGreaterThanOrEqual = 2

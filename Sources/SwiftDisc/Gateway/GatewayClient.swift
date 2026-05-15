@@ -1,9 +1,12 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 actor GatewayClient {
     private struct SeqProbe: Decodable { let s: Int? }
     
-    private let token: String
+    private let token: RedactedToken
     private let configuration: DiscordConfiguration
 
     private var socket: WebSocketClient?
@@ -12,6 +15,7 @@ actor GatewayClient {
     private var seq: Int?
     private var sessionId: String?
     private var resumeGatewayUrl: String?
+    private var resumeGatewayUrlReceivedAt: Date?
     private var missedHeartbeatAckCount: Int = 0
     private var lastHeartbeatSentAt: Date?
     private var lastHeartbeatAckAt: Date?
@@ -20,8 +24,12 @@ actor GatewayClient {
     private var resumeFailureCount: Int = 0
     private var lastResumeAttemptAt: Date?
     private var lastResumeSuccessAt: Date?
+    private var lastIdentifyAt: Date?
+    private var cachedGatewayUrl: String?
+    private var sessionStartLimit: SessionStartLimit?
+    private var recommendedShards: Int?
     private var allowReconnect: Bool = true
-    private var connectReadyContinuation: CheckedContinuation<Void, Never>?
+    private var connectReadyContinuation: CheckedContinuation<Void, any Error>?
     private var maxReconnectAttempts: Int = 10
     private var maxReconnectDelayNs: UInt64 = 16_000_000_000
 
@@ -36,11 +44,9 @@ actor GatewayClient {
 
     // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
-        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
-        let enc = JSONEncoder()
-        let data = try enc.encode(payload)
-        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+        let data = try JSONCoders.encoder.encode(payload)
+        try await sendGatewayData(data)
     }
 
     private var status: Status = .disconnected
@@ -48,9 +54,10 @@ actor GatewayClient {
     private var lastIntents: GatewayIntents = []
     private var lastEventSink: (@Sendable (DiscordEvent) -> Void)?
     private var lastShard: (index: Int, total: Int)?
+    private let rateLimiter = GatewaySendRateLimiter()
 
     init(token: String, configuration: DiscordConfiguration) {
-        self.token = token
+        self.token = RedactedToken(token)
         self.configuration = configuration
     }
 
@@ -70,9 +77,43 @@ actor GatewayClient {
         guard configuration.apiVersion >= 8 && configuration.apiVersion <= 10 else {
             throw DiscordError.gateway("Unsupported gateway version: \(configuration.apiVersion). Supported versions are 8-10.")
         }
-        // Use resume_gateway_url from READY if available, otherwise use default gateway URL
+        // Fetch gateway URL from REST on first connect
+        if cachedGatewayUrl == nil && resumeGatewayUrl == nil {
+            do {
+                let botInfo = try await fetchGatewayBot()
+                cachedGatewayUrl = botInfo.url
+                sessionStartLimit = botInfo.session_start_limit
+                recommendedShards = botInfo.shards
+            } catch {
+                // Fall back to configuration default
+            }
+        }
+        // Validate shard count against recommended shards from gateway bot
+        if let shard = shard, let recommended = recommendedShards {
+            if shard.total > recommended {
+                logDecodeDiagnostic("Shard count \(shard.total) exceeds recommended \(recommended) from gateway bot endpoint")
+            }
+        }
+        // Use resume_gateway_url from READY if available, otherwise cached or default
         let baseURL: URL
-        if let resumeUrl = resumeGatewayUrl, let url = URL(string: resumeUrl) {
+        // Discord's resume_gateway_url expires after ~7 days; check before using
+        let resumeUrlExpired: Bool
+        if let receivedAt = resumeGatewayUrlReceivedAt {
+            let age = Date().timeIntervalSince(receivedAt)
+            resumeUrlExpired = age > 7 * 24 * 60 * 60 // 7 days in seconds
+        } else {
+            resumeUrlExpired = true
+        }
+        if resumeUrlExpired, resumeGatewayUrl != nil {
+            // Clear expired resume URL and session to force fresh identify
+            self.resumeGatewayUrl = nil
+            self.resumeGatewayUrlReceivedAt = nil
+            self.sessionId = nil
+            self.seq = nil
+        }
+        if let resumeUrl = resumeGatewayUrl, !resumeUrlExpired, let url = URL(string: resumeUrl) {
+            baseURL = url
+        } else if let cachedUrl = cachedGatewayUrl, let url = URL(string: cachedUrl) {
             baseURL = url
         } else {
             baseURL = configuration.gatewayBaseURL
@@ -118,7 +159,7 @@ actor GatewayClient {
             throw DiscordError.gateway("Expected HELLO string frame")
         }
         let helloData = Data(helloText.utf8)
-        let hello = try JSONDecoder().decode(GatewayPayload<GatewayHello>.self, from: helloData)
+        let hello = try JSONCoders.decoder.decode(GatewayPayload<GatewayHello>.self, from: helloData)
         guard hello.op == .hello, let d = hello.d else { throw DiscordError.gateway("Invalid HELLO payload") }
         heartbeatIntervalMs = d.heartbeat_interval
 
@@ -126,22 +167,34 @@ actor GatewayClient {
         startHeartbeat()
 
         // Resume when we have a saved session, otherwise perform a fresh identify.
-        let enc = JSONEncoder()
         if let sessionId, let seq {
             self.status = .resuming
             self.lastResumeAttemptAt = Date()
-            let resume = ResumePayload(token: token, session_id: sessionId, seq: seq)
+            let resume = ResumePayload(token: token.rawValue, session_id: sessionId, seq: seq)
             let payload = GatewayPayload(op: .resume, d: resume, s: nil, t: nil)
-            let data = try enc.encode(payload)
-            try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+            try await sendGatewayPayload(payload)
         } else {
             self.status = .identifying
+            // Discord enforces 1 identify per 5 seconds per token.
+            if let last = lastIdentifyAt {
+                let elapsed = Date().timeIntervalSince(last)
+                if elapsed < 5 {
+                    let delayNs = UInt64((5 - elapsed) * 1_000_000_000)
+                    try? await Task.sleep(nanoseconds: delayNs)
+                }
+            }
+            // Check session start limit to avoid hitting identify rate limits
+            if let limit = sessionStartLimit, limit.remaining <= 0 {
+                let delayMs = limit.reset_after
+                let delayNs = UInt64(delayMs) * 1_000_000
+                try? await Task.sleep(nanoseconds: delayNs)
+            }
+            self.lastIdentifyAt = Date()
             let shardArray: [Int]? = shard.map { [$0.index, $0.total] }
             let compress = configuration.gatewayPayloadCompression ? true : nil
-            let identify = IdentifyPayload(token: token, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
+            let identify = IdentifyPayload(token: token.rawValue, intents: intents.rawValue, properties: .default, compress: compress, large_threshold: configuration.gatewayLargeThreshold, shard: shardArray)
             let payload = GatewayPayload(op: .identify, d: identify, s: nil, t: nil)
-            let data = try enc.encode(payload)
-            try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+            try await sendGatewayPayload(payload)
         }
 
         // Read loop stays detached so connect() can return once READY/RESUMED arrives.
@@ -150,7 +203,7 @@ actor GatewayClient {
         }
         // Wait until the socket is actually usable before returning to callers.
         // Use a single atomic check to avoid race condition with readLoop setting status.
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, any Error>) in
             if self.status == .ready {
                 cont.resume()
             } else {
@@ -161,7 +214,7 @@ actor GatewayClient {
 
     private func readLoop(eventSink: @escaping @Sendable (DiscordEvent) -> Void) async {
         guard let socket = self.socket else { return }
-        let dec = JSONDecoder()
+        let dec = JSONCoders.decoder
         var lastFrameData: Data?
         while true {
             do {
@@ -186,6 +239,7 @@ actor GatewayClient {
                                 // Save session ID and resume gateway URL for reconnects.
                                 self.sessionId = ready.session_id
                                 self.resumeGatewayUrl = ready.resume_gateway_url
+                                self.resumeGatewayUrlReceivedAt = Date()
                                 self.status = .ready
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
@@ -447,6 +501,18 @@ actor GatewayClient {
                             // Unknown events are forwarded as raw payloads so callers still get visibility.
                             eventSink(.raw(t, data))
                         }
+                    case .heartbeat:
+                        // Discord requested an immediate heartbeat (op 1)
+                        do {
+                            let hb: HeartbeatPayload = seq
+                            let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
+                            try await sendGatewayPayload(payload)
+                            missedHeartbeatAckCount += 1
+                            lastHeartbeatSentAt = Date()
+                        } catch {
+                            await attemptReconnect()
+                        }
+                        break
                     case .heartbeatAck:
                         missedHeartbeatAckCount = 0
                         lastHeartbeatAckAt = Date()
@@ -512,16 +578,15 @@ actor GatewayClient {
         let jitterNs = UInt64.random(in: 0..<UInt64(heartbeatIntervalMs)) * 1_000_000
         try? await Task.sleep(nanoseconds: jitterNs)
         while !Task.isCancelled {
-            // Allow tolerance for delayed ACKs - reconnect after 3 missed heartbeats
-            if missedHeartbeatAckCount >= 3 {
+            // Discord spec: treat connection as zombied after a single missed ACK
+            if missedHeartbeatAckCount >= 1 {
                 await attemptReconnect()
                 break
             }
             do {
                 let hb: HeartbeatPayload = seq
                 let payload = GatewayPayload(op: .heartbeat, d: hb, s: nil, t: nil)
-                let data = try JSONEncoder().encode(payload)
-                try await socket?.send(.string(String(decoding: data, as: UTF8.self)))
+                try await sendGatewayPayload(payload)
                 missedHeartbeatAckCount += 1
                 lastHeartbeatSentAt = Date()
             } catch {
@@ -534,20 +599,31 @@ actor GatewayClient {
     }
 
     private func attemptReconnect() async {
-        // Reconnect strategy: close current socket, then retry with bounded exponential backoff with jitter.
+        // Reconnect strategy: drop the current socket without a clean close,
+        // then retry with bounded exponential backoff with jitter.
         if !allowReconnect { return }
-        
-        // Check for fatal close codes that should not trigger reconnection
+
+        // Capture close code before closing so we can detect fatal codes
         let closeCode = await socket?.closeCode
         if let code = closeCode, isFatalCloseCode(code) {
             status = .disconnected
             let reason = fatalCloseCodeDescription(code)
+            if let cont = connectReadyContinuation {
+                connectReadyContinuation = nil
+                let error: DiscordError = (code == 4004)
+                    ? .authenticationFailed
+                    : .gateway("Fatal close code \(code): \(reason)")
+                cont.resume(throwing: error)
+                return
+            }
             guard let sink = lastEventSink else { return }
             sink(.disconnected(reason: "Fatal close code \(code): \(reason)"))
             return
         }
-        
-        await socket?.close()
+
+        // Use forceClose to avoid sending 1000/1001, which Discord treats as
+        // session-invalidating and would prevent resume.
+        await socket?.forceClose()
         socket = nil
         heartbeatTask?.cancel()
         heartbeatTask = nil
@@ -572,7 +648,12 @@ actor GatewayClient {
         }
         // Max reconnect attempts reached - surface fatal disconnect
         status = .disconnected
-        sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        if let cont = connectReadyContinuation {
+            connectReadyContinuation = nil
+            cont.resume(throwing: DiscordError.gateway("Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        } else {
+            sink(.disconnected(reason: "Max reconnect attempts (\(maxReconnectAttempts)) reached"))
+        }
     }
     
     private func isFatalCloseCode(_ code: Int) -> Bool {
@@ -592,6 +673,25 @@ actor GatewayClient {
         }
     }
 
+    // MARK: - Gateway URL fetch
+
+    private func fetchGatewayBot() async throws -> GatewayBotResponse {
+        let url = configuration.apiBaseURL
+            .appendingPathComponent("v\(configuration.apiVersion)")
+            .appendingPathComponent("gateway/bot")
+        var request = URLRequest(url: url)
+        request.setValue(token.authorizationHeaderValue, forHTTPHeaderField: "Authorization")
+        request.setValue("DiscordBot (https://github.com/M1tsumi/SwiftDisc, \(DiscordConfiguration.version))", forHTTPHeaderField: "User-Agent")
+
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw DiscordError.gateway("Failed to fetch gateway bot info")
+        }
+        return try JSONCoders.decoder.decode(GatewayBotResponse.self, from: data)
+    }
+
     func close() async {
         await socket?.close()
         socket = nil
@@ -602,12 +702,9 @@ actor GatewayClient {
 
     // Sends a gateway presence update payload for status/activity changes.
     func setPresence(status: String, activities: [PresenceUpdatePayload.Activity] = [], afk: Bool = false, since: Int? = nil) async {
-        guard let socket = self.socket else { return }
         let p = PresenceUpdatePayload(d: .init(since: since, activities: activities, status: status, afk: afk))
         let payload = GatewayPayload(op: .presenceUpdate, d: p, s: nil, t: nil)
-        if let data = try? JSONEncoder().encode(payload) {
-            try? await socket.send(.string(String(decoding: data, as: UTF8.self)))
-        }
+        try? await sendGatewayPayload(payload)
     }
 
     // MARK: - Health and telemetry accessors
@@ -626,6 +723,21 @@ actor GatewayClient {
   func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
   func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
   func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
+
+    // MARK: - Gateway send helpers
+
+    private func sendGatewayPayload<T: Encodable & Sendable>(_ payload: GatewayPayload<T>) async throws {
+        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
+        let data = try JSONCoders.encoder.encode(payload)
+        await rateLimiter.acquire()
+        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+    }
+
+    private func sendGatewayData(_ data: Data) async throws {
+        guard let socket = self.socket else { throw DiscordError.gateway("Socket not connected") }
+        await rateLimiter.acquire()
+        try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+    }
 }
 
 // MARK: - Lightweight decode utilities
@@ -633,4 +745,38 @@ actor GatewayClient {
 private struct GatewayOpBox: Codable, Sendable {
     let op: GatewayOpcode
     let t: String?
+}
+
+// MARK: - Gateway send rate limiter
+
+/// Enforces Discord's gateway send rate limit: 120 events per 60 seconds.
+private actor GatewaySendRateLimiter {
+    private var tokens: Double
+    private var lastRefill: Date
+    private let maxTokens: Double = 120
+    private let refillRate: Double = 2.0 // tokens per second (120 per 60s)
+
+    init() {
+        self.tokens = maxTokens
+        self.lastRefill = Date()
+    }
+
+    func acquire() async {
+        refill()
+        if tokens >= 1 {
+            tokens -= 1
+            return
+        }
+        let waitSeconds = (1 - tokens) / refillRate
+        try? await Task.sleep(nanoseconds: UInt64(waitSeconds * 1_000_000_000))
+        refill()
+        tokens = max(0, tokens - 1)
+    }
+
+    private func refill() {
+        let now = Date()
+        let elapsed = now.timeIntervalSince(lastRefill)
+        tokens = min(maxTokens, tokens + elapsed * refillRate)
+        lastRefill = now
+    }
 }

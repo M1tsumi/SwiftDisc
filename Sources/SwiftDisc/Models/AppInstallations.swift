@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents an application installation for a user or guild.
 public struct AppInstallation: Codable, Hashable, Sendable {
     public let id: Snowflake<AppInstallation>
     public let application_id: ApplicationID
@@ -10,6 +11,7 @@ public struct AppInstallation: Codable, Hashable, Sendable {
     public let created_at: String?
 }
 
+/// Represents a subscription to a premium SKU for an application.
 public struct AppSubscription: Codable, Hashable, Sendable {
     public let id: Snowflake<AppSubscription>
     public let application_id: ApplicationID

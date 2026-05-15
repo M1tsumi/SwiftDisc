@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents an auto moderation rule in a guild.
 public struct AutoModerationRule: Codable, Hashable, Sendable {
     /// Auto Moderation trigger types for rule configuration.
     public enum TriggerType: Int, Sendable {
@@ -20,6 +21,7 @@ public struct AutoModerationRule: Codable, Hashable, Sendable {
         case blockMemberInteraction = 4
     }
 
+    /// Metadata for an auto moderation trigger.
     public struct TriggerMetadata: Codable, Hashable, Sendable {
         public let keyword_filter: [String]?
         public let presets: [Int]?
@@ -27,7 +29,9 @@ public struct AutoModerationRule: Codable, Hashable, Sendable {
         public let mention_total_limit: Int?
         public let mention_raid_protection_enabled: Bool?
     }
+    /// An action taken when an auto moderation rule is triggered.
     public struct Action: Codable, Hashable, Sendable {
+        /// Metadata for an auto moderation action.
         public struct Metadata: Codable, Hashable, Sendable {
             public let channel_id: ChannelID?
             public let duration_seconds: Int?

@@ -1,5 +1,6 @@
 import Foundation
 
+/// A V2 message payload for webhook and interaction responses.
 public struct V2MessagePayload: Encodable, Sendable {
     public var content: String?
     public var flags: Int?
@@ -20,6 +21,7 @@ public struct V2MessagePayload: Encodable, Sendable {
     }
 }
 
+/// A builder for Discord poll payloads.
 public struct PollPayload: Encodable, Sendable {
     public var question: String
     public var answers: [String]

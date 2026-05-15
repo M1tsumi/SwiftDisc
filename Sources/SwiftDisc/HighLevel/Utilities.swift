@@ -180,8 +180,9 @@ public enum BotUtils: Sendable {
     /// - Parameters:
     ///   - length: The length of the random string.
     ///   - charset: Characters to use (defaults to alphanumeric).
-    /// - Returns: A random string.
+    /// - Returns: A random string, or empty string if charset is empty.
     public static func randomString(length: Int, charset: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") -> String {
+        guard !charset.isEmpty else { return "" }
         return String((0..<length).map { _ in charset.randomElement()! })
     }
 }

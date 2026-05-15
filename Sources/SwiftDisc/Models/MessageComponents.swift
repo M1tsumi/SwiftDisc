@@ -1,23 +1,75 @@
 import Foundation
 
+/// Represents a Discord message component.
+///
+/// Components are interactive UI elements that can be attached to messages and modals.
+/// They include buttons, select menus, text inputs, and more.
+///
+/// ## Component Types
+/// - `1`: Action Row (container for other components)
+/// - `2`: Button
+/// - `3`: Select Menu (text)
+/// - `4`: Text Input (for modals)
+/// - `5`: User Select Menu
+/// - `6`: Role Select Menu
+/// - `7`: Mentionable Select Menu
+/// - `8`: Channel Select Menu
+/// - `21`: Label (modal layout component)
+/// - `22`: Radio Group (modal)
+/// - `23`: Checkbox Group (modal)
+/// - `24`: Checkbox (modal)
+/// - `25`: File Upload (modal)
+///
+/// ## Example
+///
+/// ```swift
+/// let button = MessageComponent.Button(style: 1, label: "Click Me", custom_id: "btn_click")
+/// let row = MessageComponent.ActionRow(components: [button])
+/// try await client.sendMessage(channelId: channelId, components: [row])
+/// ```
+///
+/// ## Related Topics
+/// - ``ComponentsBuilder``
+/// - ``ButtonBuilder``
+/// - ``SelectMenuBuilder``
 public enum MessageComponent: Codable, Hashable, Sendable {
+    /// An action row container for other components.
     case actionRow(ActionRow)
+    
+    /// A button component.
     case button(Button)
+    
+    /// A text select menu component.
     case select(SelectMenu)
+    
+    /// A user select menu component.
     case userSelect(UserSelectMenu)
+    
+    /// A role select menu component.
     case roleSelect(RoleSelectMenu)
+    
+    /// A mentionable select menu component (users and roles).
     case mentionableSelect(MentionableSelectMenu)
+    
+    /// A channel select menu component.
     case channelSelect(ChannelSelectMenu)
+    
+    /// A text input component (for modals).
     case textInput(TextInput)
-    /// Label layout component for modals (type 21). Introduced 2026-02-12 alongside new modal components.
+    
+    /// A label layout component for modals (type 21, introduced 2026-02-12).
     case label(Label)
-    /// Radio Group for single-selection inside a modal Label (type 22). Introduced 2026-02-12.
+    
+    /// A radio group for single-selection inside a modal label (type 22, introduced 2026-02-12).
     case radioGroup(RadioGroup)
-    /// Checkbox Group for multi-selection inside a modal Label (type 23). Introduced 2026-02-12.
+    
+    /// A checkbox group for multi-selection inside a modal label (type 23, introduced 2026-02-12).
     case checkboxGroup(CheckboxGroup)
-    /// Checkbox boolean toggle inside a modal Label (type 24). Introduced 2026-02-12.
+    
+    /// A checkbox boolean toggle inside a modal label (type 24, introduced 2026-02-12).
     case checkbox(Checkbox)
-    /// File Upload component for modals (type 25). Allows users to upload files through modal submissions. Introduced 2026.
+    
+    /// A file upload component for modals (type 25, introduced 2026).
     case fileUpload(FileUpload)
 
     public init(from decoder: Decoder) throws {
@@ -63,25 +115,84 @@ public enum MessageComponent: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey { case type }
 
+    /// Represents an action row component.
+    ///
+    /// Action rows are containers that hold other components (buttons, select menus, etc.).
+    /// You can have up to 5 action rows per message, and each row can hold up to 5 buttons or 1 select menu.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let button1 = MessageComponent.Button(style: 1, label: "Yes", custom_id: "btn_yes")
+    /// let button2 = MessageComponent.Button(style: 2, label: "No", custom_id: "btn_no")
+    /// let row = MessageComponent.ActionRow(components: [button1, button2])
+    /// ```
     public struct ActionRow: Codable, Hashable, Sendable {
+        /// The component type (always 1 for action rows).
         public let type: Int
+        
+        /// The components in this action row.
         public let components: [MessageComponent]
+        
         public init(components: [MessageComponent]) {
             self.type = 1
             self.components = components
         }
     }
 
+    /// Represents a button component.
+    ///
+    /// Buttons are interactive components that users can click to trigger interactions.
+    ///
+    /// ## Button Styles
+    /// - `1`: Primary (blurple)
+    /// - `2`: Secondary (grey)
+    /// - `3`: Success (green)
+    /// - `4`: Danger (red)
+    /// - `5`: Link (requires `url` instead of `custom_id`)
+    /// - `10`: Premium Required (requires `sku_id`)
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// // Interactive button
+    /// let button = MessageComponent.Button(
+    ///     style: 1,
+    ///     label: "Click Me",
+    ///     custom_id: "btn_click"
+    /// )
+    ///
+    /// // Link button
+    /// let link = MessageComponent.Button(
+    ///     style: 5,
+    ///     label: "Visit Discord",
+    ///     url: "https://discord.com"
+    /// )
+    /// ```
     public struct Button: Codable, Hashable, Sendable {
+        /// The component type (always 2 for buttons).
         public let type: Int
+        
+        /// The button style (1-5, 10).
         public let style: Int
+        
+        /// The label text displayed on the button.
         public let label: String?
+        
+        /// The custom ID for identifying this button (required for interactive buttons).
         public let custom_id: String?
+        
+        /// The URL to open when the button is clicked (required for link buttons).
         public let url: String?
+        
+        /// Whether the button is disabled.
         public let disabled: Bool?
-        /// SKU ID for premium button style (style 10). Required when using PREMIUM_REQUIRED button style.
+        
+        /// The SKU ID for premium button style (required for style 10).
+        ///
         /// Introduced for Discord Premium Apps monetization.
         public let sku_id: SKUID?
+        
         public init(style: Int, label: String? = nil, custom_id: String? = nil, url: String? = nil, disabled: Bool? = nil, sku_id: SKUID? = nil) {
             self.type = 2
             self.style = style
@@ -93,21 +204,60 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a text select menu component.
+    ///
+    /// Select menus allow users to choose from a list of predefined options.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let option1 = MessageComponent.SelectMenu.Option(label: "Option 1", value: "opt1")
+    /// let option2 = MessageComponent.SelectMenu.Option(label: "Option 2", value: "opt2")
+    /// let select = MessageComponent.SelectMenu(
+    ///     custom_id: "select_menu",
+    ///     options: [option1, option2]
+    /// )
+    /// ```
     public struct SelectMenu: Codable, Hashable, Sendable {
+        /// Represents an option in a select menu.
         public struct Option: Codable, Hashable, Sendable {
+            /// The label displayed to the user.
             public let label: String
+            
+            /// The internal value returned when selected.
             public let value: String
+            
+            /// An optional description of the option.
             public let description: String?
+            
+            /// The emoji for this option.
             public let emoji: String?
+            
+            /// Whether this option is selected by default.
             public let `default`: Bool?
         }
+        
+        /// The component type (always 3 for select menus).
         public let type: Int
+        
+        /// The custom ID for identifying this select menu.
         public let custom_id: String
+        
+        /// The options available in this select menu.
         public let options: [Option]
+        
+        /// The placeholder text displayed when no option is selected.
         public let placeholder: String?
+        
+        /// The minimum number of items that must be selected (0-25, default 1).
         public let min_values: Int?
+        
+        /// The maximum number of items that can be selected (0-25, default 1).
         public let max_values: Int?
+        
+        /// Whether the select menu is disabled.
         public let disabled: Bool?
+        
         public init(custom_id: String, options: [Option], placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil) {
             self.type = 3
             self.custom_id = custom_id
@@ -119,14 +269,56 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a default selected value for a select menu.
+    ///
+    /// Used to pre-select options in user, role, mentionable, and channel select menus.
+    public struct DefaultSelectValue: Codable, Hashable, Sendable {
+        /// The ID of the entity to pre-select.
+        public let id: String
+        
+        /// The type of entity (user, role, channel, etc.).
+        public let type: String
+        
+        public init(id: String, type: String) {
+            self.id = id
+            self.type = type
+        }
+    }
+
+    /// Represents a user select menu component.
+    ///
+    /// User select menus allow users to select from a list of users in the server.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let select = MessageComponent.UserSelectMenu(
+    ///     custom_id: "user_select",
+    ///     placeholder: "Select a user"
+    /// )
+    /// ```
     public struct UserSelectMenu: Codable, Hashable, Sendable {
+        /// The component type (always 5 for user select menus).
         public let type: Int
+        
+        /// The custom ID for identifying this select menu.
         public let custom_id: String
+        
+        /// The placeholder text displayed when no option is selected.
         public let placeholder: String?
+        
+        /// The minimum number of items that must be selected (0-25, default 1).
         public let min_values: Int?
+        
+        /// The maximum number of items that can be selected (0-25, default 1).
         public let max_values: Int?
+        
+        /// Whether the select menu is disabled.
         public let disabled: Bool?
+        
+        /// The default selected values.
         public let default_values: [DefaultSelectValue]?
+        
         public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
             self.type = 5
             self.custom_id = custom_id
@@ -138,14 +330,31 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a role select menu component.
+    ///
+    /// Role select menus allow users to select from a list of roles in the server.
     public struct RoleSelectMenu: Codable, Hashable, Sendable {
+        /// The component type (always 6 for role select menus).
         public let type: Int
+        
+        /// The custom ID for identifying this select menu.
         public let custom_id: String
+        
+        /// The placeholder text displayed when no option is selected.
         public let placeholder: String?
+        
+        /// The minimum number of items that must be selected (0-25, default 1).
         public let min_values: Int?
+        
+        /// The maximum number of items that can be selected (0-25, default 1).
         public let max_values: Int?
+        
+        /// Whether the select menu is disabled.
         public let disabled: Bool?
+        
+        /// The default selected values.
         public let default_values: [DefaultSelectValue]?
+        
         public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
             self.type = 6
             self.custom_id = custom_id
@@ -157,14 +366,31 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a mentionable select menu component.
+    ///
+    /// Mentionable select menus allow users to select from users and roles.
     public struct MentionableSelectMenu: Codable, Hashable, Sendable {
+        /// The component type (always 7 for mentionable select menus).
         public let type: Int
+        
+        /// The custom ID for identifying this select menu.
         public let custom_id: String
+        
+        /// The placeholder text displayed when no option is selected.
         public let placeholder: String?
+        
+        /// The minimum number of items that must be selected (0-25, default 1).
         public let min_values: Int?
+        
+        /// The maximum number of items that can be selected (0-25, default 1).
         public let max_values: Int?
+        
+        /// Whether the select menu is disabled.
         public let disabled: Bool?
+        
+        /// The default selected values.
         public let default_values: [DefaultSelectValue]?
+        
         public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil) {
             self.type = 7
             self.custom_id = custom_id
@@ -176,55 +402,110 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         }
     }
 
+    /// Represents a channel select menu component.
+    ///
+    /// Channel select menus allow users to select from a list of channels in the server.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let select = MessageComponent.ChannelSelectMenu(
+    ///     custom_id: "channel_select",
+    ///     placeholder: "Select a channel"
+    /// )
+    /// ```
     public struct ChannelSelectMenu: Codable, Hashable, Sendable {
+        /// The component type (always 8 for channel select menus).
         public let type: Int
+        
+        /// The custom ID for identifying this select menu.
         public let custom_id: String
+        
+        /// The placeholder text displayed when no option is selected.
         public let placeholder: String?
+        
+        /// The minimum number of items that must be selected (0-25, default 1).
         public let min_values: Int?
+        
+        /// The maximum number of items that can be selected (0-25, default 1).
         public let max_values: Int?
+        
+        /// Whether the select menu is disabled.
         public let disabled: Bool?
-        public let channel_types: [Int]?
+        
+        /// The default selected values.
         public let default_values: [DefaultSelectValue]?
-        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, channel_types: [Int]? = nil, default_values: [DefaultSelectValue]? = nil) {
+        
+        /// The channel types to include in the select menu.
+        public let channel_types: [Int]?
+        
+        public init(custom_id: String, placeholder: String? = nil, min_values: Int? = nil, max_values: Int? = nil, disabled: Bool? = nil, default_values: [DefaultSelectValue]? = nil, channel_types: [Int]? = nil) {
             self.type = 8
             self.custom_id = custom_id
             self.placeholder = placeholder
             self.min_values = min_values
             self.max_values = max_values
             self.disabled = disabled
-            self.channel_types = channel_types
             self.default_values = default_values
+            self.channel_types = channel_types
         }
     }
 
-    public struct DefaultSelectValue: Codable, Hashable, Sendable {
-        public let id: String
-        public let type: DefaultSelectValueType
-        public init(id: String, type: DefaultSelectValueType) {
-            self.id = id
-            self.type = type
-        }
-    }
-
-    public enum DefaultSelectValueType: String, Codable, Hashable, Sendable {
-        case user
-        case role
-        case channel
-        case mentionable
-    }
-
+    /// Represents a text input component (for modals).
+    ///
+    /// Text inputs allow users to enter text in modals.
+    ///
+    /// ## Text Input Styles
+    /// - `1`: Short (single line)
+    /// - `2`: Paragraph (multi-line)
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let input = MessageComponent.TextInput(
+    ///     custom_id: "text_input",
+    ///     style: 1,
+    ///     label: "Enter your name",
+    ///     placeholder: "John Doe"
+    /// )
+    /// ```
     public struct TextInput: Codable, Hashable, Sendable {
-        public enum Style: Int, Codable, Sendable { case short = 1, paragraph = 2 }
+        /// The text input style.
+        public enum Style: Int, Codable, Hashable, Sendable {
+            /// Short (single line) input.
+            case short = 1
+            /// Paragraph (multi-line) input.
+            case paragraph = 2
+        }
+        
+        /// The component type (always 4 for text inputs).
         public let type: Int
+        
+        /// The custom ID for identifying this text input.
         public let custom_id: String
-        public let style: Style
+        
+        /// The text input style (1-2).
+        public let style: Int
+        
+        /// The label displayed above the text input.
         public let label: String
+        
+        /// The minimum length of the text input (0-4000, default 0).
         public let min_length: Int?
+        
+        /// The maximum length of the text input (1-4000, default 4000).
         public let max_length: Int?
+        
+        /// Whether this text input is required.
         public let required: Bool?
+        
+        /// The pre-filled value of the text input.
         public let value: String?
+        
+        /// The placeholder text displayed when the input is empty.
         public let placeholder: String?
-        public init(custom_id: String, style: Style, label: String, min_length: Int? = nil, max_length: Int? = nil, required: Bool? = nil, value: String? = nil, placeholder: String? = nil) {
+        
+        public init(custom_id: String, style: Int, label: String, min_length: Int? = nil, max_length: Int? = nil, required: Bool? = nil, value: String? = nil, placeholder: String? = nil) {
             self.type = 4
             self.custom_id = custom_id
             self.style = style
@@ -261,6 +542,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         public let custom_id: String
         public let options: [RadioOption]
         public let required: Bool?
+        /// An option within a radio group component.
         public struct RadioOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
@@ -288,6 +570,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         public let options: [CheckboxOption]
         public let min_values: Int?
         public let max_values: Int?
+        /// An option within a checkbox group component.
         public struct CheckboxOption: Codable, Hashable, Sendable {
             public let label: String
             public let value: String
