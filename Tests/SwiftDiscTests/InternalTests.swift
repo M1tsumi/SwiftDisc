@@ -149,10 +149,12 @@ final class InternalTests: XCTestCase {
         let guild = try TestFixtures.makeGuild(id: "g1")
 
         await cache.upsert(guild: guild)
-        XCTAssertNotNil(await cache.getGuild(id: "g1"))
+        let guildBefore = await cache.getGuild(id: "g1")
+        XCTAssertNotNil(guildBefore)
 
         await cache.removeGuild(id: "g1")
-        XCTAssertNil(await cache.getGuild(id: "g1"))
+        let guildAfter = await cache.getGuild(id: "g1")
+        XCTAssertNil(guildAfter)
     }
 
     func testCacheRemoveGuildClearsRoles() async throws {
@@ -161,10 +163,12 @@ final class InternalTests: XCTestCase {
         let role = try TestFixtures.makeRole(id: "r1")
 
         await cache.upsert(role: role, guildId: guildId)
-        XCTAssertEqual((await cache.getRoles(guildId: guildId)).count, 1)
+        let rolesBefore = await cache.getRoles(guildId: guildId)
+        XCTAssertEqual(rolesBefore.count, 1)
 
         await cache.removeGuild(id: guildId)
-        XCTAssertEqual((await cache.getRoles(guildId: guildId)).count, 0)
+        let rolesAfter = await cache.getRoles(guildId: guildId)
+        XCTAssertEqual(rolesAfter.count, 0)
     }
 
     func testCacheRemoveGuildClearsEmojis() async throws {
@@ -173,10 +177,12 @@ final class InternalTests: XCTestCase {
         let emoji = try TestFixtures.makeEmoji(id: "e1")
 
         await cache.upsert(emojis: [emoji], guildId: guildId)
-        XCTAssertEqual((await cache.getEmojis(guildId: guildId)).count, 1)
+        let emojisBefore = await cache.getEmojis(guildId: guildId)
+        XCTAssertEqual(emojisBefore.count, 1)
 
         await cache.removeGuild(id: guildId)
-        XCTAssertEqual((await cache.getEmojis(guildId: guildId)).count, 0)
+        let emojisAfter = await cache.getEmojis(guildId: guildId)
+        XCTAssertEqual(emojisAfter.count, 0)
     }
 
     func testCacheRemoveMessageUsesReverseIndex() async throws {
@@ -237,10 +243,12 @@ final class InternalTests: XCTestCase {
         let user = try TestFixtures.makeUser(id: "u1")
 
         await cache.upsert(user: user)
-        XCTAssertNotNil(await cache.getUser(id: "u1"))
+        let userBefore = await cache.getUser(id: "u1")
+        XCTAssertNotNil(userBefore)
 
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-        XCTAssertNil(await cache.getUser(id: "u1"))
+        let userAfter = await cache.getUser(id: "u1")
+        XCTAssertNil(userAfter)
     }
 
     // MARK: - OptionalField Tests
