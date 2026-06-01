@@ -278,11 +278,11 @@ final class InternalTests: XCTestCase {
     }
 
     func testOptionalFieldEquatable() {
-        XCTAssertEqual(OptionalField.absent, OptionalField.absent)
-        XCTAssertEqual(OptionalField.null, OptionalField.null)
-        XCTAssertEqual(OptionalField.value("test"), OptionalField.value("test"))
-        XCTAssertNotEqual(OptionalField.absent, OptionalField.null)
-        XCTAssertNotEqual(OptionalField.absent, OptionalField.value("test"))
+        XCTAssertEqual(OptionalField<String>.absent, OptionalField<String>.absent)
+        XCTAssertEqual(OptionalField<String>.null, OptionalField<String>.null)
+        XCTAssertEqual(OptionalField<String>.value("test"), OptionalField<String>.value("test"))
+        XCTAssertNotEqual(OptionalField<String>.absent, OptionalField<String>.null)
+        XCTAssertNotEqual(OptionalField<String>.absent, OptionalField<String>.value("test"))
     }
 
     func testOptionalFieldHashable() {
