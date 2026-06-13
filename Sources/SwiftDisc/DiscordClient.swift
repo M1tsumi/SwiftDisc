@@ -300,7 +300,7 @@ public actor DiscordClient {
     /// }
     /// ```
     public var connectionState: AsyncStream<GatewayStatus> {
-        gateway.statusUpdates()
+        get async { await gateway.statusUpdates() }
     }
 
     /// The current gateway connection state.
@@ -316,7 +316,7 @@ public actor DiscordClient {
     /// }
     /// ```
     public var gatewayStatus: GatewayStatus {
-        gateway.currentStatus()
+        get async { await gateway.currentStatus() }
     }
 
     // MARK: - Event Callbacks
