@@ -149,6 +149,18 @@ public struct DiscordConfiguration: Sendable {
     /// Set to `nil` to silence all library logging.
     public var logger: (any DiscordLogger)?
 
+    /// Proxy configuration for all HTTP and WebSocket connections.
+    ///
+    /// Set this to route all REST API requests and Gateway WebSocket traffic
+    /// through a proxy server. Requires the proxy to support the `CONNECT`
+    /// method for HTTPS/WSS traffic.
+    ///
+    /// ## Example
+    /// ```swift
+    /// config.proxy = ProxyConfiguration(host: "proxy.example.com", port: 8080)
+    /// ```
+    public var proxy: ProxyConfiguration?
+
     /// Creates a new Discord configuration.
     ///
     /// - Parameters:
@@ -164,7 +176,8 @@ public struct DiscordConfiguration: Sendable {
     ///   - httpMaxConnectionsPerHost: Maximum concurrent connections per host for the HTTP client (default is 8).
     ///   - logger: Optional logger instance. Defaults to `DefaultDiscordLogger()` which writes
     ///             to `os_log` on Apple platforms and `print` elsewhere. Pass `nil` to disable logging.
-    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil, httpMaxConnectionsPerHost: Int = 8, logger: (any DiscordLogger)? = DefaultDiscordLogger()) {
+    ///   - proxy: Optional proxy configuration. Routes all HTTP and WebSocket traffic through the given proxy (default is nil).
+    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil, httpMaxConnectionsPerHost: Int = 8, logger: (any DiscordLogger)? = DefaultDiscordLogger(), proxy: ProxyConfiguration? = nil) {
         self.apiBaseURL = apiBaseURL
         self.apiVersion = apiVersion
         self.gatewayBaseURL = gatewayBaseURL
@@ -176,6 +189,7 @@ public struct DiscordConfiguration: Sendable {
         self.gatewayLargeThreshold = gatewayLargeThreshold
         self.httpMaxConnectionsPerHost = httpMaxConnectionsPerHost
         self.logger = logger
+        self.proxy = proxy
     }
 
     /// The REST API base URL with the version appended.

@@ -157,7 +157,7 @@ actor GatewayClient {
         // and modern Windows toolchains. Unsupported targets use the unavailable adapter so
         // the package still compiles with clear runtime behavior.
         #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Windows)
-        let socket: WebSocketClient = URLSessionWebSocketAdapter(url: url, maxConnectionsPerHost: configuration.httpMaxConnectionsPerHost)
+        let socket: WebSocketClient = URLSessionWebSocketAdapter(url: url, maxConnectionsPerHost: configuration.httpMaxConnectionsPerHost, proxy: configuration.proxy)
         #else
         let socket: WebSocketClient = UnavailableWebSocketAdapter()
         #endif
@@ -696,7 +696,11 @@ actor GatewayClient {
         request.setValue(token.authorizationHeaderValue, forHTTPHeaderField: "Authorization")
         request.setValue("DiscordBot (https://github.com/M1tsumi/SwiftDisc, \(DiscordConfiguration.version))", forHTTPHeaderField: "User-Agent")
 
-        let session = URLSession(configuration: .ephemeral)
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        if let proxy = configuration.proxy {
+            sessionConfig.connectionProxyDictionary = proxy.urlSessionProxyDictionary
+        }
+        let session = URLSession(configuration: sessionConfig)
         defer { session.finishTasksAndInvalidate() }
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {

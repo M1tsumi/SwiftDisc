@@ -111,6 +111,9 @@ final class HTTPClient: @unchecked Sendable {
             for (k, v) in existing { headers[k] = v }
         }
         config.httpAdditionalHeaders = headers
+        if let proxy = configuration.proxy {
+            config.connectionProxyDictionary = proxy.urlSessionProxyDictionary
+        }
         self.session = URLSession(configuration: config)
     }
 
