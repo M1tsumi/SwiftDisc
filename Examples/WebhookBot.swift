@@ -13,7 +13,7 @@ struct WebhookBotMain {
 
             // Create a webhook for the channel
             do {
-                let webhook = try await client.createWebhook(channelId: ChannelID(channelId), name: "MyWebhook")
+                let webhook = try await client.createWebhook(channelId: channelId, name: "MyWebhook")
                 print("Webhook created: \(webhook.id)")
 
                 // Execute the webhook (asynchronous, no message returned)
