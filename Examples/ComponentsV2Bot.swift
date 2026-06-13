@@ -28,7 +28,7 @@ struct ComponentsV2BotMain {
             }
         }
 
-        await client.onInteractionCreate = { interaction in
+        await client.setOnInteractionCreate { interaction in
             guard let data = interaction.data else { return }
 
             if interaction.type == 3, let customId = data.custom_id {

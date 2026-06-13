@@ -684,6 +684,26 @@ public actor DiscordClient {
         self.onMessage = handler
     }
 
+    /// Sets the callback invoked for INTERACTION_CREATE events.
+    ///
+    /// This callback is invoked for every interaction (slash commands, components, modals, etc.)
+    /// received by the bot.
+    ///
+    /// - Parameter handler: The async callback to invoke when an interaction is created.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// await client.setOnInteractionCreate { interaction in
+    ///     // Handle interaction
+    /// }
+    /// ```
+    ///
+    /// - See Also: `Interaction`, `onInteractionCreate`
+    public func setOnInteractionCreate(_ handler: (@Sendable (Interaction) async -> Void)?) {
+        self.onInteractionCreate = handler
+    }
+
     /// Bulk deletes multiple messages from a channel.
     ///
     /// This method deletes 2-100 messages in a single API call. All messages must be newer than 14 days old.

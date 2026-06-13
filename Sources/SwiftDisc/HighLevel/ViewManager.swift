@@ -1,6 +1,6 @@
 import Foundation
 
-public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async -> Void
+public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async throws -> Void
 
 /// Pattern matching type for view custom_id routing.
 public enum MatchType: Sendable {

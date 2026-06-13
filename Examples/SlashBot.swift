@@ -11,9 +11,9 @@ struct SlashBotMain {
         // Register slash commands on startup (global example)
         Task {
             do {
-                try await client.createGlobalCommand(name: "ping", description: "Replies with Pong!")
+                _ = try await client.createGlobalCommand(name: "ping", description: "Replies with Pong!")
                 let echoOption = DiscordClient.ApplicationCommandOption(type: .string, name: "text", description: "Text to echo", required: false)
-                try await client.createGlobalCommand(name: "echo", description: "Echo back text", options: [echoOption])
+                _ = try await client.createGlobalCommand(name: "echo", description: "Echo back text", options: [echoOption])
             } catch {
                 print("Failed to create global commands: \(error)")
             }

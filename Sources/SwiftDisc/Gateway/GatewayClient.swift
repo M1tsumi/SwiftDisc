@@ -617,7 +617,7 @@ actor GatewayClient {
         if !allowReconnect { return }
 
         // Capture close code before closing so we can detect fatal codes
-        let closeCode = await socket?.closeCode
+        let closeCode = socket?.closeCode
         if let code = closeCode, isFatalCloseCode(code) {
             status = .disconnected; statusContinuation?.yield(.disconnected)
             let reason = fatalCloseCodeDescription(code)
