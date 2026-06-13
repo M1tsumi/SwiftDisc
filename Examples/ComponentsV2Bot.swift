@@ -19,9 +19,9 @@ struct ComponentsV2BotMain {
 
             Task {
                 try? await client.sendMessage(
-                    channelId: ChannelID(channelId),
+                    channelId: channelId,
                     content: "Welcome! Use the menu below:",
-                    components: [row],
+                    components: [.actionRow(row)],
                     flags: 1 << 15
                 )
                 print("Components v2 message sent (flags: \(1 << 15))")
@@ -37,8 +37,8 @@ struct ComponentsV2BotMain {
                         custom_id: "feedback_text",
                         style: 2,
                         label: "Your thoughts?",
-                        placeholder: "Tell us what you think...",
-                        required: true
+                        required: true,
+                        placeholder: "Tell us what you think..."
                     )
                     let label = MessageComponent.Label(
                         label: "Feedback",
@@ -51,7 +51,7 @@ struct ComponentsV2BotMain {
                             token: interaction.token,
                             title: "Component Feedback",
                             customId: "feedback_modal",
-                            components: [label]
+                            components: [.label(label)]
                         )
                     }
                 }
