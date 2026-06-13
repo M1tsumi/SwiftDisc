@@ -60,6 +60,8 @@ actor GatewayClient {
     }
 
     private var status: GatewayStatus = .disconnected
+    private var statusContinuation: AsyncStream<GatewayStatus>.Continuation?
+    private var statusStream: AsyncStream<GatewayStatus>?
 
     private var lastIntents: GatewayIntents = []
     private var lastEventSink: (@Sendable (DiscordEvent) -> Void)?
@@ -726,14 +728,15 @@ actor GatewayClient {
     }
 
     func currentStatus() -> GatewayStatus { status }
+    func statusUpdates() -> AsyncStream<GatewayStatus> { statusStream ?? AsyncStream { $0.finish() } }
     func currentSessionId() -> String? { sessionId }
     func currentSeq() -> Int? { seq }
     func incrementResumeCount() { resumeCount += 1 }
     func currentResumeCount() -> Int { resumeCount }
-  func getResumeSuccessCount() -> Int { resumeSuccessCount }
-  func getResumeFailureCount() -> Int { resumeFailureCount }
-  func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
-  func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
+    func getResumeSuccessCount() -> Int { resumeSuccessCount }
+    func getResumeFailureCount() -> Int { resumeFailureCount }
+    func getLastResumeAttemptAt() -> Date? { lastResumeAttemptAt }
+    func getLastResumeSuccessAt() -> Date? { lastResumeSuccessAt }
   func setAllowReconnect(_ allow: Bool) { allowReconnect = allow }
 
     // MARK: - Gateway send helpers
