@@ -76,7 +76,10 @@ public enum GatewayOpcode: Int, Codable, Sendable {
     
     /// Presence update.
     case presenceUpdate = 3
-    
+
+    /// Voice State Update.
+    case voiceStateUpdate = 4
+
     /// Resume.
     case resume = 6
     
@@ -97,6 +100,21 @@ public enum GatewayOpcode: Int, Codable, Sendable {
     
     /// Rate limited.
     case rateLimited = 12
+
+    /// Request soundboard sounds.
+    case requestSoundboardSounds = 31
+
+    /// Request ephemeral channel data.
+    case requestChannelInfo = 43
+
+    /// Unknown opcode (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = GatewayOpcode(rawValue: rawValue) ?? .unknown
+    }
 }
 
 /// Represents a gateway payload.
@@ -315,8 +333,12 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementUpdate(Entitlement)
     case entitlementDelete(Entitlement)
     // Session events
+    /// The gateway session was invalidated and a fresh identify is required.
     case sessionInvalidated
+    /// The gateway disconnected unexpectedly.
     case disconnected(reason: String)
+    /// The gateway successfully resumed a previous session after a reconnect.
+    case resumed
 }
 
 /// Sent when a message is deleted.

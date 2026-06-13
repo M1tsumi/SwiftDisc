@@ -3,6 +3,25 @@ import Foundation
 import FoundationNetworking
 #endif
 
+/// Gateway connection state.
+///
+/// Represents the current state of the WebSocket connection to Discord's gateway.
+/// This is broadcast through ``DiscordClient/connectionState``.
+public enum GatewayStatus: Sendable {
+    /// The gateway is not connected.
+    case disconnected
+    /// The gateway is establishing a connection.
+    case connecting
+    /// The gateway is sending an Identify payload.
+    case identifying
+    /// The gateway is ready and receiving events.
+    case ready
+    /// The gateway is attempting to resume a previous session.
+    case resuming
+    /// The gateway is reconnecting after a disconnect.
+    case reconnecting
+}
+
 actor GatewayClient {
     private struct SeqProbe: Decodable { let s: Int? }
     
@@ -33,15 +52,6 @@ actor GatewayClient {
     private var maxReconnectAttempts: Int = 10
     private var maxReconnectDelayNs: UInt64 = 16_000_000_000
 
-    enum Status: Sendable {
-        case disconnected
-        case connecting
-        case identifying
-        case ready
-        case resuming
-        case reconnecting
-    }
-
     // Gateway OP 8 entry point for member chunk requests.
     func requestGuildMembers(guildId: GuildID, query: String? = nil, limit: Int? = nil, presences: Bool? = nil, userIds: [UserID]? = nil, nonce: String? = nil) async throws {
         let payload = RequestGuildMembers(d: .init(guild_id: guildId, query: query, limit: limit, presences: presences, user_ids: userIds, nonce: nonce))
@@ -49,7 +59,7 @@ actor GatewayClient {
         try await sendGatewayData(data)
     }
 
-    private var status: Status = .disconnected
+    private var status: GatewayStatus = .disconnected
 
     private var lastIntents: GatewayIntents = []
     private var lastEventSink: (@Sendable (DiscordEvent) -> Void)?
@@ -59,6 +69,7 @@ actor GatewayClient {
     init(token: String, configuration: DiscordConfiguration) {
         self.token = RedactedToken(token)
         self.configuration = configuration
+        (self.statusStream, self.statusContinuation) = AsyncStream<GatewayStatus>.makeStream()
     }
 
     private func logDecodeDiagnostic(_ message: String, data: Data? = nil) {
@@ -144,7 +155,7 @@ actor GatewayClient {
         // and modern Windows toolchains. Unsupported targets use the unavailable adapter so
         // the package still compiles with clear runtime behavior.
         #if canImport(FoundationNetworking) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Windows)
-        let socket: WebSocketClient = URLSessionWebSocketAdapter(url: url)
+        let socket: WebSocketClient = URLSessionWebSocketAdapter(url: url, maxConnectionsPerHost: configuration.httpMaxConnectionsPerHost)
         #else
         let socket: WebSocketClient = UnavailableWebSocketAdapter()
         #endif
@@ -152,7 +163,7 @@ actor GatewayClient {
         self.lastIntents = intents
         self.lastEventSink = eventSink
         self.lastShard = shard
-        self.status = .connecting
+        self.status = .connecting; statusContinuation?.yield(.connecting)
 
         // The first frame must be HELLO because it carries the heartbeat interval.
         guard case let .string(helloText) = try await socket.receive() else {
@@ -168,13 +179,13 @@ actor GatewayClient {
 
         // Resume when we have a saved session, otherwise perform a fresh identify.
         if let sessionId, let seq {
-            self.status = .resuming
+            self.status = .resuming; statusContinuation?.yield(.resuming)
             self.lastResumeAttemptAt = Date()
             let resume = ResumePayload(token: token.rawValue, session_id: sessionId, seq: seq)
             let payload = GatewayPayload(op: .resume, d: resume, s: nil, t: nil)
             try await sendGatewayPayload(payload)
         } else {
-            self.status = .identifying
+            self.status = .identifying; statusContinuation?.yield(.identifying)
             // Discord enforces 1 identify per 5 seconds per token.
             if let last = lastIdentifyAt {
                 let elapsed = Date().timeIntervalSince(last)
@@ -240,7 +251,7 @@ actor GatewayClient {
                                 self.sessionId = ready.session_id
                                 self.resumeGatewayUrl = ready.resume_gateway_url
                                 self.resumeGatewayUrlReceivedAt = Date()
-                                self.status = .ready
+                                self.status = .ready; statusContinuation?.yield(.ready)
                                 eventSink(.ready(ready))
                                 if let cont = self.connectReadyContinuation {
                                     self.connectReadyContinuation = nil
@@ -249,10 +260,10 @@ actor GatewayClient {
                             }
                         } else if t == "RESUMED" {
                             // RESUME accepted; keep the same session.
-                            self.status = .ready
+                            self.status = .ready; statusContinuation?.yield(.ready)
                             self.resumeSuccessCount += 1
                             self.lastResumeSuccessAt = Date()
-                            // We do not expose a dedicated RESUMED event in the public API.
+                            eventSink(.resumed)
                             if let cont = self.connectReadyContinuation {
                                 self.connectReadyContinuation = nil
                                 cont.resume()
@@ -606,7 +617,7 @@ actor GatewayClient {
         // Capture close code before closing so we can detect fatal codes
         let closeCode = await socket?.closeCode
         if let code = closeCode, isFatalCloseCode(code) {
-            status = .disconnected
+            status = .disconnected; statusContinuation?.yield(.disconnected)
             let reason = fatalCloseCodeDescription(code)
             if let cont = connectReadyContinuation {
                 connectReadyContinuation = nil
@@ -628,7 +639,7 @@ actor GatewayClient {
         heartbeatTask?.cancel()
         heartbeatTask = nil
         missedHeartbeatAckCount = 0
-        status = .reconnecting
+        status = .reconnecting; statusContinuation?.yield(.reconnecting)
         let intents = lastIntents
         guard let sink = lastEventSink else { return }
         var delay: UInt64 = 500_000_000
@@ -647,7 +658,7 @@ actor GatewayClient {
             }
         }
         // Max reconnect attempts reached - surface fatal disconnect
-        status = .disconnected
+        status = .disconnected; statusContinuation?.yield(.disconnected)
         if let cont = connectReadyContinuation {
             connectReadyContinuation = nil
             cont.resume(throwing: DiscordError.gateway("Max reconnect attempts (\(maxReconnectAttempts)) reached"))
@@ -697,7 +708,8 @@ actor GatewayClient {
         socket = nil
         heartbeatTask?.cancel()
         heartbeatTask = nil
-        status = .disconnected
+        status = .disconnected; statusContinuation?.yield(.disconnected)
+        statusContinuation?.finish()
     }
 
     // Sends a gateway presence update payload for status/activity changes.
@@ -713,7 +725,7 @@ actor GatewayClient {
         return ack.timeIntervalSince(sent)
     }
 
-    func currentStatus() -> Status { status }
+    func currentStatus() -> GatewayStatus { status }
     func currentSessionId() -> String? { sessionId }
     func currentSeq() -> Int? { seq }
     func incrementResumeCount() { resumeCount += 1 }

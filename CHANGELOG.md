@@ -5,39 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.0] - 2026-05-14
+## [2.4.0] - 2026-06-13
 
 ### Overview
-SwiftDisc 2.4.0 adds internal utility infrastructure for improved error handling, JSON encoding consistency, token security, retry policies, and cache performance. This release introduces shared JSON coders, a three-state OptionalField type for PATCH semantics, RedactedToken for security, configurable retry policies, structured Discord API error parsing, and cache optimizations with reverse indexing.
+SwiftDisc 2.4.0 is a developer-experience release focused on observability, safety, and Discord API compliance. It introduces connection state observability, structured logging, lifecycle callbacks, configurable HTTP connections, cache statistics and LRU eviction, per-request retry policies, forward-compatible enum decoding, and comprehensive Discord API documentation verification. Two new example bots (Webhook and Sharding) demonstrate real-world patterns, and a Components v2 example shows the latest Discord UI features.
 
 ### Added
-- **JSONCoders** — shared JSONEncoder/JSONDecoder instances used across Gateway, REST, and Webhook layers for consistent encoding behavior and reduced overhead
-- **OptionalField** — three-state enum (absent, null, value) for distinguishing between field omission, explicit null, and value in PATCH payloads
-- **RetryPolicy** — configurable retry behavior for transient failures with exponential backoff and max attempt limits
-- **RedactedToken** — token wrapper that prevents accidental leakage in logs and errors by redacting string representations
-- **DiscordAPIErrorBody** — parses Discord's nested validation error responses and flattens them into a list of per-field validation failures
-- **Cache reverse index** — messageToChannelIndex for O(1) message removal instead of O(n) channel scan
-- **Cache.removeGuild()** — method to clear guild entry, roles, emojis, and associated data from cache
-- **DiscordError.apiValidation** — new error case for structured validation errors with flattened per-field failures
-- **DiscordError convenience properties** — httpStatusCode, apiErrorCode, validationErrors, isRateLimited, isAuthenticationFailure, isCancelled, isTransient for easy error introspection
-- **MessagePayload.clearContent()** — method to explicitly send null to Discord for clearing message content
-- **InternalTests.swift** — comprehensive unit tests for new internal utility types
+- **Connection state stream** — `GatewayStatus` public enum (`.disconnected`, `.connecting`, `.identifying`, `.ready`, `.resuming`, `.reconnecting`), `AsyncStream<GatewayStatus>` broadcast from `GatewayClient`, exposed as `client.connectionState` (stream) and `client.gatewayStatus` (current value) on `DiscordClient`
+- **Lifecycle callbacks** — `onResumed`, `onDisconnected`, `onSessionInvalidated` on `DiscordClient`; `.resumed` event case in `DiscordEvent`; wired through `EventDispatcher`
+- **Structured logging** — `DiscordLogLevel` enum, `DiscordLogger` protocol, `DefaultDiscordLogger` (uses `os_log` on Apple platforms, `print` fallback elsewhere), `logger` property on `DiscordConfiguration`
+- **Cache statistics** — `userCount`, `channelCount`, `guildCount`, `messageCount`, `channelsWithMessages`, `summary` for human-readable cache overview
+- **Cache LRU eviction** — `lastAccessedAt` tracking in `TimedValue`, `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, `maxEmojiEntries` configuration options, `enforceLRUBounds()` helper for automatic least-recently-used eviction on upsert
+- **Configurable HTTP connections** — `httpMaxConnectionsPerHost` property on `DiscordConfiguration`, consumed by `HTTPClient` and `URLSessionWebSocketAdapter`
+- **Per-request retry override** — `isIdempotent` flag on internal HTTP request chain; GET=true (retries 5xx + network errors), POST/PUT/PATCH/DELETE=false (only 429 rate limits). Fixes safety issue where DELETE could retry on 5xx
+- **Forward-compatible enum decoding** — `unknown` cases with custom `init(from:)` fallback on `Button.Style`, `GuildScheduledEvent.EntityType`, `GuildScheduledEvent.Status`, `RoleConnectionMetadataType`, `InteractionResponseType`, `ApplicationCommandOptionType`, `GatewayOpcode` — prevents decoding crashes when Discord adds new enum values
+- **GatewayOpcode completeness** — added `voiceStateUpdate = 4`, `requestSoundboardSounds = 31`, `requestChannelInfo = 43` per Discord API documentation
+- **Gateway status tracking** — `ShardingGatewayManager` now uses `GatewayStatus` for shard state display
+- **Event system documentation** — new "Event handling guide" section in README covering callback vs AsyncStream choice, connection state stream, and lifecycle callbacks
+- **Examples** — `Examples/WebhookBot.swift` (full webhook lifecycle CRUD), `Examples/ShardingBot.swift` (sharded connection with state monitoring via AsyncStream), `Examples/ComponentsV2Bot.swift` (IS_COMPONENTS_V2 flag, channel select menu, modal with Label+TextInput layout)
+- **README version badge** — `release-2.4.0-blue` badge
 
 ### Changed
-- **GatewayClient** — uses RedactedToken instead of raw String for token, uses shared JSONCoders, updated User-Agent header to DiscordBot format
-- **WebhookClient** — uses shared JSONCoders instead of local instances (fixes decoding issue with snake_case property names)
-- **HTTPClient** — uses shared JSONCoders, integrates RetryPolicy for configurable backoff, uses makeAPIError helper for improved error parsing
-- **RateLimiter** — added proactive global rate limiting (50 req/sec sliding window), Discord bucket ID tracking with routeKeyToBucket mapping, scope detection (user/global/shared), fallback to X-RateLimit-Reset epoch timestamp
-- **Cache** — message removal now uses reverse index for O(1) lookup, message cap enforcement cleans up reverse index, guild delete event triggers cache cleanup
-- **DiscordClient.editMessage** — content parameter changed from String? to OptionalField<String> to support explicit null for clearing content
-- **MessagePayload** — content field changed from String? to OptionalField<String> with default .absent
-- **DiscordUtils** — improved documentation for all utility enums, fixed MessageFormat.escapeSpecialCharacters() to only escape Discord's actual markdown metacharacters
-- **EventDispatcher** — calls cache.removeGuild() on guildDelete events
+- **HTTPClient** — `patchMultipart`, `deleteMultipart`, and `postStickerMultipart` methods now pass `isIdempotent: false` for correct retry behavior on unsafe operations
+- **Button style documentation** — corrected from "1-5, 10" to "1-6" to match current Discord API docs (Premium = 6)
+- **RoleConnectionMetadataType** — removed `CaseIterable` conformance when adding `unknown` case
+- **EvictionTask** — now also triggers on `ensureChannelStub` for consistency
+- **Package.swift** — added `ComponentsV2BotExample` executable target
 
 ### Fixed
-- **WebhookClient decoding** — previous local coders applied .convertFromSnakeCase which silently broke Message decoding since models declare snake_case property names directly
-- **Cache message removal** — was O(n) channel scan, now O(1) via reverse index
-- **Markdown escaping** — MessageFormat.escapeSpecialCharacters() was escaping unnecessary characters (parentheses, brackets, etc.), now only escapes Discord's actual metacharacters
+- **GatewayOpcode enum** — was missing `voiceStateUpdate = 4`, `requestSoundboardSounds = 31`, `requestChannelInfo = 43`; decoding now correctly handles these opcodes
+- **Non-idempotent multipart retries** — PATCH, DELETE, and POST sticker multipart methods were defaulting to `isIdempotent = true`, which could cause unsafe retries on 5xx errors for mutating operations
+- **Button style documentation** — comment claimed valid range "1-5, 10" but Discord API docs specify 1-6
 
 ## [2.3.1] - 2026-05-14
 

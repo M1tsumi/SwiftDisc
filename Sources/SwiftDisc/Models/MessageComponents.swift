@@ -173,7 +173,7 @@ public enum MessageComponent: Codable, Hashable, Sendable {
         /// The component type (always 2 for buttons).
         public let type: Int
         
-        /// The button style (1-5, 10).
+        /// The button style (1-6).
         public let style: Int
         
         /// The label text displayed on the button.
@@ -472,10 +472,15 @@ public enum MessageComponent: Codable, Hashable, Sendable {
     public struct TextInput: Codable, Hashable, Sendable {
         /// The text input style.
         public enum Style: Int, Codable, Hashable, Sendable {
-            /// Short (single line) input.
             case short = 1
-            /// Paragraph (multi-line) input.
             case paragraph = 2
+            case unknown = 0
+
+            public init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                let rawValue = try container.decode(Int.self)
+                self = Style(rawValue: rawValue) ?? .unknown
+            }
         }
         
         /// The component type (always 4 for text inputs).

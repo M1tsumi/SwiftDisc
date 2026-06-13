@@ -30,12 +30,12 @@ final class URLSessionWebSocketAdapter: WebSocketClient, @unchecked Sendable {
         session.invalidateAndCancel()
     }
 
-    init(url: URL) {
+    init(url: URL, maxConnectionsPerHost: Int = 8) {
         let config = URLSessionConfiguration.ephemeral
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
-        config.httpMaximumConnectionsPerHost = 8
+        config.httpMaximumConnectionsPerHost = maxConnectionsPerHost
         self.session = URLSession(configuration: config)
         self.task = session.webSocketTask(with: url)
         self.task.maximumMessageSize = 16 * 1024 * 1024 // 16 MiB to handle large GUILD_CREATE payloads

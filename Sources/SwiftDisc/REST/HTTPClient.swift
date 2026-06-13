@@ -100,7 +100,7 @@ final class HTTPClient: @unchecked Sendable {
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
-        config.httpMaximumConnectionsPerHost = 8
+        config.httpMaximumConnectionsPerHost = configuration.httpMaxConnectionsPerHost
         var headers: [AnyHashable: Any] = [
             "Authorization": self.token.authorizationHeaderValue,
             "Content-Type": "application/json",
@@ -115,14 +115,14 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     func get<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
-        try await request(method: "GET", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
+        try await request(method: "GET", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason, isIdempotent: true)
     }
 
     /// Fetch raw response bytes without JSON decoding. Useful for non-JSON endpoints (e.g. CSV).
     func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> Data {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "GET", path: trimmed)
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: true) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             url = buildURLWithQuery(url: url, query: query)
@@ -140,41 +140,41 @@ final class HTTPClient: @unchecked Sendable {
     func post<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONCoders.encoder.encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: POST \(path)") }
-        return try await request(method: "POST", path: path, body: data, query: query, headers: headers, reason: reason)
+        return try await request(method: "POST", path: path, body: data, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     func patch<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONCoders.encoder.encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PATCH \(path)") }
-        return try await request(method: "PATCH", path: path, body: data, query: query, headers: headers, reason: reason)
+        return try await request(method: "PATCH", path: path, body: data, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     func put<B: Encodable, T: Decodable>(path: String, body: B, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
         let data: Data
         do { data = try JSONCoders.encoder.encode(body) } catch { throw DiscordError.encoding(error, debugContext: "Endpoint: PUT \(path)") }
-        return try await request(method: "PUT", path: path, body: data, query: query, headers: headers, reason: reason)
+        return try await request(method: "PUT", path: path, body: data, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     // Use this for endpoints that accept an empty PUT and return 204 No Content.
     func put(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
+        let _: EmptyResponse = try await request(method: "PUT", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     func delete<T: Decodable>(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
-        try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
+        try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     func delete(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) {
-        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason)
+        let _: EmptyResponse = try await request(method: "DELETE", path: path, body: Optional<Data>.none, query: query, headers: headers, reason: reason, isIdempotent: false)
     }
 
     private struct EmptyResponse: Decodable, Sendable {
     }
 
-    private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> T {
+    private func request<T: Decodable>(method: String, path: String, body: Data?, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil, isIdempotent: Bool = true) async throws(DiscordError) -> T {
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: method, path: trimmed)
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: isIdempotent) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             url = buildURLWithQuery(url: url, query: query)
@@ -304,7 +304,7 @@ final class HTTPClient: @unchecked Sendable {
         }
         let boundary = makeBoundary()
         let jsonData = try? jsonBody.map { try JSONCoders.encoder.encode($0) }
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
@@ -332,7 +332,7 @@ final class HTTPClient: @unchecked Sendable {
         }
         let boundary = makeBoundary()
         let jsonData = try? jsonBody.map { try JSONCoders.encoder.encode($0) }
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
@@ -360,7 +360,7 @@ final class HTTPClient: @unchecked Sendable {
         }
         let boundary = makeBoundary()
         let jsonData = try? jsonBody.map { try JSONCoders.encoder.encode($0) }
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
@@ -386,7 +386,7 @@ final class HTTPClient: @unchecked Sendable {
             throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
         }
         let boundary = makeBoundary()
-        let (data, http) = try await executeWithRetry(routeKey: routeKey) {
+        let (data, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             var req = URLRequest(url: url)
@@ -489,7 +489,7 @@ final class HTTPClient: @unchecked Sendable {
         return 1.0
     }
 
-    private func executeWithRetry(routeKey: String, _ request: @Sendable () async throws(any Error) -> (data: Data, http: HTTPURLResponse)) async throws(DiscordError) -> (data: Data, http: HTTPURLResponse) {
+    private func executeWithRetry(routeKey: String, isIdempotent: Bool = true, _ request: @Sendable () async throws(any Error) -> (data: Data, http: HTTPURLResponse)) async throws(DiscordError) -> (data: Data, http: HTTPURLResponse) {
         let maxAttempts = retryPolicy.maxAttempts
         var attempt = 0
         while true {
@@ -511,7 +511,7 @@ final class HTTPClient: @unchecked Sendable {
                     await bucketSemaphores.updatePermits(for: routeKey, to: limitInt)
                 }
                 
-                // Handle 429 rate limit errors
+                // Handle 429 rate limit errors — always safe to retry
                 if http.statusCode == 429 {
                     let retryAfter = parseRetryAfter(headers: http.allHeaderFields, data: data)
                     try await rateLimiter.backoff(after: retryAfter)
@@ -519,8 +519,8 @@ final class HTTPClient: @unchecked Sendable {
                     throw makeAPIError(statusCode: http.statusCode, data: data, debugContext: "Route: \(routeKey)")
                 }
                 
-                // Handle 5xx server errors with exponential backoff
-                if (500..<600).contains(http.statusCode) && attempt < maxAttempts {
+                // Handle 5xx server errors with exponential backoff (only for idempotent requests)
+                if (500..<600).contains(http.statusCode) && isIdempotent && attempt < maxAttempts {
                     try await rateLimiter.backoff(after: serverErrorRetryPolicy.backoffDelay(forAttempt: attempt))
                     continue
                 }
@@ -532,16 +532,17 @@ final class HTTPClient: @unchecked Sendable {
                    urlError.code == .cancelled {
                     throw DiscordError.cancelled
                 }
-                if attempt < maxAttempts {
+                // Only retry on network errors for idempotent requests
+                if isIdempotent && attempt < maxAttempts {
                     try await rateLimiter.backoff(after: retryPolicy.backoffDelay(forAttempt: attempt))
                     continue
                 }
                 throw de
             } catch {
                 // Handle non-DiscordError network errors
-                // Cancellation should always be terminal - check before retry logic
                 if (error as? URLError)?.code == .cancelled { throw DiscordError.cancelled }
-                if attempt < maxAttempts {
+                // Only retry network errors for idempotent requests
+                if isIdempotent && attempt < maxAttempts {
                     try await rateLimiter.backoff(after: retryPolicy.backoffDelay(forAttempt: attempt))
                     continue
                 }

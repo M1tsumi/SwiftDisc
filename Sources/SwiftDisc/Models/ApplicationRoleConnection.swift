@@ -45,7 +45,7 @@ public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
 }
 
 /// Comparison types for role connection metadata values.
-public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIterable {
+public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable {
     case integerLessThanOrEqual = 1
     case integerGreaterThanOrEqual = 2
     case integerEqual = 3
@@ -54,4 +54,11 @@ public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIt
     case datetimeGreaterThanOrEqual = 6
     case booleanEqual = 7
     case booleanNotEqual = 8
+    case unknown = 0
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = RoleConnectionMetadataType(rawValue: rawValue) ?? .unknown
+    }
 }

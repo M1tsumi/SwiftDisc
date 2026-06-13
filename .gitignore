@@ -62,6 +62,10 @@ Pods/
 # Local development files
 .local/
 
+# AI-generated analysis artifacts (not committed)
+current-*.md
+action-plan.md
+
 
 
 # Standard Swift and IDE ignores

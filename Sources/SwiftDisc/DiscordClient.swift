@@ -287,12 +287,55 @@ public actor DiscordClient {
     /// - Note: The stream is infinite and will continue until the client disconnects.
     public var events: AsyncStream<DiscordEvent> { eventStream }
 
+    /// A stream of connection state changes from the gateway.
+    ///
+    /// Yields each state transition as the gateway connects, identifies, resumes,
+    /// becomes ready, reconnects, or disconnects.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// for await state in await client.connectionState {
+    ///     print("Gateway state: \(state)")
+    /// }
+    /// ```
+    public var connectionState: AsyncStream<GatewayStatus> {
+        gateway.statusUpdates()
+    }
+
+    /// The current gateway connection state.
+    ///
+    /// Check this to see if the client is connected, reconnecting, or disconnected.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let state = await client.gatewayStatus
+    /// if state == .ready {
+    ///     print("Bot is connected and ready")
+    /// }
+    /// ```
+    public var gatewayStatus: GatewayStatus {
+        gateway.currentStatus()
+    }
+
     // MARK: - Event Callbacks
     // Assign any of these to be notified of specific gateway events.
     // All callbacks are @Sendable so they can be used safely across actor / task boundaries.
 
     // -- Ready --
     public var onReady: (@Sendable (ReadyEvent) async -> Void)?
+
+    // -- Lifecycle --
+    /// Called when the gateway successfully resumes a session after a reconnect.
+    public var onResumed: (@Sendable () async -> Void)?
+
+    /// Called when the gateway disconnects (unexpectedly or on shutdown).
+    /// The `reason` parameter describes the cause of the disconnect.
+    public var onDisconnected: (@Sendable (_ reason: String) async -> Void)?
+
+    /// Called when the session is invalidated and the bot must re-identify.
+    public var onSessionInvalidated: (@Sendable () async -> Void)?
 
     // -- Messages --
     public var onMessage: (@Sendable (Message) async -> Void)?
@@ -3224,8 +3267,14 @@ public actor DiscordClient {
         case updateMessage = 7
         case autocompleteResult = 8
         case modal = 9
-        /// Launch a linked Activity. Added 2024-08-26.
         case launchActivity = 12
+        case unknown = 0
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(Int.self)
+            self = InteractionResponseType(rawValue: rawValue) ?? .unknown
+        }
     }
 
     public func createInteractionResponse(interactionId: InteractionID, token: String, type: InteractionResponseType, content: String? = nil, embeds: [Embed]? = nil) async throws {
@@ -3325,6 +3374,13 @@ public actor DiscordClient {
             case mentionable = 9
             case number = 10
             case attachment = 11
+            case unknown = 0
+
+            public init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                let rawValue = try container.decode(Int.self)
+                self = ApplicationCommandOptionType(rawValue: rawValue) ?? .unknown
+            }
         }
         public let type: ApplicationCommandOptionType
         public let name: String

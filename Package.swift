@@ -11,12 +11,15 @@ let allExampleFiles: [String] = [
     "CommandFrameworkBot.swift",
     "CommandsBot.swift",
     "ComponentsExample.swift",
+    "ComponentsV2Bot.swift",
     "FileUploadBot.swift",
     "LinkedRolesBot.swift",
     "PingBot.swift",
+    "ShardingBot.swift",
     "SlashBot.swift",
     "ThreadsAndScheduledEventsBot.swift",
-    "ViewExample.swift"
+    "ViewExample.swift",
+    "WebhookBot.swift"
 ]
 
 // README.md sits alongside the example sources and is not a Swift source.
@@ -105,6 +108,30 @@ let package = Package(
             path: "Examples",
             exclude: exampleExcludes(keeping: "ViewExample.swift"),
             sources: ["ViewExample.swift"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "WebhookBotExample",
+            dependencies: ["SwiftDisc"],
+            path: "Examples",
+            exclude: exampleExcludes(keeping: "WebhookBot.swift"),
+            sources: ["WebhookBot.swift"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "ShardingBotExample",
+            dependencies: ["SwiftDisc"],
+            path: "Examples",
+            exclude: exampleExcludes(keeping: "ShardingBot.swift"),
+            sources: ["ShardingBot.swift"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "ComponentsV2BotExample",
+            dependencies: ["SwiftDisc"],
+            path: "Examples",
+            exclude: exampleExcludes(keeping: "ComponentsV2Bot.swift"),
+            sources: ["ComponentsV2Bot.swift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

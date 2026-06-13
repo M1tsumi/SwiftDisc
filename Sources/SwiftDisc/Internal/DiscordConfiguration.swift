@@ -1,4 +1,64 @@
 import Foundation
+#if canImport(OSLog)
+import OSLog
+#endif
+
+/// A logger abstraction used throughout SwiftDisc.
+///
+/// Implement this protocol to route library log messages to your preferred
+/// logging backend (e.g. os_log, SwiftyBeaver, custom file output). The
+/// default implementation writes to `os_log` on Apple platforms and falls
+/// back to `print` elsewhere.
+///
+/// ## Example
+///
+/// ```swift
+/// struct MyLogger: DiscordLogger {
+///     func log(_ level: DiscordLogLevel, _ message: @autoclosure () -> String) {
+///         // Forward to your logging system
+///         print("[\(level.label)] \(message())")
+///     }
+/// }
+/// let config = DiscordConfiguration(logger: MyLogger())
+/// ```
+public enum DiscordLogLevel: String, Sendable {
+    case debug, info, warning, error
+
+    var label: String {
+        switch self {
+        case .debug:   "DEBUG"
+        case .info:    "INFO"
+        case .warning: "WARN"
+        case .error:   "ERROR"
+        }
+    }
+}
+
+public protocol DiscordLogger: Sendable {
+    /// Log a message at the given severity level.
+    /// The `message` closure is `@autoclosure` so it is not evaluated when
+    /// the logger discards the message (e.g. below a minimum threshold).
+    func log(_ level: DiscordLogLevel, _ message: @autoclosure () -> String)
+}
+
+/// Default logger: uses `os_log` on Apple platforms, `print` elsewhere.
+public struct DefaultDiscordLogger: DiscordLogger {
+    public init() {}
+    public func log(_ level: DiscordLogLevel, _ message: @autoclosure () -> String) {
+        #if canImport(OSLog)
+        let log = OSLog(subsystem: "com.swiftdisc", category: level.label)
+        let msg = message()
+        switch level {
+        case .debug:   os_log(.debug,   log: log, "%{public}@", msg)
+        case .info:    os_log(.info,    log: log, "%{public}@", msg)
+        case .warning: os_log(.default, log: log, "%{public}@", msg)
+        case .error:   os_log(.error,   log: log, "%{public}@", msg)
+        }
+        #else
+        print("[SwiftDisc][\(level.label)] \(message())")
+        #endif
+    }
+}
 
 /// Configuration options for the Discord client.
 ///
@@ -24,7 +84,7 @@ import Foundation
 /// - ``RateLimitEvent``
 public struct DiscordConfiguration: Sendable {
     /// SwiftDisc library version for User-Agent header and Discord tracking.
-    public static let version = "2.3.1"
+    public static let version = "2.4.0"
 
     // Default URLs are static constants so startup never depends on force-unwrapped strings.
     /// The default Discord API base URL.
@@ -79,6 +139,16 @@ public struct DiscordConfiguration: Sendable {
     /// Large threshold for guild member count (default 50).
     public var gatewayLargeThreshold: Int?
 
+    /// Maximum concurrent connections per host for the HTTP client (default 8).
+    ///
+    /// Increase this for high-volume bots that need to send many concurrent API requests.
+    /// Discord's REST API generally recommends staying under ~50 concurrent requests per host.
+    public var httpMaxConnectionsPerHost: Int
+
+    /// The logger used by the library for diagnostic and error messages.
+    /// Set to `nil` to silence all library logging.
+    public var logger: (any DiscordLogger)?
+
     /// Creates a new Discord configuration.
     ///
     /// - Parameters:
@@ -91,7 +161,10 @@ public struct DiscordConfiguration: Sendable {
     ///   - gatewayCompression: The gateway compression method to use (default is none).
     ///   - gatewayPayloadCompression: Whether to enable payload compression in Identify payload (default is false).
     ///   - gatewayLargeThreshold: Large threshold for guild member count (default is nil).
-    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil) {
+    ///   - httpMaxConnectionsPerHost: Maximum concurrent connections per host for the HTTP client (default is 8).
+    ///   - logger: Optional logger instance. Defaults to `DefaultDiscordLogger()` which writes
+    ///             to `os_log` on Apple platforms and `print` elsewhere. Pass `nil` to disable logging.
+    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil, httpMaxConnectionsPerHost: Int = 8, logger: (any DiscordLogger)? = DefaultDiscordLogger()) {
         self.apiBaseURL = apiBaseURL
         self.apiVersion = apiVersion
         self.gatewayBaseURL = gatewayBaseURL
@@ -101,6 +174,8 @@ public struct DiscordConfiguration: Sendable {
         self.gatewayCompression = gatewayCompression
         self.gatewayPayloadCompression = gatewayPayloadCompression
         self.gatewayLargeThreshold = gatewayLargeThreshold
+        self.httpMaxConnectionsPerHost = httpMaxConnectionsPerHost
+        self.logger = logger
     }
 
     /// The REST API base URL with the version appended.
