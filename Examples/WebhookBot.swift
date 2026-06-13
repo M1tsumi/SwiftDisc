@@ -5,7 +5,7 @@ import Foundation
 struct WebhookBotMain {
     static func main() async {
         let token = ProcessInfo.processInfo.environment["DISCORD_BOT_TOKEN"] ?? "YOUR_BOT_TOKEN"
-        let channelId = ChannelID(ProcessInfo.processInfo.environment["DISCORD_CHANNEL_ID"] ?? "0") ?? 0
+        let channelId = ChannelID(ProcessInfo.processInfo.environment["DISCORD_CHANNEL_ID"] ?? "0")
         let client = DiscordClient(token: token)
 
         await client.setOnReady { info in
