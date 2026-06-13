@@ -17,6 +17,7 @@ actor EventDispatcher {
     ///   - event: The Discord event to process.
     ///   - client: The Discord client instance.
     func process(event: DiscordEvent, client: DiscordClient) async {
+        client._internalEmitEvent(event)
         switch event {
 
         // MARK: Ready

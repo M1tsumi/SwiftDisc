@@ -95,6 +95,24 @@ public enum DiscordError: Error, Sendable {
     /// - `String`: The validation error message.
     /// - `debugContext`: Optional debug context for troubleshooting.
     case validation(String, debugContext: String? = nil)
+
+    /// The request was rate-limited by Discord (HTTP 429).
+    ///
+    /// - `retryAfter`: The number of seconds to wait before retrying.
+    /// - `debugContext`: Optional debug context for troubleshooting.
+    case rateLimited(retryAfter: TimeInterval, debugContext: String? = nil)
+
+    /// The bot lacks permission to perform the action (HTTP 403).
+    ///
+    /// - `message`: The error message from Discord, if available.
+    /// - `debugContext`: Optional debug context for troubleshooting.
+    case forbidden(String?, debugContext: String? = nil)
+
+    /// The requested resource was not found (HTTP 404).
+    ///
+    /// - `message`: The error message from Discord, if available.
+    /// - `debugContext`: Optional debug context for troubleshooting.
+    case notFound(String?, debugContext: String? = nil)
     
     /// HTTP is not available on this platform build.
     case unavailable
@@ -149,6 +167,18 @@ extension DiscordError: CustomStringConvertible, LocalizedError {
             var desc = "Validation failed: \(message)"
             if let ctx = debugContext { desc += " - Context: \(ctx)" }
             return desc
+        case .rateLimited(let retryAfter, let debugContext):
+            var desc = "Rate limited: retry after \(retryAfter)s"
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
+            return desc
+        case .forbidden(let message, let debugContext):
+            var desc = "Forbidden: \(message ?? "bot lacks permission")"
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
+            return desc
+        case .notFound(let message, let debugContext):
+            var desc = "Not found: \(message ?? "resource does not exist")"
+            if let ctx = debugContext { desc += " - Context: \(ctx)" }
+            return desc
         case .unavailable:
             return "HTTP is unavailable on this platform build"
         }
@@ -187,9 +217,10 @@ public extension DiscordError {
         return []
     }
 
-    /// `true` for rate-limit responses (HTTP 429).
+    /// `true` for rate-limit responses (HTTP 429 or `.rateLimited` case).
     var isRateLimited: Bool {
-        httpStatusCode == 429
+        if case .rateLimited = self { return true }
+        return httpStatusCode == 429
     }
 
     /// `true` for authentication failures (HTTP 401, gateway close 4004,
@@ -212,6 +243,7 @@ public extension DiscordError {
     var isTransient: Bool {
         if case .network = self { return true }
         if case .gateway = self { return true }
+        if case .rateLimited = self { return true }
         if case .cancelled = self { return false }
         if let code = httpStatusCode {
             return code == 429 || (500..<600).contains(code)

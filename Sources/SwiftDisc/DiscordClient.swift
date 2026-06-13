@@ -1814,6 +1814,7 @@ public actor DiscordClient {
     ///
     /// - Note: Messages are limited to 2000 characters. For longer content, consider using embeds or splitting into multiple messages.
     /// - See Also: `sendMessage(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:)`
+    @discardableResult
     public func sendMessage(channelId: ChannelID, content: String) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: String
@@ -1846,6 +1847,7 @@ public actor DiscordClient {
     /// ```
     ///
     /// - See Also: `Embed`, `sendMessage(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:)`
+    @discardableResult
     public func sendMessage(channelId: ChannelID, content: String? = nil, embeds: [Embed]) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: String?
@@ -1897,6 +1899,7 @@ public actor DiscordClient {
     ///
     /// - Note: For file attachments, use `sendMessageWithFiles(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:files:)`.
     /// - See Also: `MessageComponent`, `Embed`, `Poll`, `sendMessageWithFiles(channelId:content:embeds:components:allowedMentions:messageReference:tts:flags:stickerIds:attachments:poll:files:)`
+    @discardableResult
     public func sendMessage(
         channelId: ChannelID,
         content: String? = nil,

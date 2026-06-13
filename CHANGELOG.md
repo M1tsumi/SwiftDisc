@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-06-13
+
+### Overview
+SwiftDisc 2.4.1 is a correctness and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, and sets sensible memory limits on the built-in cache.
+
+### Added
+- **Dedicated error cases** — `DiscordError.rateLimited`, `.forbidden`, `.notFound` are now thrown directly for HTTP 429/403/404 instead of generic `.http` errors, enabling more precise error handling
+- **`@discardableResult` on message send methods** — `sendMessage(channelId:content:)`, `sendMessage(channelId:content:embeds:)`, and the full-parameter `sendMessage(...)` overload now suppress unused-result warnings
+
+### Fixed
+- **Event stream not emitting events (P0)** — `EventDispatcher.process()` was routing events to closure callbacks and updating the cache, but never calling `client._internalEmitEvent(event)`. This meant the `AsyncStream<DiscordEvent>` exposed via `client.events` was perpetually empty. All events now correctly flow to both closure callbacks and the async stream
+- **Cache unbounded growth** — `Cache.Configuration` default values for `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, and `maxEmojiEntries` changed from `nil` (unbounded) to sensible defaults (50K / 50K / 10K / 500 / 500 respectively), preventing memory exhaustion on large bots
+
+### Changed
+- **`DiscordError.isTransient`** now returns `true` for the new `.rateLimited` case
+- **`DiscordError.isRateLimited`** now checks both HTTP 429 status codes and the dedicated `.rateLimited` case
+- **`HTTPClient.makeAPIError`** maps HTTP 429/403/404 to their dedicated `DiscordError` cases before falling through to generic `.api` or `.http` errors
+
 ## [2.4.0] - 2026-06-13
 
 ### Overview

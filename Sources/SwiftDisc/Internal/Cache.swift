@@ -61,7 +61,7 @@ public actor Cache {
         public var maxEmojiEntries: Int?
         
         /// Creates a new cache configuration.
-        public init(userTTL: TimeInterval? = nil, channelTTL: TimeInterval? = nil, guildTTL: TimeInterval? = nil, roleTTL: TimeInterval? = nil, emojiTTL: TimeInterval? = nil, maxMessagesPerChannel: Int = 50, maxUsers: Int? = nil, maxChannels: Int? = nil, maxGuilds: Int? = nil, maxRolesPerGuild: Int? = nil, maxEmojiEntries: Int? = nil) {
+        public init(userTTL: TimeInterval? = nil, channelTTL: TimeInterval? = nil, guildTTL: TimeInterval? = nil, roleTTL: TimeInterval? = nil, emojiTTL: TimeInterval? = nil, maxMessagesPerChannel: Int = 50, maxUsers: Int? = 50_000, maxChannels: Int? = 50_000, maxGuilds: Int? = 10_000, maxRolesPerGuild: Int? = 500, maxEmojiEntries: Int? = 500) {
             self.userTTL = userTTL; self.channelTTL = channelTTL; self.guildTTL = guildTTL; self.roleTTL = roleTTL; self.emojiTTL = emojiTTL; self.maxMessagesPerChannel = maxMessagesPerChannel
             self.maxUsers = maxUsers; self.maxChannels = maxChannels; self.maxGuilds = maxGuilds; self.maxRolesPerGuild = maxRolesPerGuild; self.maxEmojiEntries = maxEmojiEntries
         }

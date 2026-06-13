@@ -10,13 +10,37 @@ import FoundationNetworking
 ///   when the body is unparseable JSON.
 @inline(__always)
 private func makeAPIError(statusCode: Int, data: Data, debugContext: String? = nil) -> DiscordError {
-    if let parsed = DiscordAPIErrorBody.parse(from: data) {
+    let body = String(data: data, encoding: .utf8) ?? ""
+    let parsed = DiscordAPIErrorBody.parse(from: data)
+    let message = parsed?.message ?? body
+    switch statusCode {
+    case 429:
+        return .rateLimited(retryAfter: parseRetryAfter(data: data), debugContext: debugContext)
+    case 403:
+        return .forbidden(message, debugContext: debugContext)
+    case 404:
+        return .notFound(message, debugContext: debugContext)
+    default:
+        break
+    }
+    if let parsed {
         if !parsed.validationErrors.isEmpty {
             return .apiValidation(message: parsed.message, code: parsed.code, errors: parsed.validationErrors, debugContext: debugContext)
         }
         return .api(message: parsed.message, code: parsed.code, debugContext: debugContext)
     }
-    return .http(statusCode, String(data: data, encoding: .utf8) ?? "", debugContext: debugContext)
+    return .http(statusCode, body, debugContext: debugContext)
+}
+
+@inline(__always)
+private func parseRetryAfter(data: Data) -> TimeInterval {
+    struct RL: Decodable, Sendable {
+        let retry_after: Double?
+    }
+    if let rl = try? JSONDecoder().decode(RL.self, from: data), let s = rl.retry_after {
+        return s
+    }
+    return 1.0
 }
 
 /// A simple async semaphore for limiting concurrent operations
