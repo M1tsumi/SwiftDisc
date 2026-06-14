@@ -591,7 +591,7 @@ public actor DiscordClient {
     /// - See Also: `DiscordConfiguration`
     public init(token: String, configuration: DiscordConfiguration = .init()) {
         self.token = token
-        self.http = HTTPClient(token: token, configuration: configuration)
+        self.http = HTTPClient(token: token, configuration: configuration, transport: configuration.httpTransport)
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration
     }

@@ -120,14 +120,6 @@ public struct DiscordConfiguration: Sendable {
     public enum GatewayCompression: Sendable {
         /// No compression.
         case none
-        
-        /// Zlib-stream compression (not yet implemented).
-        @available(*, unavailable, message: "zlib-stream compression not yet implemented")
-        case zlibStream
-        
-        /// Zstd-stream compression (not yet implemented).
-        @available(*, unavailable, message: "zstd-stream compression not yet implemented")
-        case zstdStream
     }
     
     /// The gateway compression method to use.
@@ -138,6 +130,20 @@ public struct DiscordConfiguration: Sendable {
     
     /// Large threshold for guild member count (default 50).
     public var gatewayLargeThreshold: Int?
+
+    /// Automatically request guild members via OP 8 for guilds whose member count
+    /// exceeds `gatewayLargeThreshold`. Requires the `guildMembers` intent.
+    ///
+    /// When enabled, the gateway will send a `GUILD_MEMBERS_CHUNK` request after
+    /// receiving `GUILD_CREATE` for any guild with more members than the threshold.
+    /// Set `guildMembersChunkLimit` to control how many members to request per chunk
+    /// (nil = request all members).
+    public var autoRequestGuildMembersChunk: Bool
+
+    /// Maximum members to request per Guild Members Chunk (OP 8) when
+    /// `autoRequestGuildMembersChunk` is enabled. Pass `nil` to request all members.
+    /// Defaults to `nil` (request all).
+    public var guildMembersChunkLimit: Int?
 
     /// Maximum concurrent connections per host for the HTTP client (default 8).
     ///
@@ -161,6 +167,31 @@ public struct DiscordConfiguration: Sendable {
     /// ```
     public var proxy: ProxyConfiguration?
 
+    /// Custom HTTP transport implementation.
+    ///
+    /// Set this to use a custom HTTP transport instead of the default URLSession-based
+    /// implementation. This enables integrations with transports like AsyncHTTPClient
+    /// and allows for advanced networking customizations such as proxy support,
+    /// connection pooling, and custom authentication.
+    ///
+    /// ## Example
+    /// ```swift
+    /// config.httpTransport = MyCustomHTTPTransport()
+    /// ```
+    public var httpTransport: (any HTTPTransport)?
+
+    /// Custom WebSocket transport implementation.
+    ///
+    /// Set this to use a custom WebSocket transport instead of the default URLSession-based
+    /// implementation. This enables integrations with transports like AsyncHTTPClient's
+    /// WebSocket support and allows for advanced networking customizations.
+    ///
+    /// ## Example
+    /// ```swift
+    /// config.webSocketTransport = MyCustomWebSocketTransport()
+    /// ```
+    public var webSocketTransport: (any WebSocketTransport)?
+
     /// Creates a new Discord configuration.
     ///
     /// - Parameters:
@@ -177,7 +208,9 @@ public struct DiscordConfiguration: Sendable {
     ///   - logger: Optional logger instance. Defaults to `DefaultDiscordLogger()` which writes
     ///             to `os_log` on Apple platforms and `print` elsewhere. Pass `nil` to disable logging.
     ///   - proxy: Optional proxy configuration. Routes all HTTP and WebSocket traffic through the given proxy (default is nil).
-    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil, httpMaxConnectionsPerHost: Int = 8, logger: (any DiscordLogger)? = DefaultDiscordLogger(), proxy: ProxyConfiguration? = nil) {
+    ///   - httpTransport: Optional custom HTTP transport. Uses the default URLSession-based transport if not provided.
+    ///   - webSocketTransport: Optional custom WebSocket transport. Uses the default URLSession-based transport if not provided.
+    public init(apiBaseURL: URL = DiscordConfiguration.defaultApiBaseURL, apiVersion: Int = 10, gatewayBaseURL: URL = DiscordConfiguration.defaultGatewayBaseURL, maxUploadBytes: Int = 100 * 1024 * 1024, enableGatewayDecodeDiagnostics: Bool = false, onRateLimit: RateLimitHandler? = nil, gatewayCompression: GatewayCompression = .none, gatewayPayloadCompression: Bool = false, gatewayLargeThreshold: Int? = nil, autoRequestGuildMembersChunk: Bool = false, guildMembersChunkLimit: Int? = nil, httpMaxConnectionsPerHost: Int = 8, logger: (any DiscordLogger)? = DefaultDiscordLogger(), proxy: ProxyConfiguration? = nil, httpTransport: (any HTTPTransport)? = nil, webSocketTransport: (any WebSocketTransport)? = nil) {
         self.apiBaseURL = apiBaseURL
         self.apiVersion = apiVersion
         self.gatewayBaseURL = gatewayBaseURL
@@ -187,9 +220,13 @@ public struct DiscordConfiguration: Sendable {
         self.gatewayCompression = gatewayCompression
         self.gatewayPayloadCompression = gatewayPayloadCompression
         self.gatewayLargeThreshold = gatewayLargeThreshold
+        self.autoRequestGuildMembersChunk = autoRequestGuildMembersChunk
+        self.guildMembersChunkLimit = guildMembersChunkLimit
         self.httpMaxConnectionsPerHost = httpMaxConnectionsPerHost
         self.logger = logger
         self.proxy = proxy
+        self.httpTransport = httpTransport
+        self.webSocketTransport = webSocketTransport
     }
 
     /// The REST API base URL with the version appended.

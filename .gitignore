@@ -65,8 +65,11 @@ Pods/
 # AI-generated analysis artifacts (not committed)
 current-*.md
 action-plan.md
+IMPLEMENTATION_*.md
+CustomTransportExample/
 
-
+# AI-splintered client files (not committed)
+DiscordClient+*.swift
 
 # Standard Swift and IDE ignores
 .build/

@@ -282,6 +282,21 @@ SwiftDisc is built to be resilient by default — automatic reconnection, rate-l
 
 **Structured logging** — Provide a custom logger via `DiscordConfiguration.logger`. The built-in `DefaultDiscordLogger` uses `os_log` on Apple platforms and `print` on others. Implement the `DiscordLogger` protocol to route to your own backend.
 
+**Pluggable HTTP and WebSocket transports** — Swap out the default URLSession networking for a custom implementation. Useful when you need proxy support on Linux, want to use AsyncHTTPClient, or need fine-grained control over connection behaviour.
+
+```swift
+import SwiftDisc
+import SwiftDiscAHCTransport
+
+var config = DiscordConfiguration()
+config.httpTransport = AHCTransport(
+    proxy: ProxyConfiguration(host: "proxy.corp.com", port: 8080)
+)
+let client = DiscordClient(token: token, configuration: config)
+```
+
+The default URLSession transport is used when no custom transport is provided — no code changes needed for existing bots. Conform to `HTTPTransport` or `WebSocketTransport` to integrate any networking library.
+
 **Typed error handling** — All operations throw `DiscordError` with descriptive messages. Use convenience properties to inspect errors:
 ```swift
 catch let error as DiscordError {
@@ -308,6 +323,7 @@ print(await cache.summary)
 | [**CHANGELOG.md**](CHANGELOG.md) | Detailed per-release changelog following Keep a Changelog |
 | [**CONTRIBUTING.md**](CONTRIBUTING.md) | How to set up, build, test, and submit PRs |
 | [**Examples/README.md**](Examples/README.md) | Quick-start guides for every example bot |
+| `SwiftDiscAHCTransport` | Optional in-tree AsyncHTTPClient transport. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Includes native proxy support |
 | [**CODE_OF_CONDUCT.md**](CODE_OF_CONDUCT.md) | Community standards and expectations |
 
 ## Community and support

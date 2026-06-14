@@ -40,13 +40,11 @@ let package = Package(
         .watchOS(.v7)
     ],
     products: [
-        .library(name: "SwiftDisc", targets: ["SwiftDisc"])
+        .library(name: "SwiftDisc", targets: ["SwiftDisc"]),
+        .library(name: "SwiftDiscAHCTransport", targets: ["SwiftDiscAHCTransport"]),
     ],
     dependencies: [
-        .package(
-            url: "https://github.com/apple/swift-docc-plugin",
-            from: "1.0.0"
-        )
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.0"),
     ],
     targets: [
         .target(
@@ -132,6 +130,14 @@ let package = Package(
             path: "Examples",
             exclude: exampleExcludes(keeping: "ComponentsV2Bot.swift"),
             sources: ["ComponentsV2Bot.swift"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .target(
+            name: "SwiftDiscAHCTransport",
+            dependencies: [
+                "SwiftDisc",
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+            ],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

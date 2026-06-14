@@ -8,20 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.4.1] - 2026-06-13
 
 ### Overview
-SwiftDisc 2.4.1 is a correctness and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, and sets sensible memory limits on the built-in cache.
+SwiftDisc 2.4.1 is a correctness and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, sets sensible memory limits on the built-in cache, and introduces the pluggable transport system.
 
 ### Added
 - **Dedicated error cases** — `DiscordError.rateLimited`, `.forbidden`, `.notFound` are now thrown directly for HTTP 429/403/404 instead of generic `.http` errors, enabling more precise error handling
 - **`@discardableResult` on message send methods** — `sendMessage(channelId:content:)`, `sendMessage(channelId:content:embeds:)`, and the full-parameter `sendMessage(...)` overload now suppress unused-result warnings
+- **`HTTPTransport` protocol** — public protocol with a single `request(method:url:body:headers:) async throws -> HTTPResponse` method. Conform to this to swap out the entire HTTP networking stack. Ships with a default `URLSessionHTTPTransport` that matches the existing behaviour exactly
+- **`WebSocketTransport` protocol** — public protocol inheriting `WebSocketClient` for WebSocket connections. Default `URLSessionWebSocketTransport` included
+- **`HTTPResponse` struct** — carries `data`, `statusCode`, and `headers: [String: String]` so custom transports can propagate response headers (e.g. `Retry-After`, `X-RateLimit-Limit`) to the rate-limiter
+- **`httpTransport` / `webSocketTransport` properties** on `DiscordConfiguration` — pass custom transports at init time; `nil` uses the built-in URLSession defaults
+- **`SwiftDiscAHCTransport` library** — optional in-tree target providing an `AHCTransport` built on AsyncHTTPClient with native `ProxyConfiguration` support. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Zero impact on existing projects that don't need it
 
 ### Fixed
 - **Event stream not emitting events (P0)** — `EventDispatcher.process()` was routing events to closure callbacks and updating the cache, but never calling `client._internalEmitEvent(event)`. This meant the `AsyncStream<DiscordEvent>` exposed via `client.events` was perpetually empty. All events now correctly flow to both closure callbacks and the async stream
 - **Cache unbounded growth** — `Cache.Configuration` default values for `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, and `maxEmojiEntries` changed from `nil` (unbounded) to sensible defaults (50K / 50K / 10K / 500 / 500 respectively), preventing memory exhaustion on large bots
+- **Duplicate `WebSocketClient`/`WebSocketMessage` definitions** — consolidated into `HTTPTransport.swift`; removed the redundant `URLSessionWebSocketAdapter` wrapper layer
 
 ### Changed
 - **`DiscordError.isTransient`** now returns `true` for the new `.rateLimited` case
 - **`DiscordError.isRateLimited`** now checks both HTTP 429 status codes and the dedicated `.rateLimited` case
 - **`HTTPClient.makeAPIError`** maps HTTP 429/403/404 to their dedicated `DiscordError` cases before falling through to generic `.api` or `.http` errors
+- **`HTTPClient`** now uses a `transport: HTTPTransport` internally instead of a raw `URLSession`. The `URLSessionHTTPTransport` default preserves the existing URLSession configuration, proxy support, and `deinit` cleanup exactly. Custom transports passed via `DiscordConfiguration.httpTransport` are used instead
+- **`GatewayClient`** now uses `WebSocketTransport` (inherits `WebSocketClient`) as its socket type. Supports custom WebSocket transports from `DiscordConfiguration.webSocketTransport`
+- **`URLSessionWebSocketAdapter` removed** — no longer needed; `URLSessionWebSocketTransport` is used directly
 
 ## [2.4.0] - 2026-06-13
 
