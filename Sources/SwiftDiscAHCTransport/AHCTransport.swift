@@ -28,15 +28,15 @@ public final class AHCTransport: HTTPTransport, @unchecked Sendable {
                 req.headers.add(name: key, value: value)
             }
         }
-        let response = try await client.execute(req)
+        let response = try await client.execute(req, timeout: .seconds(30))
         guard let bodyBytes = response.body else {
             throw DiscordError.network(NSError(domain: "EmptyResponse", code: -1, userInfo: nil))
         }
-        let data = bodyBytes.withUnsafeReadableBytes { Data($0) }
+        let data = Data(buffer: bodyBytes)
         var respHeaders = [String: String]()
         for (key, value) in response.headers {
             respHeaders[key] = value
         }
-        return HTTPResponse(data: data, statusCode: response.status.code, headers: respHeaders)
+        return HTTPResponse(data: data, statusCode: Int(response.status.code), headers: respHeaders)
     }
 }
