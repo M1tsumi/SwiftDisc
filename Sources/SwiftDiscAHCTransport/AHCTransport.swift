@@ -28,11 +28,11 @@ public final class AHCTransport: HTTPTransport, @unchecked Sendable {
                 req.headers.add(name: key, value: value)
             }
         }
-        let response = try await client.execute(req, timeout: .seconds(30))
+        let response = try await client.execute(req)
         guard let bodyBytes = response.body else {
             throw DiscordError.network(NSError(domain: "EmptyResponse", code: -1, userInfo: nil))
         }
-        let data = Data(buffer: bodyBytes)
+        let data = bodyBytes.withUnsafeReadableBytes { Data($0) }
         var respHeaders = [String: String]()
         for (key, value) in response.headers {
             respHeaders[key] = value
