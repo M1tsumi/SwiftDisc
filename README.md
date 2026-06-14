@@ -7,7 +7,7 @@
 # SwiftDisc
 
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/release-2.4.0-blue.svg)](https://github.com/M1tsumi/SwiftDisc/releases)
+[![Version](https://img.shields.io/badge/release-2.4.1-blue.svg)](https://github.com/M1tsumi/SwiftDisc/releases)
 [![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Discord](https://img.shields.io/discord/1439300942167146508?label=discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)

@@ -179,7 +179,7 @@ public actor ShardingGatewayManager {
         public let totalGuilds: Int
     }
 
-    private let token: String
+    private let token: RedactedToken
     private let shardingConfiguration: Configuration
     private let httpConfiguration: DiscordConfiguration
     private let fallbackIntents: GatewayIntents
@@ -213,7 +213,7 @@ public actor ShardingGatewayManager {
     ///   - intents: The gateway intents to use.
     ///   - httpConfiguration: The HTTP configuration.
     public init(token: String, configuration: Configuration = .init(), intents: GatewayIntents, httpConfiguration: DiscordConfiguration = .init()) {
-        self.token = token
+        self.token = RedactedToken(token)
         self.shardingConfiguration = configuration
         self.httpConfiguration = httpConfiguration
         self.fallbackIntents = intents
@@ -343,7 +343,7 @@ public actor ShardingGatewayManager {
 
         // Build shard clients
         shardHandles = (0..<totalShards).map { idx in
-            let client = GatewayClient(token: token, configuration: httpConfiguration)
+            let client = GatewayClient(token: token.rawValue, configuration: httpConfiguration)
             return ShardHandle(id: idx, client: client)
         }
 
@@ -462,7 +462,7 @@ public actor ShardingGatewayManager {
             if Date() < cached.urlExpiresAt {
                 // Session limits might have expired, refresh them
                 if Date() >= cached.sessionExpiresAt {
-                    let http = HTTPClient(token: token, configuration: httpConfiguration)
+                    let http = HTTPClient(token: token.rawValue, configuration: httpConfiguration)
                     struct Info: Decodable, Sendable {
                         let url: String
                         let shards: Int
@@ -477,7 +477,7 @@ public actor ShardingGatewayManager {
                 return cached.info
             }
         }
-        let http = HTTPClient(token: token, configuration: httpConfiguration)
+        let http = HTTPClient(token: token.rawValue, configuration: httpConfiguration)
         struct Info: Decodable, Sendable {
             let url: String
             let shards: Int
@@ -558,10 +558,10 @@ public actor ShardingGatewayManager {
             break
         }
         // Token format sanity check
-        if token.hasPrefix("Bot ") {
+        if token.rawValue.hasPrefix("Bot ") {
             log(.warning, "Token appears to include 'Bot ' prefix. Pass the raw token; SwiftDisc adds the header automatically.")
         }
-        if token.contains(" ") {
+        if token.rawValue.contains(" ") {
             log(.warning, "Token contains whitespace. Verify your bot token is correct.")
         }
     }

@@ -42,6 +42,9 @@ public protocol DiscordLogger: Sendable {
 }
 
 /// Default logger: uses `os_log` on Apple platforms, `print` elsewhere.
+/// All log messages use private format specifiers to prevent sensitive data
+/// leakage into the system log. Override with a custom `DiscordLogger` for
+/// different privacy policies.
 public struct DefaultDiscordLogger: DiscordLogger {
     public init() {}
     public func log(_ level: DiscordLogLevel, _ message: @autoclosure () -> String) {
@@ -49,10 +52,10 @@ public struct DefaultDiscordLogger: DiscordLogger {
         let log = OSLog(subsystem: "com.swiftdisc", category: level.label)
         let msg = message()
         switch level {
-        case .debug:   os_log(.debug,   log: log, "%{public}@", msg)
-        case .info:    os_log(.info,    log: log, "%{public}@", msg)
-        case .warning: os_log(.default, log: log, "%{public}@", msg)
-        case .error:   os_log(.error,   log: log, "%{public}@", msg)
+        case .debug:   os_log(.debug,   log: log, "%@", msg)
+        case .info:    os_log(.info,    log: log, "%@", msg)
+        case .warning: os_log(.default, log: log, "%@", msg)
+        case .error:   os_log(.error,   log: log, "%@", msg)
         }
         #else
         print("[SwiftDisc][\(level.label)] \(message())")

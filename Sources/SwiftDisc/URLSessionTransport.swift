@@ -42,7 +42,8 @@ final class URLSessionHTTPTransport: HTTPTransport {
 
         if let headers {
             for (key, value) in headers {
-                request.setValue(value, forHTTPHeaderField: key)
+                let sanitized = value.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: "\n", with: "")
+                request.setValue(sanitized, forHTTPHeaderField: key)
             }
         }
 

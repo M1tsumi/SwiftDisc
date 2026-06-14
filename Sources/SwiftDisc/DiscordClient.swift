@@ -228,11 +228,12 @@
 public actor DiscordClient {
     /// The bot token used for authentication with Discord.
     ///
-    /// This is a non-isolated `let` property, so it can be accessed from any context without `await`.
-    /// The token should be kept secure and never committed to version control.
+    /// The token is backed by a ``RedactedToken`` which prevents accidental leakage
+    /// in logs and error descriptions while keeping the raw value accessible.
     ///
     /// - Note: Obtain your bot token from the Discord Developer Portal.
-    public nonisolated let token: String
+    public nonisolated var token: String { _token.rawValue }
+    private nonisolated let _token: RedactedToken
     let http: HTTPClient
     private let gateway: GatewayClient
     private let configuration: DiscordConfiguration
@@ -590,7 +591,7 @@ public actor DiscordClient {
     /// - Important: Keep your bot token secure and never commit it to version control.
     /// - See Also: `DiscordConfiguration`
     public init(token: String, configuration: DiscordConfiguration = .init()) {
-        self.token = token
+        self._token = RedactedToken(token)
         self.http = HTTPClient(token: token, configuration: configuration, transport: configuration.httpTransport)
         self.gateway = GatewayClient(token: token, configuration: configuration)
         self.configuration = configuration

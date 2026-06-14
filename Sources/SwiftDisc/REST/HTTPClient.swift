@@ -128,7 +128,8 @@ final class HTTPClient: @unchecked Sendable {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             url = buildURLWithQuery(url: url, query: query)
-            let resp = try await transport.request(method: "GET", url: url, body: nil, headers: headers)
+            let mergedHeaders = makeRequestHeaders(headers, reason: reason)
+            let resp = try await transport.request(method: "GET", url: url, body: nil, headers: mergedHeaders)
             guard let http = HTTPURLResponse(url: url, statusCode: resp.statusCode, httpVersion: nil, headerFields: resp.headers) else {
                 throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1))
             }
@@ -546,11 +547,11 @@ final class HTTPClient: @unchecked Sendable {
 #else
 
 final class HTTPClient: @unchecked Sendable {
-    private let token: String
+    private let token: RedactedToken
     private let configuration: DiscordConfiguration
 
     init(token: String, configuration: DiscordConfiguration) {
-        self.token = token
+        self.token = RedactedToken(token)
         self.configuration = configuration
     }
 
