@@ -160,7 +160,7 @@ final class InternalTests: XCTestCase {
     func testCacheRemoveGuildClearsRoles() async throws {
         let cache = Cache()
         let guildId: GuildID = "g1"
-        let role = TestFixtures.makeRole(id: "r1")
+        let role = try TestFixtures.makeRole(id: "r1")
 
         await cache.upsert(role: role, guildId: guildId)
         let rolesBefore = await cache.getRoles(guildId: guildId)
@@ -174,7 +174,7 @@ final class InternalTests: XCTestCase {
     func testCacheRemoveGuildClearsEmojis() async throws {
         let cache = Cache()
         let guildId: GuildID = "g1"
-        let emoji = TestFixtures.makeEmoji(id: "e1")
+        let emoji = try TestFixtures.makeEmoji(id: "e1")
 
         await cache.upsert(emojis: [emoji], guildId: guildId)
         let emojisBefore = await cache.getEmojis(guildId: guildId)
@@ -280,9 +280,9 @@ final class InternalTests: XCTestCase {
     func testOptionalFieldEquatable() {
         XCTAssertEqual(OptionalField<String>.absent, OptionalField<String>.absent)
         XCTAssertEqual(OptionalField<String>.null, OptionalField<String>.null)
-        XCTAssertEqual(OptionalField<String>.value("test"), OptionalField<String>.value("test"))
+        XCTAssertEqual(OptionalField.value("test"), OptionalField.value("test"))
         XCTAssertNotEqual(OptionalField<String>.absent, OptionalField<String>.null)
-        XCTAssertNotEqual(OptionalField<String>.absent, OptionalField<String>.value("test"))
+        XCTAssertNotEqual(OptionalField<String>.absent, OptionalField.value("test"))
     }
 
     func testOptionalFieldHashable() {
