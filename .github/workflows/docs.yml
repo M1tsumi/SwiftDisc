@@ -23,7 +23,7 @@ jobs:
         run: |
           restore() { git checkout -- Package.swift; }
           trap restore EXIT
-          sed -i.bak 's/dependencies: \[/dependencies: [.package(url: "https:\/\/github.com\/apple\/swift-docc-plugin.git", from: "1.4.4"),/' Package.swift && rm -f Package.swift.bak
+          sed -i.bak '/^    dependencies: \[/s/\[/[.package(url: "https:\/\/github.com\/apple\/swift-docc-plugin.git", from: "1.4.4"),/' Package.swift && rm -f Package.swift.bak
           swift package --allow-writing-to-directory documentation generate-documentation --target SwiftDisc --output-path documentation || (echo "Documentation generation failed (exit $?)"; mkdir -p documentation)
 
       - name: Archive Documentation
