@@ -41,6 +41,7 @@ let package = Package(
     ],
     products: [
         .library(name: "SwiftDisc", targets: ["SwiftDisc"]),
+        .library(name: "SwiftDiscAHCTransport", targets: ["SwiftDiscAHCTransport"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.0"),
@@ -48,6 +49,14 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftDisc",
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .target(
+            name: "SwiftDiscAHCTransport",
+            dependencies: [
+                "SwiftDisc",
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+            ],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // Example executables so contributors can run sample bots quickly with `swift run <name>`.

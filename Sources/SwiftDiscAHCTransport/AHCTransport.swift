@@ -10,7 +10,7 @@ public final class AHCTransport: HTTPTransport, @unchecked Sendable {
         if let proxy {
             config.proxy = .server(host: proxy.host, port: proxy.port)
         }
-        self.client = HTTPClient(eventLoopGroupProvider: .singleton, configuration: config)
+        self.client = HTTPClient(eventLoopGroupProvider: .createNew, configuration: config)
     }
 
     deinit {
