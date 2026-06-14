@@ -55,6 +55,7 @@ let package = Package(
             name: "SwiftDiscAHCTransport",
             dependencies: [
                 "SwiftDisc",
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
             ],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
