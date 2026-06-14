@@ -7,7 +7,7 @@ import FoundationNetworking
 ///
 /// This is the default transport implementation that uses URLSession for HTTP requests.
 /// It supports proxy configuration and maintains the existing behavior.
-final class URLSessionHTTPTransport: HTTPTransport {
+final class URLSessionHTTPTransport: HTTPTransport, @unchecked Sendable {
     let session: URLSession
 
     init(proxy: ProxyConfiguration? = nil, maxConnectionsPerHost: Int = 8) {
@@ -61,7 +61,7 @@ final class URLSessionHTTPTransport: HTTPTransport {
 ///
 /// This is the default WebSocket transport implementation that uses URLSessionWebSocketTask
 /// for WebSocket connections. It supports proxy configuration and maintains the existing behavior.
-final class URLSessionWebSocketTransport: WebSocketTransport {
+final class URLSessionWebSocketTransport: WebSocketTransport, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     let session: URLSession
     private let closeCodeBox = LockedBox<Int?>(nil)

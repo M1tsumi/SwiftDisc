@@ -197,16 +197,15 @@ final class HTTPClient: @unchecked Sendable {
         return components?.url ?? url
     }
 
-    /// Merges custom headers with audit-log reason. Matches original behavior:
-    /// audit reason is only attached when custom headers are non-nil.
+    /// Merges custom headers with audit-log reason.
     private func makeRequestHeaders(_ headers: [String: String]?, reason: String?) -> [String: String]? {
-        guard var merged = headers else { return nil }
+        var merged = headers ?? [:]
         if let reason {
             if let encoded = reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                 merged["X-Audit-Log-Reason"] = encoded
             }
         }
-        return merged
+        return merged.isEmpty ? nil : merged
     }
 
     // MARK: - Multipart support
