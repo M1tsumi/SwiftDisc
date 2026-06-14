@@ -8,6 +8,11 @@ import AsyncHTTPClient
 ///
 /// Provides proxy support and connection pooling on Linux and Windows where
 /// `URLSession` proxy support is unavailable.
+///
+/// Requires `async-http-client` as an additional dependency in your project:
+/// ```swift
+/// .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.0")
+/// ```
 public final class AHCTransport: HTTPTransport, @unchecked Sendable {
     private let client: HTTPClient
 
@@ -49,13 +54,18 @@ public final class AHCTransport: HTTPTransport, @unchecked Sendable {
     }
 }
 #else
-/// Fallback when AsyncHTTPClient is not available on this platform.
+/// Fallback AHC transport when `AsyncHTTPClient` module is not available.
+///
+/// To use the real AHC transport, add `async-http-client` as a dependency
+/// in your project's `Package.swift`.
 public final class AHCTransport: HTTPTransport, @unchecked Sendable {
     public init(proxy: ProxyConfiguration? = nil) {
     }
 
     public func request(method: String, url: URL, body: Data?, headers: [String: String]?) async throws -> HTTPResponse {
-        throw DiscordError.network(NSError(domain: "Unavailable", code: -1, userInfo: nil))
+        throw DiscordError.network(NSError(domain: "SwiftDiscAHCTransport", code: -1, userInfo: [
+            NSLocalizedDescriptionKey: "AsyncHTTPClient module not available. Add async-http-client as a dependency to use AHCTransport."
+        ]))
     }
 }
 #endif

@@ -44,7 +44,6 @@ let package = Package(
         .library(name: "SwiftDiscAHCTransport", targets: ["SwiftDiscAHCTransport"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-server/async-http-client.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -55,7 +54,6 @@ let package = Package(
             name: "SwiftDiscAHCTransport",
             dependencies: [
                 "SwiftDisc",
-                .product(name: "AsyncHTTPClient", package: "async-http-client"),
             ],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
