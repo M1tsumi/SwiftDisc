@@ -43,6 +43,7 @@ let package = Package(
         .library(name: "SwiftDisc", targets: ["SwiftDisc"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.0"),
     ],
     targets: [
         .target(
