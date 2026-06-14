@@ -17,7 +17,7 @@ actor EventDispatcher {
     ///   - event: The Discord event to process.
     ///   - client: The Discord client instance.
     func process(event: DiscordEvent, client: DiscordClient) async {
-        client._internalEmitEvent(event)
+        await client._internalEmitEvent(event)
         switch event {
 
         // MARK: Ready
@@ -245,6 +245,8 @@ actor EventDispatcher {
         case .entitlementDelete(let ev):
             if let cb = await client.onEntitlementDelete { await cb(ev) }
 
+        case .userUpdate:
+            break
         // MARK: Raw / Other
         case .raw:
             break

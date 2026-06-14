@@ -289,7 +289,6 @@ actor GatewayClient {
         add("SOUNDBOARD_SOUND_CREATE",     SoundboardSound.self,                { .soundboardSoundCreate($0) })
         add("SOUNDBOARD_SOUND_UPDATE",     SoundboardSound.self,                { .soundboardSoundUpdate($0) })
         add("SOUNDBOARD_SOUND_DELETE",     SoundboardSound.self,                { .soundboardSoundDelete($0) })
-        add("GUILD_SOUNDBOARD_SOUNDS_UPDATE", GuildSoundboardSoundsUpdate.self, { .guildSoundboardSoundsUpdate($0) })
         add("USER_UPDATE",                 User.self,                           { .userUpdate($0) })
         add("ENTITLEMENT_CREATE",          Entitlement.self,                    { .entitlementCreate($0) })
         add("ENTITLEMENT_UPDATE",          Entitlement.self,                    { .entitlementUpdate($0) })
@@ -614,6 +613,11 @@ actor GatewayClient {
         heartbeatTask = nil
         status = .disconnected; statusContinuation?.yield(.disconnected)
         statusContinuation?.finish()
+    }
+
+    /// Alias for `disconnect()`.
+    func close() async {
+        await disconnect()
     }
 
     // Sends a gateway presence update payload for status/activity changes.

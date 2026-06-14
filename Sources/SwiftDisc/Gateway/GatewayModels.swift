@@ -328,6 +328,8 @@ public enum DiscordEvent: Hashable, Sendable {
     case soundboardSoundCreate(SoundboardSound)
     case soundboardSoundUpdate(SoundboardSound)
     case soundboardSoundDelete(SoundboardSound)
+    // User update
+    case userUpdate(User)
     // Entitlements
     case entitlementCreate(Entitlement)
     case entitlementUpdate(Entitlement)
