@@ -18,7 +18,7 @@ struct ComponentsV2BotMain {
             let row = MessageComponent.ActionRow(components: [.channelSelect(select)])
 
             Task {
-                try? await client.sendMessage(
+                _ = try? await client.sendMessage(
                     channelId: channelId,
                     content: "Welcome! Use the menu below:",
                     components: [.actionRow(row)],

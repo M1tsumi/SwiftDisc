@@ -9,25 +9,29 @@ struct ComponentsExample {
         let client = DiscordClient(token: token)
 
         // Build an embed
-        var eb = EmbedBuilder()
-        eb.title("Components V2 Example")
-        eb.description("This message demonstrates buttons and select menus using the typed builders.")
-        let embed = eb.build()
+        let embed = EmbedBuilder()
+            .title("Components V2 Example")
+            .description("This message demonstrates buttons and select menus using the typed builders.")
+            .build()
 
         // Build components
         var components = ComponentsBuilder()
-        components.row { row in
-            var btn = ButtonBuilder()
-            btn.style(.primary).label("Click me").customId("btn_click_1")
-            row.add(btn.build())
+        _ = components.row { row in
+            let btn = ButtonBuilder()
+                .style(.primary)
+                .label("Click me")
+                .customId("btn_click_1")
+                .build()
+            _ = row.add(btn)
         }
-
-        components.row { row in
-            var sel = SelectMenuBuilder()
-            sel.customId("menu_1").option(label: "Option A", value: "a").option(label: "Option B", value: "b")
-            row.add(sel.build())
+        _ = components.row { row in
+            let sel = SelectMenuBuilder()
+                .customId("menu_1")
+                .option(label: "Option A", value: "a")
+                .option(label: "Option B", value: "b")
+                .build()
+            _ = row.add(sel)
         }
-
         let comps = components.build()
 
         // Send message (note: this example requires a running bot token and permissions)

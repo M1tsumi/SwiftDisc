@@ -17,7 +17,7 @@ struct WebhookBotMain {
                 print("Webhook created: \(webhook.id)")
 
                 // Execute the webhook (asynchronous, no message returned)
-                try await client.executeWebhook(webhookId: webhook.id, token: webhook.token ?? "", content: "Hello from webhook!")
+                _ = try await client.executeWebhook(webhookId: webhook.id, token: webhook.token ?? "", content: "Hello from webhook!")
 
                 // Execute with wait=true to get the message back
                 if let msg = try await client.executeWebhook(

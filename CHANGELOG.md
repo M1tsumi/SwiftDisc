@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.1] - 2026-06-13
+## [2.4.1] - 2026-06-14
 
 ### Overview
-SwiftDisc 2.4.1 is a correctness and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, sets sensible memory limits on the built-in cache, and introduces the pluggable transport system.
+SwiftDisc 2.4.1 is a correctness, security, and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, sets sensible memory limits on the built-in cache, introduces the pluggable transport system, and applies security hardening across token handling, logging, and HTTP header processing.
 
 ### Added
 - **Dedicated error cases** — `DiscordError.rateLimited`, `.forbidden`, `.notFound` are now thrown directly for HTTP 429/403/404 instead of generic `.http` errors, enabling more precise error handling
@@ -23,6 +23,13 @@ SwiftDisc 2.4.1 is a correctness and developer-experience release. It fixes a cr
 - **Event stream not emitting events (P0)** — `EventDispatcher.process()` was routing events to closure callbacks and updating the cache, but never calling `client._internalEmitEvent(event)`. This meant the `AsyncStream<DiscordEvent>` exposed via `client.events` was perpetually empty. All events now correctly flow to both closure callbacks and the async stream
 - **Cache unbounded growth** — `Cache.Configuration` default values for `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, and `maxEmojiEntries` changed from `nil` (unbounded) to sensible defaults (50K / 50K / 10K / 500 / 500 respectively), preventing memory exhaustion on large bots
 - **Duplicate `WebSocketClient`/`WebSocketMessage` definitions** — consolidated into `HTTPTransport.swift`; removed the redundant `URLSessionWebSocketAdapter` wrapper layer
+- **`getRaw` missing audit-log reason** — `HTTPClient.getRaw()` now passes `X-Audit-Log-Reason` through `makeRequestHeaders`, matching all other REST methods. Audit reasons on raw GET requests were previously silently dropped
+- **`DiscordClient.token` backed by `RedactedToken`** — the public `token` property remains accessible as `String`, but is now stored internally as `RedactedToken`, preventing accidental token leakage via debug descriptions or logging
+- **ShardingGatewayManager token hardened** — the sharding manager now stores the bot token as `RedactedToken` instead of a bare `String`, providing consistent redaction across all token consumers
+- **Fallback HTTPClient stub token hardened** — the `#else`-branch stub (unsupported platforms) also uses `RedactedToken` for consistency
+- **CRLF header injection in URLSessionTransport** — header values are now sanitized by stripping `\r` and `\n` characters before being set on `URLRequest`, preventing HTTP header injection via unsanitized caller-supplied values
+- **`os_log` privacy hardening** — `DefaultDiscordLogger` now uses private (`%@`) instead of public (`%{public}@`) format specifiers, preventing sensitive data from appearing in the system log
+- **Compiler warnings resolved** — fixed `var` → `let` (unmutated variables), removed unnecessary `try` on non-throwing calls, suppressed unused result warnings in examples and tests
 
 ### Changed
 - **`DiscordError.isTransient`** now returns `true` for the new `.rateLimited` case
