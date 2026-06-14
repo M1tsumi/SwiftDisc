@@ -229,7 +229,7 @@ actor GatewayClient {
         let dec = JSONCoders.decoder
         var table: [String: EventHandler] = [:]
 
-        func add<T: Codable>(_ eventName: String, _ type: T.Type, _ transform: @escaping (T) -> DiscordEvent) {
+        func add<T: Codable>(_ eventName: String, _ type: T.Type, _ transform: @escaping @Sendable (T) -> DiscordEvent) {
             table[eventName] = { data in
                 guard let payload = try? dec.decode(GatewayPayload<T>.self, from: data), let d = payload.d else { return nil }
                 return transform(d)
