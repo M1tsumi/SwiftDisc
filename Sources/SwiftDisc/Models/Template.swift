@@ -1,6 +1,8 @@
 import Foundation
 
+/// Represents a guild template for creating new guilds.
 public struct Template: Codable, Hashable, Sendable {
+    /// A partial guild object contained within a template.
     public struct TemplateGuild: Codable, Hashable, Sendable {
         public let id: GuildID?
         public let name: String?

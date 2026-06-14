@@ -15,7 +15,7 @@ struct ViewExample {
         let view = View(id: "confirm-view", timeout: 60.0, handlers: [:], patterns: [
             ("confirm_", MatchType.prefix, { interaction, client in
                 do {
-                    try await client.createInteractionResponseWithFiles(applicationId: interaction.application_id, interactionToken: interaction.token, payload: ["type": .number(6)], files: [])
+                    _ = try await client.createInteractionResponseWithFiles(applicationId: interaction.application_id, interactionToken: interaction.token, payload: ["type": .number(6)], files: [])
                 } catch {
                     print("Failed to acknowledge interaction: \(error)")
                 }

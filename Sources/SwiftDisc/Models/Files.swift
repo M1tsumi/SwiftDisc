@@ -1,5 +1,6 @@
 import Foundation
 
+/// A file to upload as a message attachment.
 public struct FileAttachment: Sendable {
     public let filename: String
     public let data: Data
@@ -14,6 +15,7 @@ public struct FileAttachment: Sendable {
     }
 }
 
+/// A reference to an existing attachment when editing a message.
 public struct PartialAttachment: Encodable, Hashable, Sendable {
     public let id: AttachmentID
     public let description: String?

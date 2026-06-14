@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents a user's application-specific role connection metadata.
 public struct ApplicationRoleConnection: Codable, Hashable, Sendable {
     public let platformName: String?
     public let platformUsername: String?
@@ -18,6 +19,7 @@ public struct ApplicationRoleConnection: Codable, Hashable, Sendable {
     }
 }
 
+/// Metadata definition for an application role connection.
 public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     public let type: RoleConnectionMetadataType
     public let key: String
@@ -42,7 +44,8 @@ public struct ApplicationRoleConnectionMetadata: Codable, Hashable, Sendable {
     }
 }
 
-public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIterable {
+/// Comparison types for role connection metadata values.
+public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable {
     case integerLessThanOrEqual = 1
     case integerGreaterThanOrEqual = 2
     case integerEqual = 3
@@ -51,4 +54,11 @@ public enum RoleConnectionMetadataType: Int, Codable, Hashable, Sendable, CaseIt
     case datetimeGreaterThanOrEqual = 6
     case booleanEqual = 7
     case booleanNotEqual = 8
+    case unknown = 0
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = RoleConnectionMetadataType(rawValue: rawValue) ?? .unknown
+    }
 }

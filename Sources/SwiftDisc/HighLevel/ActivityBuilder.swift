@@ -1,5 +1,6 @@
 import Foundation
 
+/// A builder for constructing Discord rich presence activities.
 public struct ActivityBuilder: Sendable {
     private var name: String
     private var type: Int = 0 // 0 = playing, 2 = listening, 3 = watching, etc.

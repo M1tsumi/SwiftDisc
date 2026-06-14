@@ -1,5 +1,6 @@
 import Foundation
 
+/// A public preview of a guild without requiring membership.
 public struct GuildPreview: Codable, Hashable, Sendable {
     public let id: GuildID
     public let name: String

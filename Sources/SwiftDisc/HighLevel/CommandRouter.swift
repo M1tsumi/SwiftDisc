@@ -1,7 +1,41 @@
 import Foundation
 
-/// Routes prefix-based text commands. Declared as an `actor` so handler
-/// registration and dispatch are data-race free across concurrent tasks.
+/// Routes prefix-based text commands.
+///
+/// The `CommandRouter` provides a simple way to handle traditional prefix-based commands
+/// (e.g., `!ping`, `!ban`). It is declared as an `actor` so handler registration and
+/// dispatch are data-race free across concurrent tasks.
+///
+/// ## Example
+///
+/// ```swift
+/// let router = CommandRouter(prefix: "!")
+///
+/// router.register(name: "ping", description: "Check bot latency") { ctx in
+///     try await ctx.message.reply(client: ctx.client, content: "Pong!")
+/// }
+///
+/// router.register(name: "ban", description: "Ban a user") { ctx in
+///     guard ctx.isAdmin else {
+///         try await ctx.message.reply(client: ctx.client, content: "🚫 Admins only.")
+///         return
+///     }
+///     // Ban logic
+/// }
+///
+/// // Use middleware for auth
+/// router.use { ctx, next in
+///     guard ctx.isAdmin else {
+///         try await ctx.message.reply(client: ctx.client, content: "🚫 Admins only.")
+///         return
+///     }
+///     try await next(ctx)
+/// }
+/// ```
+///
+/// ## Related Topics
+/// - ``DiscordClient/useCommands(_:)``
+/// - ``SlashCommandRouter``
 public actor CommandRouter {
     private var commands: [String: HandlerWrapper] = [:]
     private var aliases: [String: String] = [:]
@@ -11,9 +45,12 @@ public actor CommandRouter {
     /// The async, Sendable handler type invoked when a command matches.
     public typealias Handler = @Sendable (Context) async throws -> Void
 
-    /// Middleware type. A sendable closure that receives the context and a `next`
-    /// handler. Call `try await next(ctx)` to continue the chain, or
-    /// throw / return early to halt further processing.
+    /// Middleware type.
+    ///
+    /// A sendable closure that receives the context and a `next` handler.
+    /// Call `try await next(ctx)` to continue the chain, or throw/return early to halt further processing.
+    ///
+    /// ## Example
     ///
     /// ```swift
     /// router.use { ctx, next in
@@ -27,10 +64,20 @@ public actor CommandRouter {
     public typealias Middleware = @Sendable (Context, _ next: @Sendable (Context) async throws -> Void) async throws -> Void
 
     /// Per-invocation context provided to every command handler.
+    ///
+    /// Contains information about the command invocation including the message,
+    /// client, arguments, and utility methods for permission checking.
     public struct Context: Sendable {
+        /// The message that triggered the command.
         public let message: Message
+        
+        /// The Discord client instance.
         public let client: DiscordClient
+        
+        /// The command arguments (split by spaces).
         public let args: [String]
+        
+        /// The command name that was invoked.
         public let command: String
 
         public init(message: Message, client: DiscordClient, args: [String], command: String) {
@@ -52,6 +99,9 @@ public actor CommandRouter {
         ///
         /// Uses `member.permissions`, which Discord provides in guild message events.
         /// Returns `false` for DMs (no member attached) or if the field is absent.
+        ///
+        /// - Parameter bit: The permission bit to check.
+        /// - Returns: Whether the user has the permission.
         public func hasPermission(_ bit: UInt64) -> Bool {
             guard let permStr = message.member?.permissions,
                   let permInt = UInt64(permStr) else { return false }
@@ -64,19 +114,30 @@ public actor CommandRouter {
         public var isAdmin: Bool { hasPermission(1 << 3) }
 
         /// Returns `true` if the member has the specified role.
+        ///
+        /// - Parameter roleId: The role ID to check.
+        /// - Returns: Whether the member has the role.
         public func memberHasRole(_ roleId: RoleID) -> Bool {
             guard let roles = message.member?.roles else { return false }
             return roles.contains(roleId)
         }
     }
 
+    /// Creates a new command router.
+    ///
+    /// - Parameters:
+    ///   - prefix: The command prefix (e.g., "!", "/").
+    ///   - onError: Optional error handler called when a command throws.
     public init(prefix: String, onError: (@Sendable (Error, Context) -> Void)? = nil) {
         self.prefix = prefix
         self.onError = onError
     }
 
     /// Optional error handler invoked when a command handler throws.
+    ///
     /// Pass this during initialization to log errors, send error responses, or implement custom error recovery.
+    ///
+    /// ## Example
     ///
     /// ```swift
     /// let router = CommandRouter(prefix: "!") { error, ctx in
@@ -86,15 +147,21 @@ public actor CommandRouter {
     /// ```
     private var onError: (@Sendable (Error, Context) -> Void)?
 
-    /// Register a command handler with an optional description.
+    /// Registers a command handler.
+    ///
+    /// - Parameters:
+    ///   - name: The command name (without prefix).
+    ///   - description: Optional description for the command.
+    ///   - handler: The async handler to invoke when the command is used.
     public func register(name: String, description: String? = nil, _ handler: @escaping Handler) {
         commands[name] = HandlerWrapper(handler: handler, description: description)
     }
     
-    /// Register an alias for an existing command.
+    /// Registers an alias for an existing command.
+    ///
     /// - Parameters:
-    ///   - alias: The alias to register
-    ///   - command: The command name this alias points to
+    ///   - alias: The alias to register.
+    ///   - command: The command name this alias points to.
     public func registerAlias(alias: String, command: String) {
         aliases[alias] = command
     }

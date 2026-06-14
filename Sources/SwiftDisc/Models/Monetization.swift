@@ -1,5 +1,6 @@
 import Foundation
 
+/// Represents a stock-keeping unit for monetized applications.
 public struct SKU: Codable, Hashable, Sendable {
     public let id: SKUID
     public let type: Int
@@ -10,6 +11,7 @@ public struct SKU: Codable, Hashable, Sendable {
     public let access_type: Int?
 }
 
+/// Represents an entitlement (purchased premium feature) for a user or guild.
 public struct Entitlement: Codable, Hashable, Sendable {
     public let id: EntitlementID
     public let sku_id: SKUID

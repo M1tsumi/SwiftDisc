@@ -1,6 +1,6 @@
 import Foundation
 
-public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async -> Void
+public typealias ViewHandler = @Sendable (Interaction, DiscordClient) async throws -> Void
 
 /// Pattern matching type for view custom_id routing.
 public enum MatchType: Sendable {
@@ -214,7 +214,7 @@ public actor ViewManager {
             case .mentionableSelect(let ms):
                 return .mentionableSelect(.init(custom_id: ms.custom_id, placeholder: ms.placeholder, min_values: ms.min_values, max_values: ms.max_values, disabled: true, default_values: ms.default_values))
             case .channelSelect(let cs):
-                return .channelSelect(.init(custom_id: cs.custom_id, placeholder: cs.placeholder, min_values: cs.min_values, max_values: cs.max_values, disabled: true, channel_types: cs.channel_types, default_values: cs.default_values))
+                return .channelSelect(.init(custom_id: cs.custom_id, placeholder: cs.placeholder, min_values: cs.min_values, max_values: cs.max_values, disabled: true, default_values: cs.default_values, channel_types: cs.channel_types))
             case .textInput(let ti):
                 return .textInput(ti)
             case .label(let l):

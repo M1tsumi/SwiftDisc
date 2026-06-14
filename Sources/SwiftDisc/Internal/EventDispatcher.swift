@@ -1,7 +1,23 @@
 import Foundation
 
+/// Internal event dispatcher for Discord gateway events.
+///
+/// This actor processes incoming Discord events from the gateway,
+/// updates the cache, and dispatches events to registered handlers.
+/// It is an internal implementation detail and not part of the public API.
 actor EventDispatcher {
+    /// Processes a Discord event.
+    ///
+    /// This method handles the event by:
+    /// 1. Updating the cache with relevant entities
+    /// 2. Dispatching to registered event callbacks
+    /// 3. Routing to command handlers if applicable
+    ///
+    /// - Parameters:
+    ///   - event: The Discord event to process.
+    ///   - client: The Discord client instance.
     func process(event: DiscordEvent, client: DiscordClient) async {
+        await client._internalEmitEvent(event)
         switch event {
 
         // MARK: Ready
@@ -57,6 +73,7 @@ actor EventDispatcher {
             if let cb = await client.onGuildUpdate { await cb(guild) }
 
         case .guildDelete(let ev):
+            await client.cache.removeGuild(id: ev.id)
             if let cb = await client.onGuildDelete { await cb(ev) }
 
         // MARK: Members
@@ -228,14 +245,18 @@ actor EventDispatcher {
         case .entitlementDelete(let ev):
             if let cb = await client.onEntitlementDelete { await cb(ev) }
 
+        case .userUpdate:
+            break
         // MARK: Raw / Other
         case .raw:
             break
         // MARK: Session events
         case .sessionInvalidated:
-            break
-        case .disconnected:
-            break
+            if let cb = await client.onSessionInvalidated { await cb() }
+        case .disconnected(let reason):
+            if let cb = await client.onDisconnected { await cb(reason) }
+        case .resumed:
+            if let cb = await client.onResumed { await cb() }
         }
     }
 }

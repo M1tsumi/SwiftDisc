@@ -40,6 +40,10 @@ These examples are simple, single-file bots demonstrating new features. They ass
 - File: `Examples/ThreadsAndScheduledEventsBot.swift`
 - What it does: Prints thread lifecycle and guild scheduled event activity to stdout.
 
+## 4) Components v2
+- File: `Examples/ComponentsV2Bot.swift`
+- What it does: Sends a message with the `IS_COMPONENTS_V2` flag (`flags: 32768`) and a channel select menu. Handles the interaction and opens a feedback modal with a Label + Text Input layout.
+
 ## Minimal Integration Snippets
 
 ### Autocomplete registration

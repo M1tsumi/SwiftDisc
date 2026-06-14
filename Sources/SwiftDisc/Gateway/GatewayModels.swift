@@ -1,103 +1,322 @@
 import Foundation
 
+/// Represents the HELLO gateway event.
+///
+/// Sent by the gateway when a connection is first established.
+/// Contains the heartbeat interval in milliseconds.
 public struct GatewayHello: Codable, Sendable {
+    /// The heartbeat interval in milliseconds.
+    ///
+    /// The client must send a heartbeat every `heartbeat_interval` milliseconds.
     public let heartbeat_interval: Int
 }
 
+/// Represents a THREAD_MEMBERS_UPDATE gateway event.
+///
+/// Sent when members are added to or removed from a thread.
 public struct ThreadMembersUpdate: Codable, Hashable, Sendable {
+    /// The ID of the thread.
     public let id: ChannelID
+    
+    /// The ID of the guild.
     public let guild_id: GuildID
+    
+    /// The approximate number of members in the thread.
     public let member_count: Int
+    
+    /// Members added to the thread.
     public let added_members: [ThreadMember]?
+    
+    /// IDs of members removed from the thread.
     public let removed_member_ids: [UserID]?
 }
 
+/// Represents a THREAD_LIST_SYNC gateway event.
+///
+/// Sent when the thread list for a guild is synced.
 public struct ThreadListSync: Codable, Hashable, Sendable {
+    /// The ID of the guild.
     public let guild_id: GuildID
+    
+    /// The IDs of the channels that are threads.
     public let channel_ids: [ChannelID]
+    
+    /// The thread objects.
     public let threads: [Channel]
+    
+    /// The thread member objects.
     public let members: [ThreadMember]
 }
 
+/// Gateway opcodes.
+///
+/// Opcodes are used to indicate the purpose of a gateway payload.
+///
+/// ## Opcode Values
+/// - `0`: DISPATCH - An event was dispatched.
+/// - `1`: HEARTBEAT - A heartbeat keep-alive.
+/// - `2`: IDENTIFY - Client identification.
+/// - `3`: PRESENCE_UPDATE - Client presence update.
+/// - `6`: RESUME - Resume a previous session.
+/// - `7`: RECONNECT - Request to reconnect.
+/// - `8`: REQUEST_GUILD_MEMBERS - Request guild members.
+/// - `9`: INVALID_SESSION - Invalid session.
+/// - `10`: HELLO - Hello from server.
+/// - `11`: HEARTBEAT_ACK - Heartbeat acknowledged.
+/// - `12`: RATE_LIMITED - Rate limited.
 public enum GatewayOpcode: Int, Codable, Sendable {
+    /// Dispatch (event).
     case dispatch = 0
+    
+    /// Heartbeat.
     case heartbeat = 1
-    case presenceUpdate = 3
+    
+    /// Identify.
     case identify = 2
+    
+    /// Presence update.
+    case presenceUpdate = 3
+
+    /// Voice State Update.
+    case voiceStateUpdate = 4
+
+    /// Resume.
     case resume = 6
+    
+    /// Reconnect.
     case reconnect = 7
+    
+    /// Request guild members.
     case requestGuildMembers = 8
+    
+    /// Invalid session.
     case invalidSession = 9
+    
+    /// Hello.
     case hello = 10
+    
+    /// Heartbeat acknowledged.
     case heartbeatAck = 11
+    
+    /// Rate limited.
     case rateLimited = 12
+
+    /// Request soundboard sounds.
+    case requestSoundboardSounds = 31
+
+    /// Request ephemeral channel data.
+    case requestChannelInfo = 43
+
+    /// Unknown opcode (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = GatewayOpcode(rawValue: rawValue) ?? .unknown
+    }
 }
 
+/// Represents a gateway payload.
+///
+/// Gateway payloads are the messages sent between the client and Discord's gateway.
+///
+/// ## Fields
+/// - `op`: The opcode for this payload.
+/// - `d`: The event data (if applicable).
+/// - `s`: The sequence number (for dispatch events).
+/// - `t`: The event name (for dispatch events).
 public struct GatewayPayload<D: Codable>: Codable {
+    /// The opcode for this payload.
     public let op: GatewayOpcode
+    
+    /// The event data (if applicable).
     public let d: D?
+    
+    /// The sequence number (for dispatch events).
     public let s: Int?
+    
+    /// The event name (for dispatch events).
     public let t: String?
 }
 extension GatewayPayload: Sendable where D: Sendable {}
 
+/// Represents a Discord gateway event.
+///
+/// This enum covers all possible events that can be dispatched from Discord's gateway.
+///
+/// ## Example
+///
+/// ```swift
+/// await client.setOnReady { ready in
+///     print("Bot is ready!")
+/// }
+///
+/// await client.setOnMessage { message in
+///     print("Message: \(message.content ?? "")")
+/// }
+///
+/// await client.setOnInteraction { interaction in
+///     print("Interaction received")
+/// }
+/// ```
+///
+/// ## Related Topics
+/// - ``DiscordClient/setOnReady(_:)``
+/// - ``DiscordClient/setOnMessage(_:)``
+/// - ``DiscordClient/setOnInteraction(_:)``
 public enum DiscordEvent: Hashable, Sendable {
+    /// The bot is ready to start receiving events.
     case ready(ReadyEvent)
+    
+    /// A message was created.
     case messageCreate(Message)
+    
+    /// A message was updated.
     case messageUpdate(Message)
+    
+    /// A message was deleted.
     case messageDelete(MessageDelete)
+    
+    /// Multiple messages were deleted.
     case messageDeleteBulk(MessageDeleteBulk)
+    
+    /// A reaction was added to a message.
     case messageReactionAdd(MessageReactionAdd)
+    
+    /// A reaction was removed from a message.
     case messageReactionRemove(MessageReactionRemove)
+    
+    /// All reactions were removed from a message.
     case messageReactionRemoveAll(MessageReactionRemoveAll)
+    
+    /// A specific emoji reaction was removed from a message.
     case messageReactionRemoveEmoji(MessageReactionRemoveEmoji)
+    
+    /// A guild was created or the bot joined a guild.
     case guildCreate(Guild)
+    
+    /// A guild was updated.
     case guildUpdate(Guild)
+    
+    /// A guild was deleted or the bot left a guild.
     case guildDelete(GuildDelete)
+    
+    /// A channel was created.
     case channelCreate(Channel)
+    
+    /// A channel was updated.
     case channelUpdate(Channel)
+    
+    /// A channel was deleted.
     case channelDelete(Channel)
+    
+    /// An interaction was created (slash command, button, etc.).
     case interactionCreate(Interaction)
+    
+    /// A member joined a guild.
     case guildMemberAdd(GuildMemberAdd)
+    
+    /// A member was removed from a guild.
     case guildMemberRemove(GuildMemberRemove)
+    
+    /// A guild member was updated.
     case guildMemberUpdate(GuildMemberUpdate)
+    
+    /// A guild role was created.
     case guildRoleCreate(GuildRoleCreate)
+    
+    /// A guild role was updated.
     case guildRoleUpdate(GuildRoleUpdate)
+    
+    /// A guild role was deleted.
     case guildRoleDelete(GuildRoleDelete)
+    
+    /// Guild emojis were updated.
     case guildEmojisUpdate(GuildEmojisUpdate)
+    
+    /// Guild stickers were updated.
     case guildStickersUpdate(GuildStickersUpdate)
+    
+    /// Guild members chunk was received.
     case guildMembersChunk(GuildMembersChunk)
+    
+    /// A user started typing.
     case typingStart(TypingStart)
+    
+    /// Channel pins were updated.
     case channelPinsUpdate(ChannelPinsUpdate)
+    
+    /// A user's presence was updated.
     case presenceUpdate(PresenceUpdate)
+
+    /// A user was banned from a guild.
     case guildBanAdd(GuildBanAdd)
+    
+    /// A user was unbanned from a guild.
     case guildBanRemove(GuildBanRemove)
+    
+    /// Guild webhooks were updated.
     case webhooksUpdate(WebhooksUpdate)
+    
+    /// Guild integrations were updated.
     case guildIntegrationsUpdate(GuildIntegrationsUpdate)
+    
+    /// An invite was created.
     case inviteCreate(InviteCreate)
+    
+    /// An invite was deleted.
     case inviteDelete(InviteDelete)
-    // Catch-all for any gateway dispatch we don't model explicitly
+    
+    /// Catch-all for any gateway dispatch we don't model explicitly.
     case raw(String, Data)
-    // Threads
+    
+    /// A thread was created.
     case threadCreate(Channel)
+    
+    /// A thread was updated.
     case threadUpdate(Channel)
+    
+    /// A thread was deleted.
     case threadDelete(Channel)
+    
+    /// A thread member was updated.
     case threadMemberUpdate(ThreadMember)
+    
+    /// Thread members were updated.
     case threadMembersUpdate(ThreadMembersUpdate)
+    
+    /// Thread list was synced.
     case threadListSync(ThreadListSync)
-    // Application Commands
+    
+    /// Application command permissions were updated.
     case applicationCommandPermissionsUpdate(ApplicationCommandPermissionsUpdate)
-    // Channel Info
+    
+    /// Channel info was received.
     case channelInfo(Channel)
-    // Scheduled Events
+    
+    /// A scheduled event was created.
     case guildScheduledEventCreate(GuildScheduledEvent)
+    
+    /// A scheduled event was updated.
     case guildScheduledEventUpdate(GuildScheduledEvent)
+    
+    /// A scheduled event was deleted.
     case guildScheduledEventDelete(GuildScheduledEvent)
+    
+    /// A user was added to a scheduled event.
     case guildScheduledEventUserAdd(GuildScheduledEventUser)
+    
+    /// A user was removed from a scheduled event.
     case guildScheduledEventUserRemove(GuildScheduledEventUser)
-    // AutoMod
+    
+    /// An auto moderation rule was created.
     case autoModerationRuleCreate(AutoModerationRule)
+
+    /// An auto moderation rule was updated.
     case autoModerationRuleUpdate(AutoModerationRule)
+
+    /// An auto moderation rule was deleted.
     case autoModerationRuleDelete(AutoModerationRule)
     case autoModerationActionExecution(AutoModerationActionExecution)
     // Audit log
@@ -109,27 +328,36 @@ public enum DiscordEvent: Hashable, Sendable {
     case soundboardSoundCreate(SoundboardSound)
     case soundboardSoundUpdate(SoundboardSound)
     case soundboardSoundDelete(SoundboardSound)
+    // User update
+    case userUpdate(User)
     // Entitlements
     case entitlementCreate(Entitlement)
     case entitlementUpdate(Entitlement)
     case entitlementDelete(Entitlement)
     // Session events
+    /// The gateway session was invalidated and a fresh identify is required.
     case sessionInvalidated
+    /// The gateway disconnected unexpectedly.
     case disconnected(reason: String)
+    /// The gateway successfully resumed a previous session after a reconnect.
+    case resumed
 }
 
+/// Sent when a message is deleted.
 public struct MessageDelete: Codable, Hashable, Sendable {
     public let id: MessageID
     public let channel_id: ChannelID
     public let guild_id: GuildID?
 }
 
+/// Sent when multiple messages are deleted at once.
 public struct MessageDeleteBulk: Codable, Hashable, Sendable {
     public let ids: [MessageID]
     public let channel_id: ChannelID
     public let guild_id: GuildID?
 }
 
+/// Sent when a user adds a reaction to a message.
 public struct MessageReactionAdd: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
@@ -139,6 +367,7 @@ public struct MessageReactionAdd: Codable, Hashable, Sendable {
     public let emoji: PartialEmoji
 }
 
+/// Sent when a user removes a reaction from a message.
 public struct MessageReactionRemove: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
@@ -147,12 +376,14 @@ public struct MessageReactionRemove: Codable, Hashable, Sendable {
     public let emoji: PartialEmoji
 }
 
+/// Sent when all reactions are removed from a message.
 public struct MessageReactionRemoveAll: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let message_id: MessageID
     public let guild_id: GuildID?
 }
 
+/// Sent when all reactions of a specific emoji are removed from a message.
 public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let message_id: MessageID
@@ -160,6 +391,9 @@ public struct MessageReactionRemoveEmoji: Codable, Hashable, Sendable {
     public let emoji: PartialEmoji
 }
 
+/// Sent when the client successfully connects to the gateway.
+///
+/// Contains the bot user and gateway session information.
 public struct ReadyEvent: Codable, Hashable, Sendable {
     public let user: User
     public let session_id: String
@@ -168,6 +402,7 @@ public struct ReadyEvent: Codable, Hashable, Sendable {
 
 // Note: Guild model lives in Sources/SwiftDisc/Models/Guild.swift
 
+/// Sent when a guild becomes unavailable or the bot is removed from a guild.
 public struct GuildDelete: Codable, Hashable, Sendable {
     public let id: GuildID
     public let unavailable: Bool?
@@ -176,6 +411,8 @@ public struct GuildDelete: Codable, Hashable, Sendable {
 // Note: Interaction model lives in Sources/SwiftDisc/Models/Interaction.swift
 
 // MARK: - Guild Member Events
+
+/// Sent when a user joins a guild.
 public struct GuildMemberAdd: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
@@ -190,11 +427,13 @@ public struct GuildMemberAdd: Codable, Hashable, Sendable {
     public let permissions: String?
 }
 
+/// Sent when a user leaves or is removed from a guild.
 public struct GuildMemberRemove: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
+/// Sent when a guild member is updated (roles, nick, etc.).
 public struct GuildMemberUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
@@ -205,36 +444,48 @@ public struct GuildMemberUpdate: Codable, Hashable, Sendable {
 }
 
 // MARK: - Role CRUD Events
+
+/// Sent when a new role is created in a guild.
 public struct GuildRoleCreate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role: Role
 }
 
+/// Sent when a role is updated in a guild.
 public struct GuildRoleUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role: Role
 }
 
+/// Sent when a role is deleted from a guild.
 public struct GuildRoleDelete: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let role_id: RoleID
 }
 
 // MARK: - Emoji / Sticker Update
+
+/// Sent when a guild's custom emojis are updated.
 public struct GuildEmojisUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let emojis: [Emoji]
 }
 
+/// Sent when a guild's custom stickers are updated.
 public struct GuildStickersUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let stickers: [Sticker]
 }
 
 // MARK: - Request/Receive Guild Members
+
+/// Gateway request payload for requesting guild members.
+///
+/// Used for lazy loading member lists or resolving mentions.
 public struct RequestGuildMembers: Codable, Hashable, Sendable {
     public let op: Int
     public let d: Payload
+    /// Parameters for requesting guild members.
     public struct Payload: Codable, Hashable, Sendable {
         public let guild_id: GuildID
         public let query: String?
@@ -250,9 +501,15 @@ public struct RequestGuildMembers: Codable, Hashable, Sendable {
     }
 }
 
+/// A placeholder presence struct for member chunk events.
+///
+/// Discord may include presence data in member chunks when requested.
 public struct Presence: Codable, Hashable, Sendable {
 }
 
+/// Sent in response to a `RequestGuildMembers` request.
+///
+/// Contains a chunk of guild members and optional presence data.
 public struct GuildMembersChunk: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let members: [GuildMember]
@@ -263,6 +520,9 @@ public struct GuildMembersChunk: Codable, Hashable, Sendable {
     public let nonce: String?
 }
 
+/// The initial identify payload sent to the gateway during connection.
+///
+/// Contains the bot token, intents, and connection properties.
 public struct IdentifyPayload: Codable, Sendable {
     public let token: String
     public let intents: UInt64
@@ -281,6 +541,9 @@ public struct IdentifyPayload: Codable, Sendable {
     }
 }
 
+/// Connection properties sent in the Identify payload.
+///
+/// Identifies the client OS, browser, and device to Discord.
 public struct IdentifyConnectionProperties: Codable, Sendable {
     public let os: String
     public let browser: String
@@ -312,28 +575,39 @@ public struct IdentifyConnectionProperties: Codable, Sendable {
 
 public typealias HeartbeatPayload = Int?
 
+/// Payload used to resume a disconnected gateway session.
+///
+/// Sent when reconnecting with a previous session ID and sequence number.
 public struct ResumePayload: Codable, Sendable {
     public let token: String
     public let session_id: String
     public let seq: Int
 }
 
+/// Payload for updating the bot's presence status.
+///
+/// Used to set activities, status, and AFK state.
 public struct PresenceUpdatePayload: Codable, Sendable {
+    /// Represents a Discord activity (rich presence).
     public struct Activity: Codable, Hashable, Sendable { 
+        /// Start and end timestamps for an activity.
         public struct Timestamps: Codable, Hashable, Sendable { 
             public let start: Int64?
             public let end: Int64?
         }
+        /// Rich presence image assets.
         public struct Assets: Codable, Hashable, Sendable { 
             public let large_image: String?
             public let large_text: String?
             public let small_image: String?
             public let small_text: String?
         }
+        /// Party information for an activity.
         public struct Party: Codable, Hashable, Sendable { 
             public let id: String?
             public let size: [Int]?
         }
+        /// Join/spectate/match secrets for an activity.
         public struct Secrets: Codable, Hashable, Sendable { 
             public let join: String?
             public let spectate: String?
@@ -370,6 +644,7 @@ public struct PresenceUpdatePayload: Codable, Sendable {
             self.secrets = secrets
         }
     }
+    /// The data payload for a presence update.
     public struct Data: Codable, Sendable {
         public let since: Int?
         public let activities: [Activity]
@@ -381,6 +656,7 @@ public struct PresenceUpdatePayload: Codable, Sendable {
 
 // MARK: - New Gateway Events (v1.1.0)
 
+/// Sent when a user starts typing in a channel.
 public struct TypingStart: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let guild_id: GuildID?
@@ -389,12 +665,14 @@ public struct TypingStart: Codable, Hashable, Sendable {
     public let member: GuildMember?
 }
 
+/// Sent when a message is pinned or unpinned in a channel.
 public struct ChannelPinsUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID?
     public let channel_id: ChannelID
     public let last_pin_timestamp: String?
 }
 
+/// Sent when a user's presence or status is updated.
 public struct PresenceUpdate: Codable, Hashable, Sendable {
     public let user: User
     public let guild_id: GuildID
@@ -402,6 +680,7 @@ public struct PresenceUpdate: Codable, Hashable, Sendable {
     public let activities: [PresenceUpdatePayload.Activity]
     public let client_status: ClientStatus
     
+    /// The user's client status across platforms.
     public struct ClientStatus: Codable, Hashable, Sendable {
         public let desktop: String?
         public let mobile: String?
@@ -409,25 +688,30 @@ public struct PresenceUpdate: Codable, Hashable, Sendable {
     }
 }
 
+/// Sent when a user is banned from a guild.
 public struct GuildBanAdd: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
+/// Sent when a user is unbanned from a guild.
 public struct GuildBanRemove: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let user: User
 }
 
+/// Sent when a guild's webhooks are updated.
 public struct WebhooksUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let channel_id: ChannelID
 }
 
+/// Sent when a guild's integrations are updated.
 public struct GuildIntegrationsUpdate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
 }
 
+/// Sent when an invite is created in a channel.
 public struct InviteCreate: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let code: String
@@ -442,6 +726,7 @@ public struct InviteCreate: Codable, Hashable, Sendable {
     public let temporary: Bool
     public let uses: Int
     
+    /// Partial application information for an invite target.
     public struct PartialApplication: Codable, Hashable, Sendable {
         public let id: ApplicationID
         public let name: String
@@ -450,6 +735,7 @@ public struct InviteCreate: Codable, Hashable, Sendable {
     }
 }
 
+/// Sent when an invite is deleted from a channel.
 public struct InviteDelete: Codable, Hashable, Sendable {
     public let channel_id: ChannelID
     public let guild_id: GuildID?
@@ -458,6 +744,7 @@ public struct InviteDelete: Codable, Hashable, Sendable {
 
 // MARK: - Auto Moderation
 
+/// Sent when an auto moderation rule action is executed.
 public struct AutoModerationActionExecution: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let action: AutoModerationRule.Action
@@ -474,6 +761,7 @@ public struct AutoModerationActionExecution: Codable, Hashable, Sendable {
 
 // MARK: - Audit Log
 
+/// Sent when a new audit log entry is created in a guild.
 public struct GuildAuditLogEntryCreate: Codable, Hashable, Sendable {
     public let guild_id: GuildID
     public let entry: AuditLogEntry
@@ -481,6 +769,7 @@ public struct GuildAuditLogEntryCreate: Codable, Hashable, Sendable {
 
 // MARK: - Poll Votes
 
+/// Sent when a user votes in a poll.
 public struct PollVote: Codable, Hashable, Sendable {
     public let user_id: UserID
     public let channel_id: ChannelID
@@ -491,6 +780,7 @@ public struct PollVote: Codable, Hashable, Sendable {
 
 // MARK: - Soundboard
 
+/// Represents a soundboard sound in a guild.
 public struct SoundboardSound: Codable, Hashable, Sendable {
     public let id: SoundboardSoundID
     public let guild_id: GuildID?
@@ -508,6 +798,7 @@ public struct SoundboardSound: Codable, Hashable, Sendable {
 
 // MARK: - Application Commands
 
+/// Sent when application command permissions are updated in a guild.
 public struct ApplicationCommandPermissionsUpdate: Codable, Hashable, Sendable {
     public let id: ApplicationCommandID
     public let application_id: ApplicationID
@@ -515,8 +806,35 @@ public struct ApplicationCommandPermissionsUpdate: Codable, Hashable, Sendable {
     public let permissions: [ApplicationCommandPermissions]
 }
 
+/// A single permission entry for an application command in a guild.
 public struct ApplicationCommandPermissions: Codable, Hashable, Sendable {
     public let id: ApplicationCommandID
     public let type: Int
     public let permissions: String
+}
+
+// MARK: - Gateway Bot
+
+/// Response from GET /gateway/bot.
+///
+/// Contains the recommended gateway URL, shard count, and session start limits.
+public struct GatewayBotResponse: Codable, Sendable {
+    /// The WebSocket URL for the gateway.
+    public let url: String
+    /// The recommended number of shards.
+    public let shards: Int
+    /// Information about the session start limit.
+    public let session_start_limit: SessionStartLimit
+}
+
+/// Session start limit information from GET /gateway/bot.
+public struct SessionStartLimit: Codable, Sendable {
+    /// Total number of session starts allowed in the current window.
+    public let total: Int
+    /// Remaining session starts in the current window.
+    public let remaining: Int
+    /// Milliseconds until the session start limit resets.
+    public let reset_after: Int
+    /// Maximum number of concurrent identify requests allowed.
+    public let max_concurrency: Int
 }

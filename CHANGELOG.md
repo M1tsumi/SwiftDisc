@@ -5,6 +5,146 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-06-14
+
+### Overview
+SwiftDisc 2.4.1 is a correctness, security, and developer-experience release. It fixes a critical bug where the event `AsyncStream` was never populated, adds dedicated error cases for common HTTP responses, improves API ergonomics, sets sensible memory limits on the built-in cache, introduces the pluggable transport system, and applies security hardening across token handling, logging, and HTTP header processing.
+
+### Added
+- **Dedicated error cases** — `DiscordError.rateLimited`, `.forbidden`, `.notFound` are now thrown directly for HTTP 429/403/404 instead of generic `.http` errors, enabling more precise error handling
+- **`@discardableResult` on message send methods** — `sendMessage(channelId:content:)`, `sendMessage(channelId:content:embeds:)`, and the full-parameter `sendMessage(...)` overload now suppress unused-result warnings
+- **`HTTPTransport` protocol** — public protocol with a single `request(method:url:body:headers:) async throws -> HTTPResponse` method. Conform to this to swap out the entire HTTP networking stack. Ships with a default `URLSessionHTTPTransport` that matches the existing behaviour exactly
+- **`WebSocketTransport` protocol** — public protocol inheriting `WebSocketClient` for WebSocket connections. Default `URLSessionWebSocketTransport` included
+- **`HTTPResponse` struct** — carries `data`, `statusCode`, and `headers: [String: String]` so custom transports can propagate response headers (e.g. `Retry-After`, `X-RateLimit-Limit`) to the rate-limiter
+- **`httpTransport` / `webSocketTransport` properties** on `DiscordConfiguration` — pass custom transports at init time; `nil` uses the built-in URLSession defaults
+- **`SwiftDiscAHCTransport` library** — optional in-tree target providing an `AHCTransport` built on AsyncHTTPClient with native `ProxyConfiguration` support. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Zero impact on existing projects that don't need it
+
+### Fixed
+- **Event stream not emitting events (P0)** — `EventDispatcher.process()` was routing events to closure callbacks and updating the cache, but never calling `client._internalEmitEvent(event)`. This meant the `AsyncStream<DiscordEvent>` exposed via `client.events` was perpetually empty. All events now correctly flow to both closure callbacks and the async stream
+- **Cache unbounded growth** — `Cache.Configuration` default values for `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, and `maxEmojiEntries` changed from `nil` (unbounded) to sensible defaults (50K / 50K / 10K / 500 / 500 respectively), preventing memory exhaustion on large bots
+- **Duplicate `WebSocketClient`/`WebSocketMessage` definitions** — consolidated into `HTTPTransport.swift`; removed the redundant `URLSessionWebSocketAdapter` wrapper layer
+- **`getRaw` missing audit-log reason** — `HTTPClient.getRaw()` now passes `X-Audit-Log-Reason` through `makeRequestHeaders`, matching all other REST methods. Audit reasons on raw GET requests were previously silently dropped
+- **`DiscordClient.token` backed by `RedactedToken`** — the public `token` property remains accessible as `String`, but is now stored internally as `RedactedToken`, preventing accidental token leakage via debug descriptions or logging
+- **ShardingGatewayManager token hardened** — the sharding manager now stores the bot token as `RedactedToken` instead of a bare `String`, providing consistent redaction across all token consumers
+- **Fallback HTTPClient stub token hardened** — the `#else`-branch stub (unsupported platforms) also uses `RedactedToken` for consistency
+- **CRLF header injection in URLSessionTransport** — header values are now sanitized by stripping `\r` and `\n` characters before being set on `URLRequest`, preventing HTTP header injection via unsanitized caller-supplied values
+- **`os_log` privacy hardening** — `DefaultDiscordLogger` now uses private (`%@`) instead of public (`%{public}@`) format specifiers, preventing sensitive data from appearing in the system log
+- **Compiler warnings resolved** — fixed `var` → `let` (unmutated variables), removed unnecessary `try` on non-throwing calls, suppressed unused result warnings in examples and tests
+
+### Changed
+- **`DiscordError.isTransient`** now returns `true` for the new `.rateLimited` case
+- **`DiscordError.isRateLimited`** now checks both HTTP 429 status codes and the dedicated `.rateLimited` case
+- **`HTTPClient.makeAPIError`** maps HTTP 429/403/404 to their dedicated `DiscordError` cases before falling through to generic `.api` or `.http` errors
+- **`HTTPClient`** now uses a `transport: HTTPTransport` internally instead of a raw `URLSession`. The `URLSessionHTTPTransport` default preserves the existing URLSession configuration, proxy support, and `deinit` cleanup exactly. Custom transports passed via `DiscordConfiguration.httpTransport` are used instead
+- **`GatewayClient`** now uses `WebSocketTransport` (inherits `WebSocketClient`) as its socket type. Supports custom WebSocket transports from `DiscordConfiguration.webSocketTransport`
+- **`URLSessionWebSocketAdapter` removed** — no longer needed; `URLSessionWebSocketTransport` is used directly
+
+## [2.4.0] - 2026-06-13
+
+### Overview
+SwiftDisc 2.4.0 is a developer-experience release focused on observability, safety, and Discord API compliance. It introduces connection state observability, structured logging, lifecycle callbacks, configurable HTTP connections, cache statistics and LRU eviction, per-request retry policies, forward-compatible enum decoding, and comprehensive Discord API documentation verification. Two new example bots (Webhook and Sharding) demonstrate real-world patterns, and a Components v2 example shows the latest Discord UI features.
+
+### Added
+- **Connection state stream** — `GatewayStatus` public enum (`.disconnected`, `.connecting`, `.identifying`, `.ready`, `.resuming`, `.reconnecting`), `AsyncStream<GatewayStatus>` broadcast from `GatewayClient`, exposed as `client.connectionState` (stream) and `client.gatewayStatus` (current value) on `DiscordClient`
+- **Lifecycle callbacks** — `onResumed`, `onDisconnected`, `onSessionInvalidated` on `DiscordClient`; `.resumed` event case in `DiscordEvent`; wired through `EventDispatcher`
+- **Structured logging** — `DiscordLogLevel` enum, `DiscordLogger` protocol, `DefaultDiscordLogger` (uses `os_log` on Apple platforms, `print` fallback elsewhere), `logger` property on `DiscordConfiguration`
+- **Cache statistics** — `userCount`, `channelCount`, `guildCount`, `messageCount`, `channelsWithMessages`, `summary` for human-readable cache overview
+- **Cache LRU eviction** — `lastAccessedAt` tracking in `TimedValue`, `maxUsers`, `maxChannels`, `maxGuilds`, `maxRolesPerGuild`, `maxEmojiEntries` configuration options, `enforceLRUBounds()` helper for automatic least-recently-used eviction on upsert
+- **Configurable HTTP connections** — `httpMaxConnectionsPerHost` property on `DiscordConfiguration`, consumed by `HTTPClient` and `URLSessionWebSocketAdapter`
+- **Per-request retry override** — `isIdempotent` flag on internal HTTP request chain; GET=true (retries 5xx + network errors), POST/PUT/PATCH/DELETE=false (only 429 rate limits). Fixes safety issue where DELETE could retry on 5xx
+- **Forward-compatible enum decoding** — `unknown` cases with custom `init(from:)` fallback on `Button.Style`, `GuildScheduledEvent.EntityType`, `GuildScheduledEvent.Status`, `RoleConnectionMetadataType`, `InteractionResponseType`, `ApplicationCommandOptionType`, `GatewayOpcode` — prevents decoding crashes when Discord adds new enum values
+- **GatewayOpcode completeness** — added `voiceStateUpdate = 4`, `requestSoundboardSounds = 31`, `requestChannelInfo = 43` per Discord API documentation
+- **Gateway status tracking** — `ShardingGatewayManager` now uses `GatewayStatus` for shard state display
+- **Event system documentation** — new "Event handling guide" section in README covering callback vs AsyncStream choice, connection state stream, and lifecycle callbacks
+- **Examples** — `Examples/WebhookBot.swift` (full webhook lifecycle CRUD), `Examples/ShardingBot.swift` (sharded connection with state monitoring via AsyncStream), `Examples/ComponentsV2Bot.swift` (IS_COMPONENTS_V2 flag, channel select menu, modal with Label+TextInput layout)
+- **README version badge** — `release-2.4.0-blue` badge
+
+### Changed
+- **HTTPClient** — `patchMultipart`, `deleteMultipart`, and `postStickerMultipart` methods now pass `isIdempotent: false` for correct retry behavior on unsafe operations
+- **Button style documentation** — corrected from "1-5, 10" to "1-6" to match current Discord API docs (Premium = 6)
+- **RoleConnectionMetadataType** — removed `CaseIterable` conformance when adding `unknown` case
+- **EvictionTask** — now also triggers on `ensureChannelStub` for consistency
+- **Package.swift** — added `ComponentsV2BotExample` executable target
+
+### Fixed
+- **GatewayOpcode enum** — was missing `voiceStateUpdate = 4`, `requestSoundboardSounds = 31`, `requestChannelInfo = 43`; decoding now correctly handles these opcodes
+- **Non-idempotent multipart retries** — PATCH, DELETE, and POST sticker multipart methods were defaulting to `isIdempotent = true`, which could cause unsafe retries on 5xx errors for mutating operations
+- **Button style documentation** — comment claimed valid range "1-5, 10" but Discord API docs specify 1-6
+
+## [2.3.1] - 2026-05-14
+
+### Overview
+SwiftDisc 2.3.1 adds comprehensive API documentation using Apple's DocC framework, provides developer-friendly documentation for all public APIs, delivers new REST endpoints, correctness fixes, builder improvements, and internal utility infrastructure for improved error handling, JSON encoding consistency, token security, retry policies, and cache performance.
+
+### Added
+- **DocC documentation** — added comprehensive DocC comments to all public APIs with detailed parameter descriptions, return values, throws documentation, and usage examples
+- **Swift-DocC plugin integration** — added Swift-DocC plugin dependency to Package.swift for automated documentation generation
+- **GitHub Actions workflow** — added workflow for automatic documentation generation and deployment to GitHub Pages
+- **Application command localization** — `localization` parameter support when creating application commands
+- **Soundboard playback endpoint** — `playSoundboardSound` REST endpoint for soundboard audio playback
+- **Poll voter pagination** — poll voter pagination endpoint with `Snowflake.rawValue` cursor support
+- **Guild bulk ban** — `bulkBanMembers` REST endpoint for banning multiple members at once
+- **X-Audit-Log-Reason header** — support for supplying an audit log reason header on applicable REST calls
+- **Enhanced documentation** — improved developer experience with detailed syntax examples, use cases, and edge case handling
+- **`disconnect()` alias** — added `public func disconnect()` as a conventional alias for `shutdown()` on `DiscordClient`
+- **Initial presence at connect** — `loginAndConnect(intents:)` and `loginAndConnectSharded(index:total:intents:)` now accept optional `status`, `activities`, `afk`, and `since` parameters to set bot presence immediately after connecting
+- **`DiscordError.authenticationFailed`** — added typed error case for Gateway close code 4004 (invalid/missing bot token)
+- **JSONCoders** — shared JSONEncoder/JSONDecoder instances used across Gateway, REST, and Webhook layers for consistent encoding behavior and reduced overhead
+- **OptionalField** — three-state enum (absent, null, value) for distinguishing between field omission, explicit null, and value in PATCH payloads
+- **RetryPolicy** — configurable retry behavior for transient failures with exponential backoff and max attempt limits
+- **RedactedToken** — token wrapper that prevents accidental leakage in logs and errors by redacting string representations
+- **DiscordAPIErrorBody** — parses Discord's nested validation error responses and flattens them into a list of per-field validation failures
+- **Cache reverse index** — messageToChannelIndex for O(1) message removal instead of O(n) channel scan
+- **Cache.removeGuild()** — method to clear guild entry, roles, emojis, and associated data from cache
+- **DiscordError.apiValidation** — new error case for structured validation errors with flattened per-field failures
+- **DiscordError convenience properties** — httpStatusCode, apiErrorCode, validationErrors, isRateLimited, isAuthenticationFailure, isCancelled, isTransient for easy error introspection
+- **MessagePayload.clearContent()** — method to explicitly send null to Discord for clearing message content
+- **InternalTests.swift** — comprehensive unit tests for new internal utility types
+
+### Changed
+- **Documentation infrastructure** — migrated to DocC for modern, Apple-style documentation generation
+- **Version references** — updated all version references to 2.3.1 across the codebase
+- **Guild member search** — updated to use the POST endpoint instead of GET
+- **Route key normalization** — refactored route key generation for improved reliability and clarity
+- **GatewayClient** — uses RedactedToken instead of raw String for token, uses shared JSONCoders, updated User-Agent header to DiscordBot format
+- **WebhookClient** — uses shared JSONCoders instead of local instances (fixes decoding issue with snake_case property names)
+- **HTTPClient** — uses shared JSONCoders, integrates RetryPolicy for configurable backoff, uses makeAPIError helper for improved error parsing
+- **RateLimiter** — added proactive global rate limiting (50 req/sec sliding window), Discord bucket ID tracking with routeKeyToBucket mapping, scope detection (user/global/shared), fallback to X-RateLimit-Reset epoch timestamp
+- **Cache** — message removal now uses reverse index for O(1) lookup, message cap enforcement cleans up reverse index, guild delete event triggers cache cleanup
+- **DiscordClient.editMessage** — content parameter changed from String? to OptionalField<String> to support explicit null for clearing content
+- **MessagePayload** — content field changed from String? to OptionalField<String> with default .absent
+- **DiscordUtils** — improved documentation for all utility enums, fixed MessageFormat.escapeSpecialCharacters() to only escape Discord's actual markdown metacharacters
+- **EventDispatcher** — calls cache.removeGuild() on guildDelete events
+
+### Fixed
+- **Sticker upload multipart format** — corrected multipart body formatting for sticker file uploads
+- **Application emoji endpoint paths** — fixed incorrect URL paths for application emoji REST endpoints
+- **Rate-limit bucket keying** — resolved concurrency and parameter keying issues in rate-limit bucket handling
+- **Poll voter pagination cursor** — now correctly uses `Snowflake.rawValue` for the pagination cursor
+- **Slash option `Choice` construction** — builds `Choice` with `name_localizations` and `JSONValue` properly
+- **Missing `autoModerationRuleUpdate` event** — added missing `DiscordEvent` case for auto moderation rule updates
+- **`ChannelSelectMenu` and `TextInput` builders** — corrected builder type signatures and argument ordering
+- **`ViewManager.ChannelSelect` init** — reordered initialization arguments to match expected call sites
+- **Missing type annotations** — restored type annotations and definitions inadvertently removed during DocC edits
+- **CI build failures** — fixed compilation failures introduced by incomplete DocC additions
+- **Docs workflow** — corrected `swift-docc-plugin` command, removed invalid `swift package resolve` step, and tarred docs before artifact upload to avoid colon-in-filename errors
+- **SPM warnings** — dropped bogus excludes and silenced unhandled-file warnings in the Examples target
+- **Gateway heartbeat ACK tolerance** — reduced tolerance from 3 to 1 missed ACK to comply with Discord spec and detect zombied connections immediately
+- **Gateway session-invalidating close codes** — added `forceClose()` to WebSocketClient to drop connections without sending clean close frames (1000/1001), preserving sessions for resume
+- **Gateway send rate limiting** — implemented token-bucket rate limiter enforcing Discord's 120 events per 60 seconds limit on all outgoing gateway sends
+- **Identify rate limiting** — enforced Discord's 1 identify per 5 seconds per token rate limit with cooldown before sending Identify payloads
+- **Gateway URL fetching** — added `GET /gateway/bot` REST endpoint call to fetch recommended gateway URL and session start limits before connecting
+- **Session start limit enforcement** — check and wait if session start limit is reached before identifying to avoid hitting Discord's identify rate limits
+- **Shard count validation** — validate user-provided shard parameters against recommended shard count from gateway bot endpoint and warn if exceeded
+- **Resume URL expiration** — track resume gateway URL age and clear expired URLs (~7 days) to force fresh identify instead of failing resume attempts
+- **Discord-initiated heartbeats** — added handling for op 1 Heartbeat requests sent by Discord to request immediate heartbeat responses
+- **Gateway socket guard cleanup** — removed unused and redundant socket guards in `requestGuildMembers` and `setPresence` methods
+- **Voice intent removal** — removed `guildVoiceStates` intent since voice support is not planned
+- **Fatal gateway close code propagation** — `GatewayClient.connectReadyContinuation` is now a throwing continuation so fatal close codes (e.g., 4004 Authentication Failed) during initial connect propagate as typed `DiscordError` instead of hanging indefinitely
+- **WebhookClient decoding** — previous local coders applied .convertFromSnakeCase which silently broke Message decoding since models declare snake_case property names directly
+- **Cache message removal** — was O(n) channel scan, now O(1) via reverse index
+- **Markdown escaping** — MessageFormat.escapeSpecialCharacters() was escaping unnecessary characters (parentheses, brackets, etc.), now only escapes Discord's actual metacharacters
+
 ## [2.3.0] - 2026-05-12
 
 ### Overview

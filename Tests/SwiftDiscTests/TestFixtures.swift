@@ -30,6 +30,26 @@ enum TestFixtures {
         return try JSONDecoder().decode(Message.self, from: data)
     }
 
+    /// Creates a minimal decodable `Guild` fixture with required fields.
+    static func makeGuild(id: String = "g1", name: String = "Test Guild") throws -> Guild {
+        let payload: [String: Any] = [
+            "id": id,
+            "name": name
+        ]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        return try JSONDecoder().decode(Guild.self, from: data)
+    }
+
+    /// Creates a minimal `Role` fixture.
+    static func makeRole(id: String = "r1", name: String = "Test Role") -> Role {
+        Role(id: RoleID(id), name: name, color: nil, colors: nil, hoist: nil, position: nil, permissions: nil, managed: nil, mentionable: nil, icon: nil, unicode_emoji: nil)
+    }
+
+    /// Creates a minimal `Emoji` fixture.
+    static func makeEmoji(id: String = "e1", name: String = "testemoji") -> Emoji {
+        Emoji(id: EmojiID(id), name: name, roles: nil, user: nil, require_colons: nil, managed: nil, animated: nil, available: nil)
+    }
+
     /// Creates a minimal component `Interaction` fixture for collector and router tests.
     static func makeComponentInteraction(customId: String, guildId: String = "guild", channelId: String = "chan", id: String = "1", applicationId: String = "app", token: String = "tok") -> Interaction {
         let interactionId = InteractionID(id)
