@@ -1,5 +1,4 @@
 import Foundation
-import AsyncHTTPClient
 import SwiftDisc
 
 public final class AHCTransport: HTTPTransport, @unchecked Sendable {
