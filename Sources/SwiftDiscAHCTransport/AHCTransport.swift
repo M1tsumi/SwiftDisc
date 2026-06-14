@@ -1,7 +1,13 @@
 import Foundation
-import AsyncHTTPClient
 import SwiftDisc
 
+#if canImport(AsyncHTTPClient)
+import AsyncHTTPClient
+
+/// AsyncHTTPClient-based HTTP transport for SwiftDisc.
+///
+/// Provides proxy support and connection pooling on Linux and Windows where
+/// `URLSession` proxy support is unavailable.
 public final class AHCTransport: HTTPTransport, @unchecked Sendable {
     private let client: HTTPClient
 
@@ -42,3 +48,14 @@ public final class AHCTransport: HTTPTransport, @unchecked Sendable {
         return HTTPResponse(data: data, statusCode: Int(response.status.code), headers: respHeaders)
     }
 }
+#else
+/// Fallback when AsyncHTTPClient is not available on this platform.
+public final class AHCTransport: HTTPTransport, @unchecked Sendable {
+    public init(proxy: ProxyConfiguration? = nil) {
+    }
+
+    public func request(method: String, url: URL, body: Data?, headers: [String: String]?) async throws -> HTTPResponse {
+        throw DiscordError.network(NSError(domain: "Unavailable", code: -1, userInfo: nil))
+    }
+}
+#endif
