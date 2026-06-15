@@ -1,9 +1,3 @@
-<div align="center">
-
-![SwiftDisc Typing](assets/swiftdisc-logo.svg)
-
-</div>
-
 # SwiftDisc
 
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
