@@ -2,15 +2,22 @@ name: Documentation
 
 on:
   push:
-    branches: [main, next]
+    branches: [main]
   pull_request:
 
 jobs:
   build-docs:
     runs-on: macos-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: Install Swift 6.2
         uses: compnerd/gha-setup-swift@main
@@ -26,50 +33,23 @@ jobs:
           sed -i.bak '/^    dependencies: \[/s/\[/[.package(url: "https:\/\/github.com\/apple\/swift-docc-plugin.git", from: "1.4.4"),/' Package.swift && rm -f Package.swift.bak
           swift package --allow-writing-to-directory documentation generate-documentation --target SwiftDisc --output-path documentation
 
-      - name: Archive Documentation
-        if: always()
-        run: tar -czf documentation.tar.gz documentation/ || true
-
-      - name: Upload Documentation Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: documentation
-          path: documentation.tar.gz
+          path: ./documentation
 
   deploy-docs:
     needs: build-docs
-    runs-on: macos-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: write
       pages: write
       id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: macos-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download Documentation Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: documentation
-
-      - name: Extract Documentation
-        run: tar -xzf documentation.tar.gz
-
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./documentation
-          enable_jekyll: false
-          force_orphan: true
-
-      - name: Set Pages source to gh-pages
-        run: |
-          curl -L -X PUT \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${{ github.repository }}/pages" \
-            -d '{"source":{"branch":"gh-pages","path":"/"},"build_type":"legacy"}'
+        id: deployment
+        uses: actions/deploy-pages@v4
