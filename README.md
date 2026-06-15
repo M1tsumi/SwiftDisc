@@ -1,6 +1,6 @@
 <div align="center">
 
-![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/assets/typing-swiftdisc.svg)
+![SwiftDisc Typing](assets/swiftdisc-logo.svg)
 
 </div>
 

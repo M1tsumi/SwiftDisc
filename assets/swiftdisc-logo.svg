@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="480" height="80" xmlns="http://www.w3.org/2000/svg" style="background: #1a1b26; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;">
+  <style>
+    .prompt { fill: #7aa2f7; font-size: 20px; font-weight: bold; }
+    .text { fill: #c0caf5; font-size: 20px; }
+    .cursor { 
+      fill: #7aa2f7; 
+      animation: blink 1s step-end infinite;
+    }
+    .comment { fill: #565f89; font-size: 14px; }
+    
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    
+    .char { opacity: 0; animation: type 0.05s forwards; }
+    .c1 { animation-delay: 0.1s; }
+    .c2 { animation-delay: 0.15s; }
+    .c3 { animation-delay: 0.2s; }
+    .c4 { animation-delay: 0.25s; }
+    .c5 { animation-delay: 0.3s; }
+    .c6 { animation-delay: 0.35s; }
+    .c7 { animation-delay: 0.4s; }
+    .c8 { animation-delay: 0.45s; }
+    .c9 { animation-delay: 0.5s; }
+    
+    @keyframes type { to { opacity: 1; } }
+  </style>
+  
+  <text x="24" y="38">
+    <tspan class="prompt">$ </tspan>
+    <tspan class="text"><tspan class="char c1">S</tspan><tspan class="char c2">w</tspan><tspan class="char c3">i</tspan><tspan class="char c4">f</tspan><tspan class="char c5">t</tspan><tspan class="char c6">D</tspan><tspan class="char c7">i</tspan><tspan class="char c8">s</tspan><tspan class="char c9">c</tspan></tspan>
+    <tspan class="cursor" dx="4">_</tspan>
+  </text>
+  
+  <text x="24" y="60" class="comment"># Discord API wrapper for Swift</text>
+</svg>
