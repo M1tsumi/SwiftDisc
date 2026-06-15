@@ -1,6 +1,6 @@
 <div align="center">
 
-![SwiftDisc Typing](https://raw.githubusercontent.com/M1tsumi/M1tsumi/main/assets/typing-swiftdisc.svg)
+![SwiftDisc Typing](assets/swiftdisc-logo.svg)
 
 </div>
 
@@ -319,7 +319,7 @@ print(await cache.summary)
 
 | Resource | What you'll find |
 |----------|-----------------|
-| [**SwiftDiscDocs.txt**](SwiftDiscDocs.txt) | Complete API reference — every public type, method, and property |
+| [**GitHub Pages**](https://M1tsumi.github.io/SwiftDisc/) | Auto-generated DocC documentation for SwiftDisc — browseable API reference with search |
 | [**CHANGELOG.md**](CHANGELOG.md) | Detailed per-release changelog following Keep a Changelog |
 | [**CONTRIBUTING.md**](CONTRIBUTING.md) | How to set up, build, test, and submit PRs |
 | [**Examples/README.md**](Examples/README.md) | Quick-start guides for every example bot |
