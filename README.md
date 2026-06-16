@@ -1,10 +1,13 @@
-# SwiftDisc
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/swiftdisc-logo.svg">
+  <img alt="SwiftDisc" src="assets/swiftdisc-logo.svg" width="400">
+</picture>
 
 [![CI](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml/badge.svg)](https://github.com/M1tsumi/SwiftDisc/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/release-2.4.1-blue.svg)](https://github.com/M1tsumi/SwiftDisc/releases)
 [![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Discord](https://img.shields.io/discord/1439300942167146508?label=discord&logo=discord&logoColor=white)](https://discord.gg/6nS2KqxQtj)
+[![Discord](https://img.shields.io/discord/1439300942167146508?label=discord&logo=discord&logoColor=white)](https://discord.gg/tWyefRKKEH)
 
 Meet **SwiftDisc** — a Swift-first Discord API wrapper that feels like it was written for you, not by a spec sheet. It brings together the full Discord REST API, Gateway events, typed models, and high-level bot-building tools — all built on Swift 6.2's async/await and with actor-safe concurrency from day one.
 
@@ -322,7 +325,7 @@ print(await cache.summary)
 
 ## Community and support
 
-- **Discord server** — [https://discord.gg/6nS2KqxQtj](https://discord.gg/6nS2KqxQtj) — get help, discuss features, show off your bot
+- **Discord server** — [https://discord.gg/tWyefRKKEH](https://discord.gg/tWyefRKKEH) — get help, discuss features, show off your bot
 - **GitHub Issues** — [https://github.com/M1tsumi/SwiftDisc/issues](https://github.com/M1tsumi/SwiftDisc/issues) — report bugs and request features
 - **GitHub Discussions** — available on the repo for longer conversations
 
