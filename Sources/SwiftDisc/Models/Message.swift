@@ -649,7 +649,7 @@ public extension Message {
     /// }
     /// ```
     @discardableResult
-    func reply(
+    public func reply(
         client: DiscordClient,
         content: String? = nil,
         embeds: [Embed]? = nil,
