@@ -408,6 +408,48 @@ public actor DiscordClient {
     public var onSoundboardSoundUpdate: (@Sendable (SoundboardSound) async -> Void)?
     public var onSoundboardSoundDelete: (@Sendable (SoundboardSound) async -> Void)?
 
+    // -- Emojis / Stickers --
+    public var onGuildEmojisUpdate: (@Sendable (GuildEmojisUpdate) async -> Void)?
+    public var onGuildStickersUpdate: (@Sendable (GuildStickersUpdate) async -> Void)?
+
+    // -- Webhooks / Integrations / Invites --
+    public var onWebhooksUpdate: (@Sendable (WebhooksUpdate) async -> Void)?
+    public var onGuildIntegrationsUpdate: (@Sendable (GuildIntegrationsUpdate) async -> Void)?
+    public var onInviteCreate: (@Sendable (InviteCreate) async -> Void)?
+    public var onInviteDelete: (@Sendable (InviteDelete) async -> Void)?
+
+    // -- Audit Log --
+    public var onGuildAuditLogEntryCreate: (@Sendable (AuditLogEntry) async -> Void)?
+
+    // -- Auto Moderation Rules --
+    public var onAutoModerationRuleCreate: (@Sendable (AutoModerationRule) async -> Void)?
+    public var onAutoModerationRuleUpdate: (@Sendable (AutoModerationRule) async -> Void)?
+    public var onAutoModerationRuleDelete: (@Sendable (AutoModerationRule) async -> Void)?
+
+    // -- Voice Channel Status --
+    public var onVoiceChannelStatusUpdate: (@Sendable (VoiceChannelStatusUpdate) async -> Void)?
+    public var onVoiceChannelStartTimeUpdate: (@Sendable (VoiceChannelStartTimeUpdate) async -> Void)?
+
+    // -- User --
+    public var onUserUpdate: (@Sendable (User) async -> Void)?
+
+    // -- Channel Pins --
+    public var onChannelPinsUpdate: (@Sendable (ChannelPinsUpdate) async -> Void)?
+
+    // -- Threads (additional) --
+    public var onThreadMemberUpdate: (@Sendable (ThreadMember) async -> Void)?
+    public var onThreadListSync: (@Sendable (ThreadListSync) async -> Void)?
+
+    // -- Guild Members Chunk --
+    public var onGuildMembersChunk: (@Sendable (GuildMembersChunk) async -> Void)?
+
+    // -- Scheduled Event Users --
+    public var onGuildScheduledEventUserAdd: (@Sendable (GuildScheduledEventUser) async -> Void)?
+    public var onGuildScheduledEventUserRemove: (@Sendable (GuildScheduledEventUser) async -> Void)?
+
+    // -- Channel Info --
+    public var onChannelInfo: (@Sendable (Channel) async -> Void)?
+
     /// The command router for prefix-based commands.
     ///
     /// Set this to enable prefix-based command handling. Use `useCommands(_:)` to assign a router.
@@ -3128,6 +3170,33 @@ public actor DiscordClient {
 
     public func getGuildPreview(guildId: GuildID) async throws -> GuildPreview {
         try await http.get(path: "/guilds/\(guildId)/preview")
+    }
+
+    // MARK: - REST: Welcome Screen
+
+    /// Returns the Welcome Screen for a Community guild.
+    ///
+    /// - Parameter guildId: The ID of the guild.
+    /// - Returns: The guild's welcome screen configuration.
+    /// - Throws: `DiscordError` if the guild is not a Community guild.
+    public func getGuildWelcomeScreen(guildId: GuildID) async throws -> WelcomeScreen {
+        try await http.get(path: "/guilds/\(guildId)/welcome-screen")
+    }
+
+    /// Modifies the Welcome Screen for a Community guild.
+    ///
+    /// - Parameters:
+    ///   - guildId: The ID of the guild.
+    ///   - description: The new welcome screen description, or `nil` to leave unchanged.
+    ///   - welcomeChannels: The new welcome channels, or `nil` to leave unchanged.
+    /// - Returns: The updated welcome screen configuration.
+    /// - Throws: `DiscordError` if the guild is not a Community guild.
+    public func modifyGuildWelcomeScreen(guildId: GuildID, description: String? = nil, welcomeChannels: [WelcomeScreenChannel]? = nil) async throws -> WelcomeScreen {
+        struct Body: Encodable, Sendable {
+            let description: String?
+            let welcome_channels: [WelcomeScreenChannel]?
+        }
+        return try await http.patch(path: "/guilds/\(guildId)/welcome-screen", body: Body(description: description, welcome_channels: welcomeChannels))
     }
 
     // MARK: - REST: Threads
