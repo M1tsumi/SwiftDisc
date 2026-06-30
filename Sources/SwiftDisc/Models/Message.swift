@@ -47,7 +47,7 @@ public enum MessageType: Int, Codable, Sendable {
 }
 
 /// Message flags combined as a bitfield.
-public struct MessageFlags: OptionSet, Codable, Sendable {
+public struct MessageFlags: OptionSet, Codable, Hashable, Sendable {
     public let rawValue: Int
     public init(rawValue: Int) { self.rawValue = rawValue }
 

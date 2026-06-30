@@ -1,7 +1,7 @@
 import Foundation
 
 /// Guild member flags combined as a bitfield.
-public struct GuildMemberFlags: OptionSet, Codable, Sendable {
+public struct GuildMemberFlags: OptionSet, Codable, Hashable, Sendable {
     public let rawValue: Int
     public init(rawValue: Int) { self.rawValue = rawValue }
 
