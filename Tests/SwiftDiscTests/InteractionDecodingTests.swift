@@ -30,7 +30,7 @@ final class InteractionDecodingTests: XCTestCase {
         )
 
         XCTAssertEqual(payload.t, "INTERACTION_CREATE")
-        XCTAssertEqual(payload.d?.type, 3)
+        XCTAssertEqual(payload.d?.type, .messageComponent)
         XCTAssertEqual(payload.d?.data?.custom_id, "btn:confirm")
         XCTAssertEqual(payload.d?.data?.name, nil)
     }
@@ -51,7 +51,7 @@ final class InteractionDecodingTests: XCTestCase {
         """#
 
         let interaction = try JSONDecoder().decode(Interaction.self, from: Data(json.utf8))
-        XCTAssertEqual(interaction.type, 2)
+        XCTAssertEqual(interaction.type, .applicationCommand)
         XCTAssertEqual(interaction.data?.name, "ping")
     }
 }

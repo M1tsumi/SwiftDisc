@@ -172,7 +172,7 @@ actor EventDispatcher {
                 await client.cache.ensureChannelStub(id: cid)
             }
             if let cb = await client.onInteractionCreate { await cb(interaction) }
-            if interaction.type == 4, let ac = await client.autocomplete {
+            if interaction.type == .autocomplete, let ac = await client.autocomplete {
                 await ac.handle(interaction: interaction, client: client)
             } else if let s = await client.slashCommands {
                 await s.handle(interaction: interaction, client: client)

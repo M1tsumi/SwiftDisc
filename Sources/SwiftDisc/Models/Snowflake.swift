@@ -152,3 +152,7 @@ public typealias AuditLogEntryID = Snowflake<AuditLogEntryTag>
 /// An auto moderation rule ID.
 public enum AutoModerationRuleTag {}
 public typealias AutoModerationRuleID = Snowflake<AutoModerationRuleTag>
+
+/// A team ID.
+public enum TeamTag {}
+public typealias TeamID = Snowflake<TeamTag>

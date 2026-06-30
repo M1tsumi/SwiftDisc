@@ -1,5 +1,121 @@
 import Foundation
 
+/// A feature enabled on a guild.
+public enum GuildFeature: RawRepresentable, Codable, Hashable, Sendable {
+    case animatedIcon
+    case banner
+    case community
+    case discoveries
+    case featurable
+    case inviteSplash
+    case memberVerificationGateEnabled
+    case monetizationEnabled
+    case moreStickers
+    case news
+    case partnered
+    case previewEnabled
+    case raidAlertsDisabled
+    case roleSubscriptionsEnabled
+    case roleSubscriptionsPurchased
+    case ticketedEventsEnabled
+    case vanityUrl
+    case verified
+    case vipRegions
+    case welcomeScreenEnabled
+    case guestsEnabled
+    case guildTags
+    case enhancedRoleColors
+    case applicationCommandPermissionsV2
+    case autoModeration
+    case guildWebPageVanityUrl
+    case creatorMonetizable
+    case creatorMonetizableDisclaimer
+    case creatorStorePage
+    case roleSubscriptionsAvailableForPurchase
+    case onboardingEnabled
+    case onboarding
+    case soundboard
+    case memberProfiles
+    case roleSubscriptions
+    case home
+    case channelIconEmojisGenerated
+    case [`internal`]
+    case unknown(String)
+
+    public var rawValue: String {
+        switch self {
+        case .animatedIcon: return "ANIMATED_ICON"
+        case .banner: return "BANNER"
+        case .community: return "COMMUNITY"
+        case .discoveries: return "DISCOVERABLE"
+        case .featurable: return "FEATURABLE"
+        case .inviteSplash: return "INVITE_SPLASH"
+        case .memberVerificationGateEnabled: return "MEMBER_VERIFICATION_GATE_ENABLED"
+        case .monetizationEnabled: return "MONETIZATION_ENABLED"
+        case .moreStickers: return "MORE_STICKERS"
+        case .news: return "NEWS"
+        case .partnered: return "PARTNERED"
+        case .previewEnabled: return "PREVIEW_ENABLED"
+        case .raidAlertsDisabled: return "RAID_ALERTS_DISABLED"
+        case .roleSubscriptionsEnabled: return "ROLE_SUBSCRIPTIONS_ENABLED"
+        case .roleSubscriptionsPurchased: return "ROLE_SUBSCRIPTIONS_PURCHASED"
+        case .ticketedEventsEnabled: return "TICKETED_EVENTS_ENABLED"
+        case .vanityUrl: return "VANITY_URL"
+        case .verified: return "VERIFIED"
+        case .vipRegions: return "VIP_REGIONS"
+        case .welcomeScreenEnabled: return "WELCOME_SCREEN_ENABLED"
+        case .guestsEnabled: return "GUESTS_ENABLED"
+        case .guildTags: return "GUILD_TAGS"
+        case .enhancedRoleColors: return "ENHANCED_ROLE_COLORS"
+        case .applicationCommandPermissionsV2: return "APPLICATION_COMMAND_PERMISSIONS_V2"
+        case .autoModeration: return "AUTO_MODERATION"
+        case .guildWebPageVanityUrl: return "GUILD_WEB_PAGE_VANITY_URL"
+        case .creatorMonetizable: return "CREATOR_MONETIZABLE"
+        case .creatorMonetizableDisclaimer: return "CREATOR_MONETIZABLE_DISCLAIMER"
+        case .creatorStorePage: return "CREATOR_STORE_PAGE"
+        case .roleSubscriptionsAvailableForPurchase: return "ROLE_SUBSCRIPTIONS_AVAILABLE_FOR_PURCHASE"
+        case .onboardingEnabled: return "ONBOARDING_ENABLED"
+        case .onboarding: return "ONBOARDING"
+        case .soundboard: return "SOUNDBOARD"
+        case .memberProfiles: return "MEMBER_PROFILES"
+        case .roleSubscriptions: return "ROLE_SUBSCRIPTIONS"
+        case .home: return "HOME"
+        case .channelIconEmojisGenerated: return "CHANNEL_ICON_EMOJIS_GENERATED"
+        case .`internal`: return "INTERNAL"
+        case .unknown(let value): return value
+        }
+    }
+
+    public init(rawValue: String) {
+        self = Self.allKnown.first { $0.rawValue == rawValue } ?? .unknown(rawValue)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = Self(rawValue: rawValue)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    private static let allKnown: [GuildFeature] = [
+        .animatedIcon, .banner, .community, .discoveries, .featurable,
+        .inviteSplash, .memberVerificationGateEnabled, .monetizationEnabled,
+        .moreStickers, .news, .partnered, .previewEnabled, .raidAlertsDisabled,
+        .roleSubscriptionsEnabled, .roleSubscriptionsPurchased, .ticketedEventsEnabled,
+        .vanityUrl, .verified, .vipRegions, .welcomeScreenEnabled, .guestsEnabled,
+        .guildTags, .enhancedRoleColors, .applicationCommandPermissionsV2,
+        .autoModeration, .guildWebPageVanityUrl, .creatorMonetizable,
+        .creatorMonetizableDisclaimer, .creatorStorePage,
+        .roleSubscriptionsAvailableForPurchase, .onboardingEnabled, .onboarding,
+        .soundboard, .memberProfiles, .roleSubscriptions, .home,
+        .channelIconEmojisGenerated, .`internal`
+    ]
+}
+
 /// Represents a Discord guild (server).
 ///
 /// Guilds are the primary way users organize and communicate in Discord.
@@ -93,7 +209,7 @@ public struct Guild: Codable, Hashable, Sendable {
     public let emojis: [Emoji]?
     
     /// The enabled guild features.
-    public let features: [String]?
+    public let features: [GuildFeature]?
     
     /// The custom guild stickers.
     public let stickers: [Sticker]?

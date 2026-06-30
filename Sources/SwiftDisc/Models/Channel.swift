@@ -1,21 +1,65 @@
 import Foundation
 
+/// The type of a Discord channel.
+public enum ChannelType: Int, Codable, Sendable {
+    case text = 0
+    case dm = 1
+    case voice = 2
+    case groupDm = 3
+    case category = 4
+    case news = 5
+    case store = 6
+    case newsThread = 10
+    case publicThread = 11
+    case privateThread = 12
+    case stageChannel = 13
+    case directory = 14
+    case forum = 15
+    case mediaChannel = 16
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = ChannelType(rawValue: rawValue) ?? .unknown
+    }
+}
+
+/// Channel flags combined as a bitfield.
+public struct ChannelFlags: OptionSet, Codable, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        rawValue = try container.decode(Int.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    public static let hideMediaDownloadOptions = ChannelFlags(rawValue: 1 << 15)
+}
+
 /// Represents a Discord channel.
 ///
 /// Channels are the primary way users communicate in Discord. This struct represents all channel types including:
-/// - Text channels (type 0)
-/// - Direct messages (type 1)
-/// - Voice channels (type 2)
-/// - Group DMs (type 3)
-/// - Categories (type 4)
-/// - News channels (type 5)
-/// - Store channels (type 6)
-/// - News threads (type 10)
-/// - Public threads (type 11)
-/// - Private threads (type 12)
-/// - Stage channels (type 13)
-/// - Directory channels (type 14)
-/// - Forum channels (type 15)
+/// - Text channels (``ChannelType/text``)
+/// - Direct messages (``ChannelType/dm``)
+/// - Voice channels (``ChannelType/voice``)
+/// - Group DMs (``ChannelType/groupDm``)
+/// - Categories (``ChannelType/category``)
+/// - News channels (``ChannelType/news``)
+/// - Store channels (``ChannelType/store``)
+/// - News threads (``ChannelType/newsThread``)
+/// - Public threads (``ChannelType/publicThread``)
+/// - Private threads (``ChannelType/privateThread``)
+/// - Stage channels (``ChannelType/stageChannel``)
+/// - Directory channels (``ChannelType/directory``)
+/// - Forum channels (``ChannelType/forum``)
+/// - Media channels (``ChannelType/mediaChannel``)
 ///
 /// ## Example
 ///
@@ -30,23 +74,6 @@ import Foundation
 /// }
 /// ```
 ///
-/// ## Channel Type Constants
-///
-/// - `0`: Guild text channel
-/// - `1`: DM channel
-/// - `2`: Guild voice channel
-/// - `3`: Group DM
-/// - `4`: Guild category
-/// - `5`: Guild news channel
-/// - `6`: Guild store channel
-/// - `10`: Guild news thread
-/// - `11`: Guild public thread
-/// - `12`: Guild private thread
-/// - `13`: Guild stage channel
-/// - `14`: Guild directory
-/// - `15`: Guild forum channel
-/// - `16`: Guild media channel
-///
 /// ## Related Topics
 /// - ``DiscordClient/getChannel(id:)``
 /// - ``DiscordClient/modifyChannel(id:topic:nsfw:position:parentId:)``
@@ -56,8 +83,8 @@ public struct Channel: Codable, Hashable, Sendable {
     /// The unique ID of the channel.
     public let id: ChannelID
     
-    /// The type of channel (see Channel Type Constants in the struct documentation).
-    public let type: Int
+    /// The type of channel.
+    public let type: ChannelType
     
     /// The name of the channel (1-100 characters).
     public let name: String?
@@ -126,7 +153,7 @@ public struct Channel: Codable, Hashable, Sendable {
     public let permissions: String?
     
     /// Channel flags combined as a bitfield.
-    public let flags: Int?
+    public let flags: ChannelFlags?
     
     /// Number of messages ever sent in a thread (thread channels only).
     public let total_message_sent: Int?
@@ -163,7 +190,7 @@ public struct Channel: Codable, Hashable, Sendable {
 
     public init(
         id: ChannelID,
-        type: Int,
+        type: ChannelType,
         name: String? = nil,
         topic: String? = nil,
         nsfw: Bool? = nil,
@@ -186,7 +213,7 @@ public struct Channel: Codable, Hashable, Sendable {
         member: ThreadMember? = nil,
         default_auto_archive_duration: Int? = nil,
         permissions: String? = nil,
-        flags: Int? = nil,
+        flags: ChannelFlags? = nil,
         total_message_sent: Int? = nil,
         available_tags: [ForumTag]? = nil,
         applied_tags: [ForumTagID]? = nil,
@@ -307,7 +334,7 @@ public struct DefaultReaction: Codable, Hashable, Sendable {
 ///    let overwrites = channel.permission_overwrites {
 ///     for overwrite in overwrites {
 ///         print("Overwrite ID: \(overwrite.id)")
-///         print("Type: \(overwrite.type == 0 ? "role" : "member")")
+///         print("Type: \(overwrite.type)") // 0 = role, 1 = member
 ///         print("Allow: \(overwrite.allow)")
 ///         print("Deny: \(overwrite.deny)")
 ///     }

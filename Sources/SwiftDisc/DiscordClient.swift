@@ -954,7 +954,7 @@ public actor DiscordClient {
         allowedMentions: AllowedMentions? = nil,
         messageReference: MessageReference? = nil,
         tts: Bool? = nil,
-        flags: Int? = nil,
+        flags: MessageFlags? = nil,
         stickerIds: [StickerID]? = nil,
         attachments: [PartialAttachment]? = nil,
         poll: Poll? = nil,
@@ -967,7 +967,7 @@ public actor DiscordClient {
             let allowed_mentions: AllowedMentions?
             let message_reference: MessageReference?
             let tts: Bool?
-            let flags: Int?
+            let flags: MessageFlags?
             let sticker_ids: [StickerID]?
             let attachments: [PartialAttachment]?
             let poll: Poll?
@@ -1108,12 +1108,12 @@ public actor DiscordClient {
     }
 
     // Merges optional message fields with a raw `poll` payload.
-    public func createPollMessage(channelId: ChannelID, content: String? = nil, poll: [String: JSONValue], flags: Int? = nil, components: [JSONValue]? = nil) async throws -> Message {
+    public func createPollMessage(channelId: ChannelID, content: String? = nil, poll: [String: JSONValue], flags: MessageFlags? = nil, components: [JSONValue]? = nil) async throws -> Message {
         var body: [String: JSONValue] = [
             "poll": .object(poll)
         ]
         if let content { body["content"] = .string(content) }
-        if let flags { body["flags"] = .int(flags) }
+        if let flags { body["flags"] = .int(flags.rawValue) }
         if let components { body["components"] = .array(components) }
         return try await http.post(path: "/channels/\(channelId)/messages", body: body)
     }
@@ -1124,12 +1124,12 @@ public actor DiscordClient {
     }
 
     // MARK: - Poll typed payload
-    public func createPollMessage(channelId: ChannelID, payload: PollPayload, content: String? = nil, flags: Int? = nil, components: [JSONValue]? = nil) async throws -> Message {
+    public func createPollMessage(channelId: ChannelID, payload: PollPayload, content: String? = nil, flags: MessageFlags? = nil, components: [JSONValue]? = nil) async throws -> Message {
         var body: [String: JSONValue] = [
             "poll": .object(payload.pollJSON())
         ]
         if let content { body["content"] = .string(content) }
-        if let flags { body["flags"] = .int(flags) }
+        if let flags { body["flags"] = .int(flags.rawValue) }
         if let components { body["components"] = .array(components) }
         return try await http.post(path: "/channels/\(channelId)/messages", body: body)
     }
@@ -1951,7 +1951,7 @@ public actor DiscordClient {
         allowedMentions: AllowedMentions? = nil,
         messageReference: MessageReference? = nil,
         tts: Bool? = nil,
-        flags: Int? = nil,
+        flags: MessageFlags? = nil,
         stickerIds: [StickerID]? = nil,
         attachments: [PartialAttachment]? = nil,
         poll: Poll? = nil
@@ -1963,7 +1963,7 @@ public actor DiscordClient {
             let allowed_mentions: AllowedMentions?
             let message_reference: MessageReference?
             let tts: Bool?
-            let flags: Int?
+            let flags: MessageFlags?
             let sticker_ids: [StickerID]?
             let attachments: [PartialAttachment]?
             let poll: Poll?
@@ -1975,7 +1975,7 @@ public actor DiscordClient {
                 allowedMentions: AllowedMentions? = nil,
                 messageReference: MessageReference? = nil,
                 tts: Bool? = nil,
-                flags: Int? = nil,
+                flags: MessageFlags? = nil,
                 stickerIds: [StickerID]? = nil,
                 attachments: [PartialAttachment]? = nil,
                 poll: Poll? = nil
@@ -3120,11 +3120,11 @@ public actor DiscordClient {
     }
 
     
-    public func modifyGuildMember(guildId: GuildID, userId: UserID, nick: String? = nil, roles: [RoleID]? = nil, flags: Int? = nil) async throws -> GuildMember {
+    public func modifyGuildMember(guildId: GuildID, userId: UserID, nick: String? = nil, roles: [RoleID]? = nil, flags: GuildMemberFlags? = nil) async throws -> GuildMember {
         struct Body: Encodable, Sendable {
             let nick: String?
             let roles: [RoleID]?
-            let flags: Int?
+            let flags: GuildMemberFlags?
         }
         return try await http.patch(path: "/guilds/\(guildId)/members/\(userId)", body: Body(nick: nick, roles: roles, flags: flags))
     }
@@ -3170,6 +3170,52 @@ public actor DiscordClient {
 
     public func getGuildPreview(guildId: GuildID) async throws -> GuildPreview {
         try await http.get(path: "/guilds/\(guildId)/preview")
+    }
+
+    // MARK: - REST: Guild New Member Welcome
+
+    /// Returns the New Member Welcome configuration for a guild.
+    public func getGuildNewMemberWelcome(guildId: GuildID) async throws -> NewMemberWelcome {
+        try await http.get(path: "/guilds/\(guildId)/new-member-welcome")
+    }
+
+    /// Modifies the New Member Welcome configuration for a guild.
+    public func modifyGuildNewMemberWelcome(guildId: GuildID, enabled: Bool? = nil, welcomeMessage: String? = nil, welcomeChannelId: ChannelID? = nil) async throws -> NewMemberWelcome {
+        struct Body: Encodable, Sendable {
+            let enabled: Bool?
+            let welcome_message: String?
+            let welcome_channel_id: ChannelID?
+        }
+        return try await http.patch(path: "/guilds/\(guildId)/new-member-welcome", body: Body(enabled: enabled, welcome_message: welcomeMessage, welcome_channel_id: welcomeChannelId))
+    }
+
+    // MARK: - REST: Guild MFA Level
+
+    /// Returns the MFA level for a guild.
+    public func getGuildMFALevel(guildId: GuildID) async throws -> MFALevel {
+        try await http.get(path: "/guilds/\(guildId)/mfa")
+    }
+
+    /// Sets the MFA level for a guild.
+    /// - Parameter level: The MFA level (0 = disabled, 1 = enabled).
+    public func modifyGuildMFALevel(guildId: GuildID, level: Int) async throws -> MFALevel {
+        struct Body: Encodable, Sendable {
+            let level: Int
+        }
+        return try await http.post(path: "/guilds/\(guildId)/mfa", body: Body(level: level))
+    }
+
+    // MARK: - REST: Guild Incidents
+
+    /// Modifies the incident actions configuration for a guild.
+    /// Use this to enable/disable raid protection and set invite cooldowns.
+    public func modifyGuildIncidentActions(guildId: GuildID, raidsDisabled: Bool? = nil, raidSystemEnabled: Bool? = nil, invitesDisabledUntil: String? = nil) async throws -> IncidentsData {
+        struct Body: Encodable, Sendable {
+            let raids_disabled: Bool?
+            let raid_system_enabled: Bool?
+            let invites_disabled_until: String?
+        }
+        return try await http.put(path: "/guilds/\(guildId)/incident-actions", body: Body(raids_disabled: raidsDisabled, raid_system_enabled: raidSystemEnabled, invites_disabled_until: invitesDisabledUntil))
     }
 
     // MARK: - REST: Welcome Screen
@@ -3898,14 +3944,14 @@ public actor DiscordClient {
     public func getGuildAuditLog(
         guildId: GuildID,
         userId: UserID? = nil,
-        actionType: Int? = nil,
+        actionType: AuditLogEventType? = nil,
         before: AuditLogEntryID? = nil,
         limit: Int? = nil
     ) async throws -> AuditLog {
         let path = "/guilds/\(guildId)/audit-logs"
         var qs: [String] = []
         if let userId { qs.append("user_id=\(userId)") }
-        if let actionType { qs.append("action_type=\(actionType)") }
+        if let actionType { qs.append("action_type=\(actionType.rawValue)") }
         if let before { qs.append("before=\(before)") }
         if let limit { qs.append("limit=\(limit)") }
         let q = qs.isEmpty ? "" : "?" + qs.joined(separator: "&")
@@ -3924,8 +3970,8 @@ public actor DiscordClient {
     public func createAutoModerationRule(
         guildId: GuildID,
         name: String,
-        eventType: Int,
-        triggerType: Int,
+        eventType: AutoModerationRule.EventType,
+        triggerType: AutoModerationRule.TriggerType,
         triggerMetadata: AutoModerationRule.TriggerMetadata? = nil,
         actions: [AutoModerationRule.Action],
         enabled: Bool = true,
@@ -3934,8 +3980,8 @@ public actor DiscordClient {
     ) async throws -> AutoModerationRule {
         struct Body: Encodable, Sendable {
             let name: String
-            let event_type: Int
-            let trigger_type: Int
+            let event_type: AutoModerationRule.EventType
+            let trigger_type: AutoModerationRule.TriggerType
             let trigger_metadata: AutoModerationRule.TriggerMetadata?
             let actions: [AutoModerationRule.Action]
             let enabled: Bool?
@@ -3959,7 +4005,7 @@ public actor DiscordClient {
         guildId: GuildID,
         ruleId: AutoModerationRuleID,
         name: String? = nil,
-        eventType: Int? = nil,
+        eventType: AutoModerationRule.EventType? = nil,
         triggerMetadata: AutoModerationRule.TriggerMetadata? = nil,
         actions: [AutoModerationRule.Action]? = nil,
         enabled: Bool? = nil,
@@ -3968,7 +4014,7 @@ public actor DiscordClient {
     ) async throws -> AutoModerationRule {
         struct Body: Encodable, Sendable {
             let name: String?
-            let event_type: Int?
+            let event_type: AutoModerationRule.EventType?
             let trigger_metadata: AutoModerationRule.TriggerMetadata?
             let actions: [AutoModerationRule.Action]?
             let enabled: Bool?
@@ -4004,23 +4050,23 @@ public actor DiscordClient {
         name: String,
         scheduledStartTimeISO8601: String,
         scheduledEndTimeISO8601: String? = nil,
-        privacyLevel: Int = 2,
+        privacyLevel: EventPrivacyLevel = .guildOnly,
         description: String? = nil,
         entityMetadata: GuildScheduledEvent.EntityMetadata? = nil
     ) async throws -> GuildScheduledEvent {
         struct Body: Encodable, Sendable {
             let channel_id: ChannelID?
-            let entity_type: Int
+            let entity_type: GuildScheduledEvent.EntityType
             let name: String
             let scheduled_start_time: String
             let scheduled_end_time: String?
-            let privacy_level: Int
+            let privacy_level: EventPrivacyLevel
             let description: String?
             let entity_metadata: GuildScheduledEvent.EntityMetadata?
         }
         let body = Body(
             channel_id: channelId,
-            entity_type: entityType.rawValue,
+            entity_type: entityType,
             name: name,
             scheduled_start_time: scheduledStartTimeISO8601,
             scheduled_end_time: scheduledEndTimeISO8601,
@@ -4044,31 +4090,31 @@ public actor DiscordClient {
         name: String? = nil,
         scheduledStartTimeISO8601: String? = nil,
         scheduledEndTimeISO8601: String? = nil,
-        privacyLevel: Int? = nil,
+        privacyLevel: EventPrivacyLevel? = nil,
         description: String? = nil,
         status: GuildScheduledEvent.Status? = nil,
         entityMetadata: GuildScheduledEvent.EntityMetadata? = nil
     ) async throws -> GuildScheduledEvent {
         struct Body: Encodable, Sendable {
             let channel_id: ChannelID?
-            let entity_type: Int?
+            let entity_type: GuildScheduledEvent.EntityType?
             let name: String?
             let scheduled_start_time: String?
             let scheduled_end_time: String?
-            let privacy_level: Int?
+            let privacy_level: EventPrivacyLevel?
             let description: String?
-            let status: Int?
+            let status: GuildScheduledEvent.Status?
             let entity_metadata: GuildScheduledEvent.EntityMetadata?
         }
         let body = Body(
             channel_id: channelId,
-            entity_type: entityType?.rawValue,
+            entity_type: entityType,
             name: name,
             scheduled_start_time: scheduledStartTimeISO8601,
             scheduled_end_time: scheduledEndTimeISO8601,
             privacy_level: privacyLevel,
             description: description,
-            status: status?.rawValue,
+            status: status,
             entity_metadata: entityMetadata
         )
         return try await http.patch(path: "/guilds/\(guildId)/scheduled-events/\(eventId)", body: body)
@@ -4097,11 +4143,11 @@ public actor DiscordClient {
     }
 
     // MARK: - REST: Stage Instances
-    public func createStageInstance(channelId: ChannelID, topic: String, privacyLevel: Int = 2, guildScheduledEventId: GuildScheduledEventID? = nil) async throws -> StageInstance {
+    public func createStageInstance(channelId: ChannelID, topic: String, privacyLevel: EventPrivacyLevel = .guildOnly, guildScheduledEventId: GuildScheduledEventID? = nil) async throws -> StageInstance {
         struct Body: Encodable, Sendable {
             let channel_id: ChannelID
             let topic: String
-            let privacy_level: Int
+            let privacy_level: EventPrivacyLevel
             let guild_scheduled_event_id: GuildScheduledEventID?
         }
         let body = Body(channel_id: channelId, topic: topic, privacy_level: privacyLevel, guild_scheduled_event_id: guildScheduledEventId)
@@ -4112,10 +4158,10 @@ public actor DiscordClient {
         try await http.get(path: "/stage-instances/\(channelId)")
     }
 
-    public func modifyStageInstance(channelId: ChannelID, topic: String? = nil, privacyLevel: Int? = nil) async throws -> StageInstance {
+    public func modifyStageInstance(channelId: ChannelID, topic: String? = nil, privacyLevel: EventPrivacyLevel? = nil) async throws -> StageInstance {
         struct Body: Encodable, Sendable {
             let topic: String?
-            let privacy_level: Int?
+            let privacy_level: EventPrivacyLevel?
         }
         return try await http.patch(path: "/stage-instances/\(channelId)", body: Body(topic: topic, privacy_level: privacyLevel))
     }

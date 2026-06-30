@@ -1,5 +1,81 @@
 import Foundation
 
+/// The type of a Discord message.
+public enum MessageType: Int, Codable, Sendable {
+    case `default` = 0
+    case recipientAdd = 1
+    case recipientRemove = 2
+    case call = 3
+    case channelNameChange = 4
+    case channelIconChange = 5
+    case channelPinnedMessage = 6
+    case userJoin = 7
+    case guildBoost = 8
+    case guildBoostTier1 = 9
+    case guildBoostTier2 = 10
+    case guildBoostTier3 = 11
+    case channelFollowAdd = 12
+    case guildDiscoveryDisqualified = 14
+    case guildDiscoveryRequalified = 15
+    case guildDiscoveryGracePeriodInitialWarning = 16
+    case guildDiscoveryGracePeriodFinalWarning = 17
+    case threadCreated = 18
+    case reply = 19
+    case chatInputCommand = 20
+    case threadStarterMessage = 21
+    case guildInviteReminder = 22
+    case contextMenuCommand = 23
+    case autoModerationAction = 24
+    case roleSubscriptionPurchase = 25
+    case interactionPremiumUpsell = 26
+    case stageStart = 27
+    case stageEnd = 28
+    case stageSpeaker = 29
+    case stageTopic = 31
+    case guildApplicationPremiumSubscription = 32
+    case guildIncidentAlertModeEnabled = 36
+    case guildIncidentAlertModeDisabled = 37
+    case guildIncidentReportRaid = 38
+    case guildIncidentReportFalseAlarm = 39
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = MessageType(rawValue: rawValue) ?? .unknown
+    }
+}
+
+/// Message flags combined as a bitfield.
+public struct MessageFlags: OptionSet, Codable, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        rawValue = try container.decode(Int.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    public static let crossposted = MessageFlags(rawValue: 1 << 0)
+    public static let isCrosspost = MessageFlags(rawValue: 1 << 1)
+    public static let suppressEmbeds = MessageFlags(rawValue: 1 << 2)
+    public static let sourceMessageDeleted = MessageFlags(rawValue: 1 << 3)
+    public static let urgent = MessageFlags(rawValue: 1 << 4)
+    public static let hasThread = MessageFlags(rawValue: 1 << 5)
+    public static let ephemeral = MessageFlags(rawValue: 1 << 6)
+    public static let loading = MessageFlags(rawValue: 1 << 7)
+    public static let failedToMentionSomeRoles = MessageFlags(rawValue: 1 << 8)
+    public static let suppressNotifications = MessageFlags(rawValue: 1 << 12)
+    public static let isVoiceMessage = MessageFlags(rawValue: 1 << 13)
+    public static let hasSnapshot = MessageFlags(rawValue: 1 << 14)
+    public static let isComponentsV2 = MessageFlags(rawValue: 1 << 15)
+}
+
 // `Box` breaks recursive value-type cycles during Codable decoding.
 // It is `@unchecked Sendable` because it only stores immutable state (`let value`).
 // That keeps instances effectively safe to share across tasks.
@@ -94,8 +170,8 @@ public struct Message: Codable, Hashable, Sendable {
     /// Whether this message is pinned.
     public let pinned: Bool?
     
-    /// The type of message (see Discord documentation for type values).
-    public let type: Int?
+    /// The type of message.
+    public let type: MessageType?
     
     /// Activity information for rich presence-related messages.
     public let activity: MessageActivity?
@@ -113,7 +189,7 @@ public struct Message: Codable, Hashable, Sendable {
     public let referenced_message: Box<Message>?
     
     /// Message flags combined as a bitfield.
-    public let flags: Int?
+    public let flags: MessageFlags?
     
     /// Metadata for interaction-related messages.
     public let interaction_metadata: MessageInteractionMetadata?

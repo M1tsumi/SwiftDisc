@@ -1,5 +1,27 @@
 import Foundation
 
+/// Guild member flags combined as a bitfield.
+public struct GuildMemberFlags: OptionSet, Codable, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        rawValue = try container.decode(Int.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    public static let didRejoin = GuildMemberFlags(rawValue: 1 << 0)
+    public static let completedOnboarding = GuildMemberFlags(rawValue: 1 << 1)
+    public static let bypassesVerification = GuildMemberFlags(rawValue: 1 << 2)
+    public static let startedOnboarding = GuildMemberFlags(rawValue: 1 << 3)
+    public static let automodQuarantinedGuildTag = GuildMemberFlags(rawValue: 1 << 4)
+}
+
 /// Represents a Discord guild member.
 ///
 /// Guild members represent a user's membership in a specific guild (server),
@@ -57,7 +79,7 @@ public struct GuildMember: Codable, Hashable, Sendable {
     public let collectibles: Collectibles?
     
     /// Guild member flags as a bit set.
-    public let flags: Int?
+    public let flags: GuildMemberFlags?
     
     /// When the member's timeout expires (ISO 8601 timestamp).
     public let communication_disabled_until: String?
