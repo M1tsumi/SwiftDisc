@@ -87,7 +87,7 @@ public struct DefaultDiscordLogger: DiscordLogger {
 /// - ``RateLimitEvent``
 public struct DiscordConfiguration: Sendable {
     /// SwiftDisc library version for User-Agent header and Discord tracking.
-    public static let version = "2.4.0"
+    public static let version = "2.5.0"
 
     // Default URLs are static constants so startup never depends on force-unwrapped strings.
     /// The default Discord API base URL.

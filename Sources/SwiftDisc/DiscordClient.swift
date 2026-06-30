@@ -3807,31 +3807,23 @@ public actor DiscordClient {
     /// Response from the Get Target Users Job Status endpoint.
     public struct InviteTargetUsersJobStatus: Codable, Sendable {
         public let job_id: String
-        public let status: String  // e.g. "pending", "complete", "failed"
+        public let status: String
         public let invite_code: String
     }
 
-    /// Get the raw CSV of user IDs allowed to accept a restricted invite.
-    /// The response is CSV bytes with a `user_id` header column (not JSON).
-    /// Decode with `String(data: result, encoding: .utf8)` to get the CSV text.
-    /// `GET /invites/{code}/users` â€” Added 2026-01-13, updated 2026-02-05 (header always `user_id`).
+    /// Get the users allowed to see and accept a restricted invite.
     public func getInviteTargetUsers(code: String) async throws -> Data {
-        try await http.getRaw(path: "/invites/\(code)/users")
+        try await http.getRaw(path: "/invites/\(code)/target-users")
     }
 
-    /// Replace the list of users allowed to accept a restricted invite by uploading a CSV file.
-    /// The CSV must have a `user_id` column. Returns the async job status.
-    /// `PATCH /invites/{code}/users` â€” Added 2026-01-13.
-    public func updateInviteTargetUsers(code: String, file: FileAttachment) async throws -> InviteTargetUsersJobStatus {
-        struct Empty: Encodable, Sendable {
-        }
-        return try await http.patchMultipart(path: "/invites/\(code)/users", jsonBody: Empty(), files: [file])
+    /// Replace the list of users allowed to accept a restricted invite.
+    public func updateInviteTargetUsers(code: String, csvData: Data) async throws {
+        try await http.putFile(path: "/invites/\(code)/target-users", data: csvData, filename: "target_users.csv")
     }
 
-    /// Check the status of the background job that processes a target-users CSV upload.
-    /// `GET /invites/{code}/users/jobs/{job_id}` â€” Added 2026-01-13.
-    public func getInviteTargetUsersJobStatus(code: String, jobId: String) async throws -> InviteTargetUsersJobStatus {
-        try await http.get(path: "/invites/\(code)/users/jobs/\(jobId)")
+    /// Check the status of a target-users processing job.
+    public func getInviteTargetUsersJobStatus(code: String) async throws -> InviteTargetUsersJobStatus {
+        try await http.get(path: "/invites/\(code)/target-users/job-status")
     }
 
     public func getTemplate(code: String) async throws -> Template {
@@ -4365,29 +4357,4 @@ public actor DiscordClient {
         try await http.put(path: "/channels/\(channelId)/voice-status", body: Body(status: status))
     }
 
-    // MARK: - REST: Guild Role Member Counts
-
-    /// Get the number of members that have each role in a guild.
-    public func getGuildRoleMemberCounts(guildId: GuildID) async throws -> [RoleMemberCount] {
-        try await http.get(path: "/guilds/\(guildId)/roles/member-counts")
-    }
-
-    // MARK: - REST: Invite Target Users
-
-    /// Get the users allowed to see and accept an invite.
-    /// Response is a CSV file with the header `user_id`.
-    public func getInviteTargetUsers(code: String) async throws -> Data {
-        try await http.getRaw(path: "/invites/\(code)/target-users")
-    }
-
-    /// Update the users allowed to see and accept an invite.
-    /// Uploads a CSV file with user IDs.
-    public func updateInviteTargetUsers(code: String, csvData: Data) async throws {
-        try await http.putFile(path: "/invites/\(code)/target-users", data: csvData, filename: "target_users.csv")
-    }
-
-    /// Check the status of a target-users processing job.
-    public func getInviteTargetUsersJobStatus(code: String) async throws -> InviteTargetUsersJobStatus {
-        try await http.get(path: "/invites/\(code)/target-users/job-status")
-    }
 }

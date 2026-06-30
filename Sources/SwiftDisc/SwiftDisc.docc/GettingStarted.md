@@ -17,7 +17,7 @@ let package = Package(
     name: "MyBot",
     platforms: [.macOS(.v11)],
     dependencies: [
-        .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.4.0")
+        .package(url: "https://github.com/M1tsumi/SwiftDisc.git", from: "2.5.0")
     ],
     targets: [
         .executableTarget(
