@@ -4354,7 +4354,8 @@ public actor DiscordClient {
         struct Body: Encodable, Sendable {
             let status: String?
         }
-        try await http.put(path: "/channels/\(channelId)/voice-status", body: Body(status: status))
+        struct EmptyResponse: Decodable, Sendable {}
+        let _: EmptyResponse = try await http.put(path: "/channels/\(channelId)/voice-status", body: Body(status: status))
     }
 
 }

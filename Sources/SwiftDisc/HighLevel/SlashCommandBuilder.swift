@@ -71,36 +71,42 @@ public struct SlashCommandBuilder: Sendable {
         }
 
         @discardableResult
-        public func required(_ req: Bool = true) -> OptionBuilder { var c = self; c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: req, choices: c.option.choices); return c }
-
-        @discardableResult
-        public func nameLocalizations(_ loc: [String: String]) -> OptionBuilder { var c = self; c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: c.option.required, choices: c.option.choices, nameLocalizations: loc); return c }
-
-        @discardableResult
-        public func descriptionLocalizations(_ loc: [String: String]) -> OptionBuilder { var c = self; c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: c.option.required, choices: c.option.choices, descriptionLocalizations: loc); return c }
-
-        @discardableResult
-        public func choice(_ name: String, _ value: String) -> OptionBuilder {
-            var c = self
-            c.choices.append(.init(name: name, name_localizations: nil, value: .string(value)))
-            c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: c.option.required, choices: c.choices)
-            return c
+        public mutating func required(_ req: Bool = true) -> OptionBuilder {
+            option = .init(type: option.type, name: option.name, description: option.description, required: req, choices: option.choices)
+            return self
         }
 
         @discardableResult
-        public func choice(_ name: String, _ value: Int) -> OptionBuilder {
-            var c = self
-            c.choices.append(.init(name: name, name_localizations: nil, value: .int(value)))
-            c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: c.option.required, choices: c.choices)
-            return c
+        public mutating func nameLocalizations(_ loc: [String: String]) -> OptionBuilder {
+            option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: option.choices, nameLocalizations: loc)
+            return self
         }
 
         @discardableResult
-        public func choice(_ name: String, _ value: Double) -> OptionBuilder {
-            var c = self
-            c.choices.append(.init(name: name, name_localizations: nil, value: .double(value)))
-            c.option = .init(type: c.option.type, name: c.option.name, description: c.option.description, required: c.option.required, choices: c.choices)
-            return c
+        public mutating func descriptionLocalizations(_ loc: [String: String]) -> OptionBuilder {
+            option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: option.choices, descriptionLocalizations: loc)
+            return self
+        }
+
+        @discardableResult
+        public mutating func choice(_ name: String, _ value: String) -> OptionBuilder {
+            choices.append(.init(name: name, name_localizations: nil, value: .string(value)))
+            option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: choices)
+            return self
+        }
+
+        @discardableResult
+        public mutating func choice(_ name: String, _ value: Int) -> OptionBuilder {
+            choices.append(.init(name: name, name_localizations: nil, value: .int(value)))
+            option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: choices)
+            return self
+        }
+
+        @discardableResult
+        public mutating func choice(_ name: String, _ value: Double) -> OptionBuilder {
+            choices.append(.init(name: name, name_localizations: nil, value: .double(value)))
+            option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: choices)
+            return self
         }
 
         public func build() -> DiscordClient.ApplicationCommandOption { option }

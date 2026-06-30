@@ -19,7 +19,7 @@ Building a Discord bot in Swift should feel like writing Swift, not like transla
 
 **Actor-safe concurrency from day one.** Built on Swift 6.2 structured concurrency with `async/await` and Swift actors. No locking, no queues, no data races. The cache, the gateway, and the REST client are all designed around Swift's sendability guarantees.
 
-**Everything is typed.** Every Discord API object is a native Swift struct with full `Codable`, `Hashable`, and `Sendable` conformance. The REST client returns concrete types, not `[String: Any]` dictionaries. Invalid payloads fail at compile time, not at 3 AM.
+**Everything is typed.** Every Discord API object is a native Swift struct with full `Codable`, `Hashable`, and `Sendable` conformance. The REST client returns concrete types, not `[String: Any]` dictionaries. Invalid payloads surface as decoding errors rather than silent `nil` values.
 
 **One actor to rule them all.** `DiscordClient` owns the gateway connection, the REST client, the event dispatcher, and the cache. You never juggle separate connections or wonder which client to call.
 

@@ -221,17 +221,18 @@ public struct MentionableSelectMenuBuilder: Sendable {
     private var placeholder: String?
     private var min: Int?
     private var max: Int?
-    private var defaultMentionableIds: [String]?
+    private var defaultValues: [MessageComponent.SelectMenu.DefaultValue]?
     private var disabled: Bool?
     public init() {}
     public func customId(_ id: String) -> MentionableSelectMenuBuilder { var c = self; c.customId = id; return c }
     public func placeholder(_ t: String) -> MentionableSelectMenuBuilder { var c = self; c.placeholder = t; return c }
     public func minValues(_ v: Int) -> MentionableSelectMenuBuilder { var c = self; c.min = v; return c }
     public func maxValues(_ v: Int) -> MentionableSelectMenuBuilder { var c = self; c.max = v; return c }
-    public func defaultMentionables(_ ids: [String]) -> MentionableSelectMenuBuilder { var c = self; c.defaultMentionableIds = ids; return c }
+    public func defaultUsers(_ ids: [UserID]) -> MentionableSelectMenuBuilder { var c = self; c.defaultValues = ids.map { .init(id: $0.rawValue, type: "user") }; return c }
+    public func defaultRoles(_ ids: [RoleID]) -> MentionableSelectMenuBuilder { var c = self; c.defaultValues = ids.map { .init(id: $0.rawValue, type: "role") }; return c }
     public func disabled(_ d: Bool = true) -> MentionableSelectMenuBuilder { var c = self; c.disabled = d; return c }
     public func build() -> MessageComponent {
-        MessageComponent.mentionableSelect(.init(custom_id: customId, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled, default_values: defaultMentionableIds?.map { .init(id: $0, type: "user") }))
+        MessageComponent.mentionableSelect(.init(custom_id: customId, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled, default_values: defaultValues))
     }
 }
 
@@ -415,7 +416,7 @@ public struct ActionRowBuilder: Sendable {
     public init() {}
     
     /// Adds a component to the action row.
-    public func add(_ component: MessageComponent) -> ActionRowBuilder { var c = self; c.components.append(component); return c }
+    public mutating func add(_ component: MessageComponent) -> ActionRowBuilder { components.append(component); return self }
     
     /// Builds the action row.
     public func build() -> MessageComponent { .actionRow(.init(components: components)) }
@@ -442,13 +443,14 @@ public struct ComponentsBuilder: Sendable {
     public init() {}
     
     /// Adds a row to the components.
-    public mutating func row(_ configure: @Sendable (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
+    public func row(_ configure: @Sendable (inout ActionRowBuilder) -> Void) -> ComponentsBuilder {
         var rb = ActionRowBuilder()
         configure(&rb)
+        var c = self
         if case let .actionRow(row) = rb.build() {
-            rows.append(row)
+            c.rows.append(row)
         }
-        return self
+        return c
     }
     
     /// Builds all rows.

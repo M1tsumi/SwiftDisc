@@ -384,11 +384,16 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     func putMultipart<B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) {
+        for file in files {
+            if file.data.count > configuration.maxUploadBytes {
+                throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
+            }
+        }
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let routeKey = makeRouteKey(method: "PUT", path: trimmed)
         let boundary = makeBoundary()
         let jsonData = try? jsonBody.map { try JSONCoders.encoder.encode($0) }
-        let (_, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
+        let (respData, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
             var url = configuration.restBase
             url.appendPathComponent(trimmed)
             let body = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files, boundary: boundary)
@@ -405,7 +410,7 @@ final class HTTPClient: @unchecked Sendable {
             return (resp.data, http)
         }
         if (200..<300).contains(http.statusCode) { return }
-        throw makeAPIError(statusCode: http.statusCode, data: Data(), debugContext: "Endpoint: PUT \(path)")
+        throw makeAPIError(statusCode: http.statusCode, data: respData, debugContext: "Endpoint: PUT \(path)")
     }
 
     func putFile(path: String, data: Data, filename: String, reason: String? = nil) async throws(DiscordError) {
