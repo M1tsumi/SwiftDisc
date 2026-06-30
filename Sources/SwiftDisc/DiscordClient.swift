@@ -3441,7 +3441,13 @@ public actor DiscordClient {
         public let options: [ApplicationCommandOption]?
         public let default_member_permissions: String?
         public let dm_permission: Bool?
-        public init(name: String, description: String, options: [ApplicationCommandOption]? = nil, default_member_permissions: String? = nil, dm_permission: Bool? = nil, nameLocalizations: [String: String]? = nil, descriptionLocalizations: [String: String]? = nil) {
+        /// The command type (1 = CHAT_INPUT, 2 = USER, 3 = MESSAGE). Defaults to CHAT_INPUT.
+        public let type: Int?
+        /// Whether the command is age-restricted.
+        public let nsfw: Bool?
+        /// Interaction context(s) where the command can be used (0 = GUILD, 1 = BOT_DM, 2 = PRIVATE_CHANNEL).
+        public let contexts: [Int]?
+        public init(name: String, description: String, options: [ApplicationCommandOption]? = nil, default_member_permissions: String? = nil, dm_permission: Bool? = nil, nameLocalizations: [String: String]? = nil, descriptionLocalizations: [String: String]? = nil, type: Int? = nil, nsfw: Bool? = nil, contexts: [Int]? = nil) {
             self.name = name
             self.name_localizations = nameLocalizations
             self.description = description
@@ -3449,6 +3455,9 @@ public actor DiscordClient {
             self.options = options
             self.default_member_permissions = default_member_permissions
             self.dm_permission = dm_permission
+            self.type = type
+            self.nsfw = nsfw
+            self.contexts = contexts
         }
     }
 

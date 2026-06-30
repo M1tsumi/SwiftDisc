@@ -169,6 +169,72 @@ public struct ChannelSelectMenuBuilder: Sendable {
     }
 }
 
+// MARK: - User Select Menu Builder
+
+/// A builder for Discord user select menus.
+public struct UserSelectMenuBuilder: Sendable {
+    private var customId: String = ""
+    private var placeholder: String?
+    private var min: Int?
+    private var max: Int?
+    private var defaultUserIds: [UserID]?
+    private var disabled: Bool?
+    public init() {}
+    public func customId(_ id: String) -> UserSelectMenuBuilder { var c = self; c.customId = id; return c }
+    public func placeholder(_ t: String) -> UserSelectMenuBuilder { var c = self; c.placeholder = t; return c }
+    public func minValues(_ v: Int) -> UserSelectMenuBuilder { var c = self; c.min = v; return c }
+    public func maxValues(_ v: Int) -> UserSelectMenuBuilder { var c = self; c.max = v; return c }
+    public func defaultUsers(_ ids: [UserID]) -> UserSelectMenuBuilder { var c = self; c.defaultUserIds = ids; return c }
+    public func disabled(_ d: Bool = true) -> UserSelectMenuBuilder { var c = self; c.disabled = d; return c }
+    public func build() -> MessageComponent {
+        MessageComponent.userSelect(.init(custom_id: customId, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled, default_values: defaultUserIds?.map { .init(id: $0.rawValue, type: "user") }))
+    }
+}
+
+// MARK: - Role Select Menu Builder
+
+/// A builder for Discord role select menus.
+public struct RoleSelectMenuBuilder: Sendable {
+    private var customId: String = ""
+    private var placeholder: String?
+    private var min: Int?
+    private var max: Int?
+    private var defaultRoleIds: [RoleID]?
+    private var disabled: Bool?
+    public init() {}
+    public func customId(_ id: String) -> RoleSelectMenuBuilder { var c = self; c.customId = id; return c }
+    public func placeholder(_ t: String) -> RoleSelectMenuBuilder { var c = self; c.placeholder = t; return c }
+    public func minValues(_ v: Int) -> RoleSelectMenuBuilder { var c = self; c.min = v; return c }
+    public func maxValues(_ v: Int) -> RoleSelectMenuBuilder { var c = self; c.max = v; return c }
+    public func defaultRoles(_ ids: [RoleID]) -> RoleSelectMenuBuilder { var c = self; c.defaultRoleIds = ids; return c }
+    public func disabled(_ d: Bool = true) -> RoleSelectMenuBuilder { var c = self; c.disabled = d; return c }
+    public func build() -> MessageComponent {
+        MessageComponent.roleSelect(.init(custom_id: customId, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled, default_values: defaultRoleIds?.map { .init(id: $0.rawValue, type: "role") }))
+    }
+}
+
+// MARK: - Mentionable Select Menu Builder
+
+/// A builder for Discord mentionable (users + roles) select menus.
+public struct MentionableSelectMenuBuilder: Sendable {
+    private var customId: String = ""
+    private var placeholder: String?
+    private var min: Int?
+    private var max: Int?
+    private var defaultMentionableIds: [String]?
+    private var disabled: Bool?
+    public init() {}
+    public func customId(_ id: String) -> MentionableSelectMenuBuilder { var c = self; c.customId = id; return c }
+    public func placeholder(_ t: String) -> MentionableSelectMenuBuilder { var c = self; c.placeholder = t; return c }
+    public func minValues(_ v: Int) -> MentionableSelectMenuBuilder { var c = self; c.min = v; return c }
+    public func maxValues(_ v: Int) -> MentionableSelectMenuBuilder { var c = self; c.max = v; return c }
+    public func defaultMentionables(_ ids: [String]) -> MentionableSelectMenuBuilder { var c = self; c.defaultMentionableIds = ids; return c }
+    public func disabled(_ d: Bool = true) -> MentionableSelectMenuBuilder { var c = self; c.disabled = d; return c }
+    public func build() -> MessageComponent {
+        MessageComponent.mentionableSelect(.init(custom_id: customId, placeholder: placeholder, min_values: min, max_values: max, disabled: disabled, default_values: defaultMentionableIds?.map { .init(id: $0, type: "user") }))
+    }
+}
+
 /// A builder for creating text input components (for modals).
 ///
 /// Use this builder to construct text inputs with validation.
