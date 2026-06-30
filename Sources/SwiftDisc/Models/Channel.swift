@@ -45,6 +45,7 @@ import Foundation
 /// - `13`: Guild stage channel
 /// - `14`: Guild directory
 /// - `15`: Guild forum channel
+/// - `16`: Guild media channel
 ///
 /// ## Related Topics
 /// - ``DiscordClient/getChannel(id:)``

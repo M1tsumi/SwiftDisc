@@ -141,6 +141,18 @@ public struct Message: Codable, Hashable, Sendable {
     
     /// The sync status of attachments.
     public let attachments_sync_status: Int?
+    
+    /// The webhook ID if the message was sent by a webhook.
+    public let webhook_id: WebhookID?
+    
+    /// Message snapshots (for forwarded messages).
+    public let message_snapshots: [MessageSnapshot]?
+    
+    /// Call information for messages in private channels.
+    public let call: MessageCall?
+    
+    /// Shared client-side theme data.
+    public let shared_client_theme: SharedClientTheme?
 }
 
 /// Represents a channel mention in a message.
@@ -174,6 +186,9 @@ public struct ChannelMention: Codable, Hashable, Sendable {
 /// )
 /// ```
 public struct MessageReference: Codable, Hashable, Sendable {
+    /// The type of reference (0 = DEFAULT, 1 = FORWARD).
+    public let type: Int?
+    
     /// The ID of the referenced message.
     public let message_id: MessageID?
     
@@ -186,7 +201,8 @@ public struct MessageReference: Codable, Hashable, Sendable {
     /// Whether to throw an error if the referenced message doesn't exist.
     public let fail_if_not_exists: Bool?
     
-    public init(message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+    public init(type: Int? = nil, message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+        self.type = type
         self.message_id = message_id
         self.channel_id = channel_id
         self.guild_id = guild_id
@@ -396,6 +412,22 @@ public struct PollAnswerUsers: Codable, Hashable, Sendable {
     public let after: UserID?
 }
 
+/// A snapshot of a message at the time it was forwarded.
+public struct MessageSnapshot: Codable, Hashable, Sendable {
+    public let message: Message
+}
+
+/// Information about a call in a private channel.
+public struct MessageCall: Codable, Hashable, Sendable {
+    public let participants: [UserID]
+    public let ended_timestamp: String?
+}
+
+/// Shared client-side theme data sent with a message.
+public struct SharedClientTheme: Codable, Hashable, Sendable {
+    public let theme: String?
+}
+
 /// Controls which mentions are allowed to trigger notifications in a message.
 ///
 /// Use this to prevent unwanted pings when sending messages.
@@ -456,6 +488,12 @@ public struct AllowedMentions: Codable, Hashable, Sendable {
 ///     }
 /// }
 /// ```
+/// Detailed count information for a reaction.
+public struct ReactionCountDetails: Codable, Hashable, Sendable {
+    public let burst: Int
+    public let normal: Int
+}
+
 public struct Reaction: Codable, Hashable, Sendable {
     /// The number of users who have reacted with this emoji.
     public let count: Int
@@ -463,8 +501,17 @@ public struct Reaction: Codable, Hashable, Sendable {
     /// Whether the current user has reacted with this emoji.
     public let me: Bool
     
+    /// Whether the current user has reacted with a super reaction.
+    public let me_burst: Bool?
+    
     /// The emoji information for this reaction.
     public let emoji: PartialEmoji
+    
+    /// Detailed count breakdown (burst vs normal).
+    public let count_details: ReactionCountDetails?
+    
+    /// Hex color codes for super reaction burst animation.
+    public let burst_colors: [String]?
 }
 
 /// Represents a partial emoji object.

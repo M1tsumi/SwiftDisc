@@ -170,6 +170,14 @@ public struct Guild: Codable, Hashable, Sendable {
     /// The approximate number of online members in the guild (from REST).
     public let approximate_presence_count: Int?
 
+    // MARK: - Incidents
+    /// Incidents data for the guild (raid alerts, etc.).
+    public let incidents_data: IncidentsData?
+
+    // MARK: - Welcome Screen
+    /// The welcome screen of a Community guild.
+    public let welcome_screen: WelcomeScreen?
+
     // MARK: - GUILD_CREATE-only fields
     /// ISO 8601 timestamp for when the bot joined (present only in GUILD_CREATE payloads).
     public let joined_at: String?
@@ -218,5 +226,27 @@ public struct Guild: Codable, Hashable, Sendable {
         self.max_video_channel_users = nil; self.max_stage_video_channel_users = nil
         self.approximate_member_count = nil; self.approximate_presence_count = nil
         self.joined_at = nil; self.members = members; self.channels = channels; self.threads = nil
+        self.incidents_data = nil; self.welcome_screen = nil
     }
+}
+
+/// Incidents data for a guild (e.g. raid detection).
+public struct IncidentsData: Codable, Hashable, Sendable {
+    public let raids_disabled: Bool?
+    public let raid_system_enabled: Bool?
+    public let invites_disabled_until: String?
+}
+
+/// Welcome screen shown to new members of a Community guild.
+public struct WelcomeScreen: Codable, Hashable, Sendable {
+    public let description: String?
+    public let welcome_channels: [WelcomeScreenChannel]?
+}
+
+/// A channel in the welcome screen.
+public struct WelcomeScreenChannel: Codable, Hashable, Sendable {
+    public let channel_id: ChannelID
+    public let description: String
+    public let emoji_id: EmojiID?
+    public let emoji_name: String?
 }

@@ -26,6 +26,8 @@ public struct AuditLogEntry: Codable, Hashable, Sendable {
         public let role_name: String?
         public let type: String?
         public let application_id: ApplicationID?
+        /// Voice channel status (for VOICE_CHANNEL_STATUS_UPDATE entries).
+        public let status: String?
     }
     public let id: AuditLogEntryID
     public let target_id: String?

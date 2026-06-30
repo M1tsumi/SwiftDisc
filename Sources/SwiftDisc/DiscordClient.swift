@@ -2497,24 +2497,26 @@ public actor DiscordClient {
     /// - Important: All fields are optional; only provided fields will be updated.
     ///           To explicitly clear the content field, pass `OptionalField.null`.
     /// - See Also: `sendMessage(channelId:content:)`
-    public func editMessage(channelId: ChannelID, messageId: MessageID, content: OptionalField<String> = .absent, embeds: [Embed]? = nil, components: [MessageComponent]? = nil) async throws -> Message {
+    public func editMessage(channelId: ChannelID, messageId: MessageID, content: OptionalField<String> = .absent, embeds: [Embed]? = nil, components: [MessageComponent]? = nil, attachments: [PartialAttachment]? = nil) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: OptionalField<String>
             let embeds: [Embed]?
             let components: [MessageComponent]?
+            let attachments: [PartialAttachment]?
 
             func encode(to encoder: Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
                 try container.encode(content, forKey: .content)
                 if let embeds = embeds { try container.encode(embeds, forKey: .embeds) }
                 if let components = components { try container.encode(components, forKey: .components) }
+                if let attachments = attachments { try container.encode(attachments, forKey: .attachments) }
             }
 
             enum CodingKeys: String, CodingKey {
-                case content, embeds, components
+                case content, embeds, components, attachments
             }
         }
-        return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components))
+        return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components, attachments: attachments))
     }
 
     /// Lists recent messages from a channel.
@@ -4225,5 +4227,43 @@ public actor DiscordClient {
     /// Get a single subscription.
     public func getApplicationSubscription(applicationId: ApplicationID, subscriptionId: AppSubscriptionID) async throws -> AppSubscription {
         try await http.get(path: "/applications/\(applicationId)/subscriptions/\(subscriptionId)")
+    }
+
+    // MARK: - REST: Voice Channel Status
+
+    /// Set a voice channel's status.
+    /// Requires `SET_VOICE_CHANNEL_STATUS` permission.
+    /// Also requires `MANAGE_CHANNELS` if the bot is not connected to the voice channel.
+    public func setVoiceChannelStatus(channelId: ChannelID, status: String?) async throws {
+        struct Body: Encodable, Sendable {
+            let status: String?
+        }
+        try await http.put(path: "/channels/\(channelId)/voice-status", body: Body(status: status))
+    }
+
+    // MARK: - REST: Guild Role Member Counts
+
+    /// Get the number of members that have each role in a guild.
+    public func getGuildRoleMemberCounts(guildId: GuildID) async throws -> [RoleMemberCount] {
+        try await http.get(path: "/guilds/\(guildId)/roles/member-counts")
+    }
+
+    // MARK: - REST: Invite Target Users
+
+    /// Get the users allowed to see and accept an invite.
+    /// Response is a CSV file with the header `user_id`.
+    public func getInviteTargetUsers(code: String) async throws -> Data {
+        try await http.getRaw(path: "/invites/\(code)/target-users")
+    }
+
+    /// Update the users allowed to see and accept an invite.
+    /// Uploads a CSV file with user IDs.
+    public func updateInviteTargetUsers(code: String, csvData: Data) async throws {
+        try await http.putFile(path: "/invites/\(code)/target-users", data: csvData, filename: "target_users.csv")
+    }
+
+    /// Check the status of a target-users processing job.
+    public func getInviteTargetUsersJobStatus(code: String) async throws -> InviteTargetUsersJobStatus {
+        try await http.get(path: "/invites/\(code)/target-users/job-status")
     }
 }

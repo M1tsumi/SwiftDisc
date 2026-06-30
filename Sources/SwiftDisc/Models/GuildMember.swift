@@ -46,4 +46,22 @@ public struct GuildMember: Codable, Hashable, Sendable {
     /// Effective permissions bitfield (decimal string) included by Discord in
     /// interaction payloads and some gateway member events.
     public let permissions: String?
+    
+    /// The member's guild banner hash.
+    public let banner: String?
+    
+    /// Avatar decoration data for the member's guild avatar.
+    public let avatar_decoration_data: AvatarDecorationData?
+    
+    /// Collectibles data for the member.
+    public let collectibles: Collectibles?
+    
+    /// Guild member flags as a bit set.
+    public let flags: Int?
+    
+    /// When the member's timeout expires (ISO 8601 timestamp).
+    public let communication_disabled_until: String?
+    
+    /// Whether the member has not yet passed Membership Screening.
+    public let pending: Bool?
 }

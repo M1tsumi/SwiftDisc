@@ -328,6 +328,9 @@ public enum DiscordEvent: Hashable, Sendable {
     case soundboardSoundCreate(SoundboardSound)
     case soundboardSoundUpdate(SoundboardSound)
     case soundboardSoundDelete(SoundboardSound)
+    // Voice Channel Status
+    case voiceChannelStatusUpdate(VoiceChannelStatusUpdate)
+    case voiceChannelStartTimeUpdate(VoiceChannelStartTimeUpdate)
     // User update
     case userUpdate(User)
     // Entitlements
@@ -795,6 +798,22 @@ public struct SoundboardSound: Codable, Hashable, Sendable {
 // MARK: - Entitlements
 
 // Entitlement model in Models/Monetization.swift
+
+// MARK: - Voice Channel Status
+
+/// Sent when a voice channel's status changes.
+public struct VoiceChannelStatusUpdate: Codable, Hashable, Sendable {
+    public let guild_id: GuildID
+    public let channel_id: ChannelID
+    public let status: String?
+}
+
+/// Sent when a voice session's start time changes.
+public struct VoiceChannelStartTimeUpdate: Codable, Hashable, Sendable {
+    public let guild_id: GuildID
+    public let channel_id: ChannelID
+    public let voice_start_time: String?
+}
 
 // MARK: - Application Commands
 

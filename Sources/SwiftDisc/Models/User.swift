@@ -84,6 +84,15 @@ public struct User: Codable, Hashable, Sendable {
     /// The user's primary guild tag (added 2025-07-02).
     public let primary_guild: UserPrimaryGuild?
     
+    /// The user's premium type (Nitro subscription level).
+    public let premium_type: Int?
+    
+    /// Avatar decoration data.
+    public let avatar_decoration_data: AvatarDecorationData?
+    
+    /// Collectibles data.
+    public let collectibles: Collectibles?
+    
     /// The user's chosen language locale (ISO 639 code).
     public let locale: String?
     
@@ -103,11 +112,73 @@ public struct User: Codable, Hashable, Sendable {
 
     public let system: Bool?
 
+    public init(
+        id: UserID,
+        username: String,
+        discriminator: String? = nil,
+        globalName: String? = nil,
+        avatar: String? = nil,
+        banner: String? = nil,
+        accent_color: Int? = nil,
+        flags: Int? = nil,
+        public_flags: Int? = nil,
+        premium_type: Int? = nil,
+        avatar_decoration_data: AvatarDecorationData? = nil,
+        collectibles: Collectibles? = nil,
+        locale: String? = nil,
+        email: String? = nil,
+        verified: Bool? = nil,
+        mfa_enabled: Bool? = nil,
+        bot: Bool? = nil,
+        system: Bool? = nil,
+        primary_guild: UserPrimaryGuild? = nil
+    ) {
+        self.id = id
+        self.username = username
+        self.discriminator = discriminator
+        self.globalName = globalName
+        self.avatar = avatar
+        self.banner = banner
+        self.accent_color = accent_color
+        self.flags = flags
+        self.public_flags = public_flags
+        self.premium_type = premium_type
+        self.avatar_decoration_data = avatar_decoration_data
+        self.collectibles = collectibles
+        self.locale = locale
+        self.email = email
+        self.verified = verified
+        self.mfa_enabled = mfa_enabled
+        self.bot = bot
+        self.system = system
+        self.primary_guild = primary_guild
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, username, discriminator, avatar, banner
         case accent_color, flags, public_flags
+        case premium_type, avatar_decoration_data, collectibles
         case primary_guild, locale, email, verified
         case mfa_enabled, bot, system
         case globalName = "global_name"
     }
+}
+
+/// Avatar decoration data for a user or member.
+public struct AvatarDecorationData: Codable, Hashable, Sendable {
+    public let asset: String
+    public let sku_id: Snowflake<SKU>?
+}
+
+/// Collectibles data for a user or member.
+public struct Collectibles: Codable, Hashable, Sendable {
+    public let collectibles: [Collectible]?
+}
+
+/// A single collectible item.
+public struct Collectible: Codable, Hashable, Sendable {
+    public let id: String
+    public let sku_id: SKUID
+    public let name: String
+    public let type: Int
 }

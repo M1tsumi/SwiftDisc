@@ -61,6 +61,7 @@ public struct PermissionBitset: OptionSet, Codable, Hashable, Sendable {
     public static let useExternalApps = PermissionBitset(rawValue: 1 << 50)
     public static let pinMessages = PermissionBitset(rawValue: 1 << 51)
     public static let bypassSlowmode = PermissionBitset(rawValue: 1 << 52)
+    public static let setVoiceChannelStatus = PermissionBitset(rawValue: 1 << 47)
     
     // Codable conformance for serialization
     public init(from decoder: Decoder) throws {
