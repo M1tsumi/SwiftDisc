@@ -217,11 +217,12 @@ public actor ShardingGatewayManager {
         self.shardingConfiguration = configuration
         self.httpConfiguration = httpConfiguration
         self.fallbackIntents = intents
-        self.eventStream = AsyncStream<ShardedEvent> { continuation in
-            continuation.onTermination = { @Sendable _ in
-                Task { await self.setShuttingDown() }
-            }
-            self.eventContinuation = continuation
+        let (stream, continuation) = AsyncStream<ShardedEvent>.makeStream()
+        self.eventStream = stream
+        self.eventContinuation = continuation
+        continuation.onTermination = { @Sendable [weak self] _ in
+            guard let self else { return }
+            Task { await self.setShuttingDown() }
         }
     }
 

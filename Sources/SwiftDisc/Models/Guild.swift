@@ -39,7 +39,7 @@ public enum GuildFeature: RawRepresentable, Codable, Hashable, Sendable {
     case roleSubscriptions
     case home
     case channelIconEmojisGenerated
-    case [`internal`]
+    case `internal`
     case unknown(String)
 
     public var rawValue: String {
@@ -331,7 +331,7 @@ public struct Guild: Codable, Hashable, Sendable {
         self.afk_timeout = nil; self.widget_enabled = nil; self.widget_channel_id = nil
         self.verification_level = nil; self.default_message_notifications = nil
         self.explicit_content_filter = nil; self.mfa_level = nil; self.nsfw_level = nsfw_level
-        self.roles = roles; self.emojis = emojis; self.features = features; self.stickers = nil
+        self.roles = roles; self.emojis = emojis; self.features = features?.compactMap(GuildFeature.init(rawValue:)); self.stickers = nil
         self.application_id = nil; self.system_channel_id = nil; self.system_channel_flags = nil
         self.rules_channel_id = nil; self.max_presences = nil; self.max_members = nil
         self.member_count = member_count; self.large = nil; self.unavailable = nil

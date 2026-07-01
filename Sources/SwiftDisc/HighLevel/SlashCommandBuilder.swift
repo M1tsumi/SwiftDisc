@@ -104,7 +104,7 @@ public struct SlashCommandBuilder: Sendable {
 
         @discardableResult
         public mutating func choice(_ name: String, _ value: Double) -> OptionBuilder {
-            choices.append(.init(name: name, name_localizations: nil, value: .double(value)))
+            choices.append(.init(name: name, name_localizations: nil, value: .number(value)))
             option = .init(type: option.type, name: option.name, description: option.description, required: option.required, choices: choices)
             return self
         }

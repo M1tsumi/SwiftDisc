@@ -414,7 +414,7 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     func putFile(path: String, data: Data, filename: String, reason: String? = nil) async throws(DiscordError) {
-        let file = FileAttachment(data: data, filename: filename)
+        let file = FileAttachment(filename: filename, data: data)
         try await putMultipart(path: path, jsonBody: Optional<String>.none, files: [file], reason: reason)
     }
 

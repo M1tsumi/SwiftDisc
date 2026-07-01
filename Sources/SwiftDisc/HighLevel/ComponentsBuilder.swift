@@ -221,7 +221,7 @@ public struct MentionableSelectMenuBuilder: Sendable {
     private var placeholder: String?
     private var min: Int?
     private var max: Int?
-    private var defaultValues: [MessageComponent.SelectMenu.DefaultValue]?
+    private var defaultValues: [MessageComponent.DefaultSelectValue]?
     private var disabled: Bool?
     public init() {}
     public func customId(_ id: String) -> MentionableSelectMenuBuilder { var c = self; c.customId = id; return c }

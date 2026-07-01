@@ -77,8 +77,8 @@ public typealias RoleID = Snowflake<Role>
 public typealias EmojiID = Snowflake<Emoji>
 
 /// An application ID.
-public enum Application {}
-public typealias ApplicationID = Snowflake<Application>
+public enum ApplicationTag {}
+public typealias ApplicationID = Snowflake<ApplicationTag>
 
 /// An attachment ID.
 public enum AttachmentTag {}

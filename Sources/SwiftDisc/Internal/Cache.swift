@@ -163,7 +163,7 @@ public actor Cache {
     /// - Parameter id: The channel ID.
     public func ensureChannelStub(id: ChannelID) {
         if channelsTimed[id] == nil {
-            channelsTimed[id] = TimedValue(value: Channel(id: id, type: 0), storedAt: Date())
+            channelsTimed[id] = TimedValue(value: Channel(id: id, type: .text), storedAt: Date())
         }
     }
 

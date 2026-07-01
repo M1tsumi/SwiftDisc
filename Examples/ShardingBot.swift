@@ -9,20 +9,20 @@ struct ShardingBotMain {
         let config = ShardingGatewayManager.Configuration(
             shardCount: .automatic,
             identifyConcurrency: .respectDiscordLimits,
+            fallbackPresence: .init(
+                activities: [
+                    .init(name: "with shards", type: 0)
+                ],
+                status: "online",
+                afk: false
+            ),
             connectionDelay: .staggered(interval: 5.0)
         )
 
         let manager = ShardingGatewayManager(
             token: token,
             configuration: config,
-            intents: [.guilds, .guildMessages, .messageContent],
-            presence: ShardingGatewayManager.Configuration.PresenceConfig(
-                activities: [
-                    .init(name: "with shards", type: 0)
-                ],
-                status: "online",
-                afk: false
-            )
+            intents: [.guilds, .guildMessages, .messageContent]
         )
 
         // Monitor shard health periodically
@@ -36,7 +36,7 @@ struct ShardingBotMain {
 
         // Monitor events with shard metadata
         Task {
-            for await event in manager.events {
+            for await event in await manager.events {
                 print("[Shard \(event.shardId)] \(event.event)")
             }
         }
