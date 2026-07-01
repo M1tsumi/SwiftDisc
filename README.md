@@ -9,23 +9,17 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Discord](https://img.shields.io/discord/1439300942167146508?label=discord&logo=discord&logoColor=white)](https://discord.gg/tWyefRKKEH)
 
-## Why SwiftDisc?
+## Features
 
-Building a Discord bot in Swift should feel like writing Swift, not like translating REST docs into network calls. SwiftDisc is a Swift-first Discord API wrapper that treats the Discord API as a native Swift library, not a remote JSON endpoint.
+- **Single-actor client.** `DiscordClient` owns the gateway connection, REST client, event dispatcher, and cache in one place.
+- **Automatic gateway management.** Reconnection, session resumption, heartbeats, and rate-limit backoff are handled internally.
+- **Actor-based concurrency.** Built on Swift 6.2 structured concurrency with `async/await`. The cache, gateway, and REST client avoid locks by design.
+- **Typed models.** Every Discord API object is a native Swift struct with `Codable`, `Hashable`, and `Sendable`. The REST client returns concrete types, not `[String: Any]`.
+- **Event callbacks + async streams.** Use callback closures or `for await` on the unified event stream — or both at once.
+- **Pluggable transports.** Default transports use URLSession. Swap in AsyncHTTPClient for proxy support on Linux, or conform to `HTTPTransport`/`WebSocketTransport` for custom networking.
+- **Modular high-level APIs.** Separate routers for slash commands, prefix commands, autocomplete, views, webhooks, collectors, and cooldowns.
 
-### What makes SwiftDisc different?
-
-**Gateway lifecycle that just works.** Automatic reconnection, session resumption, heartbeat management, and rate limit backoff are all handled internally. You write your bot logic, not WebSocket plumbing.
-
-**Actor-safe concurrency from day one.** Built on Swift 6.2 structured concurrency with `async/await` and Swift actors. No locking, no queues, no data races. The cache, the gateway, and the REST client are all designed around Swift's sendability guarantees.
-
-**Everything is typed.** Every Discord API object is a native Swift struct with full `Codable`, `Hashable`, and `Sendable` conformance. The REST client returns concrete types, not `[String: Any]` dictionaries. Invalid payloads surface as decoding errors rather than silent `nil` values.
-
-**One actor to rule them all.** `DiscordClient` owns the gateway connection, the REST client, the event dispatcher, and the cache. You never juggle separate connections or wonder which client to call.
-
-**Developer experience that scales.** Event handling via closures _and_ async streams, typed error handling with `DiscordError`, plugin-based HTTP transports, and pluggable logging. Start with one server in minutes, shard to thousands without rewriting your bot.
-
-## Quick start (1 minute to pong)
+## Quick start (ping bot)
 
 Create a new SwiftPM executable, add SwiftDisc as a dependency, and drop this in:
 
@@ -133,7 +127,7 @@ let package = Package(
 
 ## How SwiftDisc works
 
-SwiftDisc is organized into clear layers so you can grab what you need:
+SwiftDisc is split into these layers:
 
 **`DiscordClient`** -- the main actor. It owns your Gateway connection, the REST client, the event dispatcher, and the cache. You will spend most of your time here.
 
@@ -202,7 +196,7 @@ swift run PingBotExample
 
 ## Event handling guide
 
-SwiftDisc gives you two ways to handle gateway events. Pick the one that fits your style.
+You can handle gateway events with callbacks or an async stream.
 
 ### Option 1: Callback closures (simple, self-documenting)
 
@@ -289,7 +283,7 @@ If your bot connects but does not receive events, check these in order:
 
 ## Reliability and debugging
 
-SwiftDisc is built to be resilient by default -- automatic reconnection, rate-limit backoff, and session resumption are all handled internally. When you need to look under the hood:
+Reconnection, rate-limit backoff, and session resumption are handled internally. Debugging tools:
 
 **Gateway decode diagnostics** -- Enable `DiscordConfiguration.enableGatewayDecodeDiagnostics` to log payload decoding failures with opcode context and payload previews. Essential when adding support for new Discord features.
 
@@ -321,12 +315,21 @@ print(await cache.summary)
 
 | Resource | What you will find |
 |----------|-------------------|
-| [**GitHub Pages**](https://M1tsumi.github.io/SwiftDisc/) | Auto-generated DocC documentation for SwiftDisc -- browseable API reference with search |
-| [**CHANGELOG.md**](CHANGELOG.md) | Detailed per-release changelog following Keep a Changelog |
+| [**GitHub Pages**](https://M1tsumi.github.io/SwiftDisc/) | DocC documentation for SwiftDisc -- API reference with search |
+| [**CHANGELOG.md**](CHANGELOG.md) | Per-release changelog following Keep a Changelog |
 | [**CONTRIBUTING.md**](CONTRIBUTING.md) | How to set up, build, test, and submit PRs |
 | [**Examples/README.md**](Examples/README.md) | Quick-start guides for every example bot |
-| `SwiftDiscAHCTransport` | Optional in-tree AsyncHTTPClient transport. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Includes native proxy support |
+| `SwiftDiscAHCTransport` | Optional AsyncHTTPClient transport. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Supports proxies on Linux |
 | [**CODE_OF_CONDUCT.md**](CODE_OF_CONDUCT.md) | Community standards and expectations |
+
+You can also build the docs locally:
+
+```bash
+# Requires swift-docc-plugin (add it to Package.swift first)
+swift package --allow-writing-to-directory generate-documentation --target SwiftDisc --output-path docs --transform-for-static-hosting
+```
+
+Then open `docs/index.html` in a browser.
 
 ## Community and support
 

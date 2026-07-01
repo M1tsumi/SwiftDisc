@@ -1,6 +1,6 @@
 # ``SwiftDisc``
 
-A Swift-first Discord API wrapper that feels like it was written for you, not by a spec sheet.
+A Discord API wrapper for Swift with typed models, actor-based concurrency, and automatic gateway management.
 
 @Metadata {
   @PageImage(purpose: icon, source: swiftdisc-logo)
