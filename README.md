@@ -330,7 +330,7 @@ You can also build and preview the docs locally:
 swift package --disable-sandbox preview-documentation --target SwiftDisc
 
 # Or build static HTML and serve it:
-swift package --allow-writing-to-directory generate-documentation --target SwiftDisc --output-path docs --transform-for-static-hosting --hosting-base-path /
+swift package --allow-writing-to-directory docs generate-documentation --target SwiftDisc --output-path docs --transform-for-static-hosting --hosting-base-path /
 cd docs && python3 -m http.server 8080
 # Then open http://localhost:8080 in a browser
 ```
