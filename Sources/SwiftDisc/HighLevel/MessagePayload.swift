@@ -22,7 +22,7 @@ public struct MessagePayload: Sendable {
     public var allowedMentions: AllowedMentions?
     public var messageReference: MessageReference?
     public var tts: Bool?
-    public var flags: Int?
+    public var flags: MessageFlags?
     public var stickerIds: [StickerID]?
     public var files: [FileAttachment]?
     public var poll: Poll?
@@ -96,21 +96,21 @@ public struct MessagePayload: Sendable {
     /// Mark the message as *ephemeral* — only visible to the interaction invoker.
     /// Only effective in interaction responses.
     public func ephemeral() -> Self {
-        var c = self; c.flags = (c.flags ?? 0) | (1 << 6); return c
+        var c = self; c.flags = (c.flags ?? MessageFlags()).union(.ephemeral); return c
     }
 
     /// Suppress link embeds (Discord flag bit 2).
     public func suppressEmbeds() -> Self {
-        var c = self; c.flags = (c.flags ?? 0) | (1 << 2); return c
+        var c = self; c.flags = (c.flags ?? MessageFlags()).union(.suppressEmbeds); return c
     }
 
     /// Mark the message as *silent* — no push/desktop notification (Discord flag bit 12).
     public func silent() -> Self {
-        var c = self; c.flags = (c.flags ?? 0) | (1 << 12); return c
+        var c = self; c.flags = (c.flags ?? MessageFlags()).union(.suppressNotifications); return c
     }
 
-    /// Set raw message flags (replaces any previously OR'd flags).
-    public func flags(_ f: Int) -> Self { var c = self; c.flags = f; return c }
+    /// Set message flags (replaces any previously OR'd flags).
+    public func flags(_ f: MessageFlags) -> Self { var c = self; c.flags = f; return c }
 
     // MARK: - TTS & Stickers
 
@@ -227,7 +227,7 @@ public extension DiscordClient {
             let content: String?
             let embeds: [Embed]?
             let components: [MessageComponent]?
-            let flags: Int?
+            let flags: MessageFlags?
             let tts: Bool?
             let allowed_mentions: AllowedMentions?
         }

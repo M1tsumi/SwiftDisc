@@ -1,5 +1,17 @@
 import Foundation
 
+/// The privacy level of a scheduled event.
+public enum EventPrivacyLevel: Int, Codable, Sendable {
+    case guildOnly = 2
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = EventPrivacyLevel(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a scheduled event in a guild.
 public struct GuildScheduledEvent: Codable, Hashable, Sendable {
     /// The type of entity associated with a scheduled event.
@@ -37,7 +49,7 @@ public struct GuildScheduledEvent: Codable, Hashable, Sendable {
     public let description: String?
     public let scheduled_start_time: String
     public let scheduled_end_time: String?
-    public let privacy_level: Int
+    public let privacy_level: EventPrivacyLevel
     public let status: Status
     public let entity_type: EntityType
     public let entity_id: ChannelID?

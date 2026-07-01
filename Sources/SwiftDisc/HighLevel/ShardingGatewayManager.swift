@@ -217,10 +217,17 @@ public actor ShardingGatewayManager {
         self.shardingConfiguration = configuration
         self.httpConfiguration = httpConfiguration
         self.fallbackIntents = intents
+        let (stream, continuation) = AsyncStream<ShardedEvent>.makeStream()
+        self.eventStream = stream
+        self.eventContinuation = continuation
+        continuation.onTermination = { @Sendable [weak self] _ in
+            guard let self else { return }
+            Task { await self.setShuttingDown() }
+        }
     }
 
     // Unified event stream
-    private var eventStream: AsyncStream<ShardedEvent>!
+    private var eventStream: AsyncStream<ShardedEvent>
     private nonisolated(unsafe) var eventContinuation: AsyncStream<ShardedEvent>.Continuation!
     
     /// The unified event stream for all shards.
@@ -325,15 +332,6 @@ public actor ShardingGatewayManager {
     /// This method will connect all shards according to the configured strategy,
     /// wait for them to become ready, and verify guild distribution.
     public func connect() async throws {
-        // Prepare unified events
-        self.eventStream = AsyncStream<ShardedEvent> { continuation in
-            continuation.onTermination = { @Sendable _ in
-                // Clean up resources when stream terminates
-                Task { await self.setShuttingDown() }
-            }
-            self.eventContinuation = continuation
-        }
-
         // Determine shard count and identify concurrency
         let (totalShards, maxConcurrency) = try await fetchShardPlan()
         self.maxIdentifyConcurrency = maxConcurrency

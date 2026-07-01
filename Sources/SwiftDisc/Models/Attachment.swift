@@ -49,6 +49,10 @@ public struct Attachment: Codable, Hashable, Sendable {
     /// Whether the attachment is ephemeral (temporary).
     public let ephemeral: Bool?
     
+    /// Whether the attachment is marked as a spoiler.
+    /// Added 2026-06-24 per Discord API changelog.
+    public let is_spoiler: Bool?
+    
     // Voice message metadata
     
     /// The duration of the voice message in seconds.
@@ -59,4 +63,7 @@ public struct Attachment: Codable, Hashable, Sendable {
     
     /// Attachment flags.
     public let flags: Int?
+    
+    /// Whether the `IS_SPOILER` flag is set on this attachment.
+    public var isSpoiler: Bool { (flags ?? 0) & (1 << 2) != 0 }
 }

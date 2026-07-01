@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-06-30
+
+### Overview
+SwiftDisc 2.5.0 adds the Application model, typed enums across all Discord API models, and many new REST endpoints (Welcome Screen, New Member Welcome, MFA, Incidents). All missing gateway event callbacks have been added, and voice `VoiceChannelStatusUpdate`/`VoiceStartTimeUpdate` events are now properly dispatched.
+
+### Added
+- **Application model** — `Application` struct with Codable support
+- **Typed enums** — `ChannelType`, `MessageType`, `MessageFlags`, `InteractionType`, `GuildFeature`, `GuildMemberFlags`, `ChannelFlags`, `AuditLogEventType`, `EventPrivacyLevel`, `AutoModerationEventType`, `AutoModerationActionType`, `AutoModerationTriggerType`, `AutoModerationKeywordPresetType`
+- **Welcome Screen REST** — `getGuildWelcomeScreen`, `modifyGuildWelcomeScreen` endpoints
+- **New Member Welcome REST** — `getGuildNewMemberWelcome`, `modifyGuildNewMemberWelcome` endpoints
+- **MFA REST** — `getGuildMfaLevel`, `modifyGuildMfaLevel` endpoints
+- **Incidents REST** — `getGuildIncidentActions`, `modifyGuildIncidentActions` endpoints
+- **All missing gateway callbacks** — 20+ event callbacks including `autoModerationActionExecution`, `autoModerationRuleCreate/Update/Delete`, `guildAuditLogEntryCreate`, `guildScheduledEventUserAdd/Remove`, `soundboardSoundsUpdate`, `voiceChannelStatusUpdate`, `voiceStartTimeUpdate`, and others
+- **Community Invite Target Users REST** — `getInviteTargetUsers`, `updateInviteTargetUsers`, `getInviteTargetUsersJobStatus` endpoints
+
+### Changed
+- **EventDispatcher** — Voice channel status update events now dispatch to their dedicated callbacks instead of falling through to `.raw` events
+- **Enums across all models** migrated from raw `String`/`Int` to typed enums with `Unknown` fallback cases
+- **`Interaction.type`** — changed from `Int` to `InteractionType` enum
+
+### Fixed
+- **CI build failures** — resolved all compilation errors across Windows, macOS, and Linux CI runners
+- **Test compilation** — updated `TestFixtures` and `SlashCommandRouterTests` to pass `InteractionType` enum values instead of raw integers
+- **`Application` phantom tag collision** — renamed to `ApplicationTag` to avoid ambiguity with the real `Application` model
+- **`GuildFeature.internal` case** — fixed invalid backtick syntax
+- **`Guild` convenience init** — `features` parameter now maps `[String]` to `[GuildFeature]` via `GuildFeature.init(rawValue:)`
+- **`SlashCommandBuilder`** — replaced missing `JSONValue.double` with `.number`
+- **`HTTPClient.putFile`** — fixed `FileAttachment` argument order
+- **`Cache.ensureChannelStub`** — uses `ChannelType.text` enum instead of raw `0`
+- **`MessagePayload`** — replaced ambiguous `|` on `MessageFlags` with `.union()`
+- **`MentionableSelectMenuBuilder`** — fixed `DefaultValue` type reference to `DefaultSelectValue`
+- **`ShardingGatewayManager` init** — refactored `AsyncStream` to avoid `self` capture before member initialization
+- **`ShardingBot` example** — updated for new `Configuration.fallbackPresence` API and actor-isolated `events` access
+
 ## [2.4.1] - 2026-06-14
 
 ### Overview

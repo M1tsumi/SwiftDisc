@@ -19,7 +19,7 @@ final class URLSessionHTTPTransport: HTTPTransport {
         var headers: [AnyHashable: Any] = [
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "DiscordBot (https://github.com/M1tsumi/SwiftDisc, 2.4.0)"
+            "User-Agent": "DiscordBot (https://github.com/M1tsumi/SwiftDisc, 2.5.0)"
         ]
         if let existing = config.httpAdditionalHeaders {
             for (k, v) in existing { headers[k] = v }

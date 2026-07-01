@@ -1,5 +1,81 @@
 import Foundation
 
+/// The type of a Discord message.
+public enum MessageType: Int, Codable, Sendable {
+    case `default` = 0
+    case recipientAdd = 1
+    case recipientRemove = 2
+    case call = 3
+    case channelNameChange = 4
+    case channelIconChange = 5
+    case channelPinnedMessage = 6
+    case userJoin = 7
+    case guildBoost = 8
+    case guildBoostTier1 = 9
+    case guildBoostTier2 = 10
+    case guildBoostTier3 = 11
+    case channelFollowAdd = 12
+    case guildDiscoveryDisqualified = 14
+    case guildDiscoveryRequalified = 15
+    case guildDiscoveryGracePeriodInitialWarning = 16
+    case guildDiscoveryGracePeriodFinalWarning = 17
+    case threadCreated = 18
+    case reply = 19
+    case chatInputCommand = 20
+    case threadStarterMessage = 21
+    case guildInviteReminder = 22
+    case contextMenuCommand = 23
+    case autoModerationAction = 24
+    case roleSubscriptionPurchase = 25
+    case interactionPremiumUpsell = 26
+    case stageStart = 27
+    case stageEnd = 28
+    case stageSpeaker = 29
+    case stageTopic = 31
+    case guildApplicationPremiumSubscription = 32
+    case guildIncidentAlertModeEnabled = 36
+    case guildIncidentAlertModeDisabled = 37
+    case guildIncidentReportRaid = 38
+    case guildIncidentReportFalseAlarm = 39
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = MessageType(rawValue: rawValue) ?? .unknown
+    }
+}
+
+/// Message flags combined as a bitfield.
+public struct MessageFlags: OptionSet, Codable, Hashable, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        rawValue = try container.decode(Int.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    public static let crossposted = MessageFlags(rawValue: 1 << 0)
+    public static let isCrosspost = MessageFlags(rawValue: 1 << 1)
+    public static let suppressEmbeds = MessageFlags(rawValue: 1 << 2)
+    public static let sourceMessageDeleted = MessageFlags(rawValue: 1 << 3)
+    public static let urgent = MessageFlags(rawValue: 1 << 4)
+    public static let hasThread = MessageFlags(rawValue: 1 << 5)
+    public static let ephemeral = MessageFlags(rawValue: 1 << 6)
+    public static let loading = MessageFlags(rawValue: 1 << 7)
+    public static let failedToMentionSomeRoles = MessageFlags(rawValue: 1 << 8)
+    public static let suppressNotifications = MessageFlags(rawValue: 1 << 12)
+    public static let isVoiceMessage = MessageFlags(rawValue: 1 << 13)
+    public static let hasSnapshot = MessageFlags(rawValue: 1 << 14)
+    public static let isComponentsV2 = MessageFlags(rawValue: 1 << 15)
+}
+
 // `Box` breaks recursive value-type cycles during Codable decoding.
 // It is `@unchecked Sendable` because it only stores immutable state (`let value`).
 // That keeps instances effectively safe to share across tasks.
@@ -94,8 +170,8 @@ public struct Message: Codable, Hashable, Sendable {
     /// Whether this message is pinned.
     public let pinned: Bool?
     
-    /// The type of message (see Discord documentation for type values).
-    public let type: Int?
+    /// The type of message.
+    public let type: MessageType?
     
     /// Activity information for rich presence-related messages.
     public let activity: MessageActivity?
@@ -113,7 +189,7 @@ public struct Message: Codable, Hashable, Sendable {
     public let referenced_message: Box<Message>?
     
     /// Message flags combined as a bitfield.
-    public let flags: Int?
+    public let flags: MessageFlags?
     
     /// Metadata for interaction-related messages.
     public let interaction_metadata: MessageInteractionMetadata?
@@ -141,6 +217,18 @@ public struct Message: Codable, Hashable, Sendable {
     
     /// The sync status of attachments.
     public let attachments_sync_status: Int?
+    
+    /// The webhook ID if the message was sent by a webhook.
+    public let webhook_id: WebhookID?
+    
+    /// Message snapshots (for forwarded messages).
+    public let message_snapshots: [MessageSnapshot]?
+    
+    /// Call information for messages in private channels.
+    public let call: MessageCall?
+    
+    /// Shared client-side theme data.
+    public let shared_client_theme: SharedClientTheme?
 }
 
 /// Represents a channel mention in a message.
@@ -174,6 +262,9 @@ public struct ChannelMention: Codable, Hashable, Sendable {
 /// )
 /// ```
 public struct MessageReference: Codable, Hashable, Sendable {
+    /// The type of reference (0 = DEFAULT, 1 = FORWARD).
+    public let type: Int?
+    
     /// The ID of the referenced message.
     public let message_id: MessageID?
     
@@ -186,7 +277,8 @@ public struct MessageReference: Codable, Hashable, Sendable {
     /// Whether to throw an error if the referenced message doesn't exist.
     public let fail_if_not_exists: Bool?
     
-    public init(message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+    public init(type: Int? = nil, message_id: MessageID? = nil, channel_id: ChannelID? = nil, guild_id: GuildID? = nil, fail_if_not_exists: Bool? = nil) {
+        self.type = type
         self.message_id = message_id
         self.channel_id = channel_id
         self.guild_id = guild_id
@@ -396,6 +488,22 @@ public struct PollAnswerUsers: Codable, Hashable, Sendable {
     public let after: UserID?
 }
 
+/// A snapshot of a message at the time it was forwarded.
+public struct MessageSnapshot: Codable, Hashable, Sendable {
+    public let message: Message
+}
+
+/// Information about a call in a private channel.
+public struct MessageCall: Codable, Hashable, Sendable {
+    public let participants: [UserID]
+    public let ended_timestamp: String?
+}
+
+/// Shared client-side theme data sent with a message.
+public struct SharedClientTheme: Codable, Hashable, Sendable {
+    public let theme: String?
+}
+
 /// Controls which mentions are allowed to trigger notifications in a message.
 ///
 /// Use this to prevent unwanted pings when sending messages.
@@ -456,6 +564,12 @@ public struct AllowedMentions: Codable, Hashable, Sendable {
 ///     }
 /// }
 /// ```
+/// Detailed count information for a reaction.
+public struct ReactionCountDetails: Codable, Hashable, Sendable {
+    public let burst: Int
+    public let normal: Int
+}
+
 public struct Reaction: Codable, Hashable, Sendable {
     /// The number of users who have reacted with this emoji.
     public let count: Int
@@ -463,8 +577,17 @@ public struct Reaction: Codable, Hashable, Sendable {
     /// Whether the current user has reacted with this emoji.
     public let me: Bool
     
+    /// Whether the current user has reacted with a super reaction.
+    public let me_burst: Bool?
+    
     /// The emoji information for this reaction.
     public let emoji: PartialEmoji
+    
+    /// Detailed count breakdown (burst vs normal).
+    public let count_details: ReactionCountDetails?
+    
+    /// Hex color codes for super reaction burst animation.
+    public let burst_colors: [String]?
 }
 
 /// Represents a partial emoji object.
@@ -526,7 +649,7 @@ public extension Message {
     /// }
     /// ```
     @discardableResult
-    func reply(
+    public func reply(
         client: DiscordClient,
         content: String? = nil,
         embeds: [Embed]? = nil,

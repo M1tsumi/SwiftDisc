@@ -60,6 +60,9 @@ public struct Invite: Codable, Hashable, Sendable {
         public let unicode_emoji: String?
     }
 
+    /// The type of invite (0 = GUILD, 1 = GROUP_DM, 2 = FRIEND).
+    public let type: Int?
+    
     /// The invite code.
     public let code: String
     
@@ -101,4 +104,23 @@ public struct Invite: Codable, Hashable, Sendable {
     
     /// Target user type for restricted invites.
     public let target_type: Int?
+    
+    /// Guild invite flags combined as a bitfield.
+    public let flags: Int?
+}
+
+/// Status of a target-users processing job for an invite.
+public struct InviteTargetUsersJobStatus: Codable, Hashable, Sendable {
+    /// Job status code (0 = UNSPECIFIED, 1 = PROCESSING, 2 = COMPLETED, 3 = FAILED).
+    public let status: Int
+    /// Total number of users to process.
+    public let total_users: Int?
+    /// Number of users processed so far.
+    public let processed_users: Int?
+    /// When the job was created (ISO 8601 timestamp).
+    public let created_at: String?
+    /// When the job was completed (ISO 8601 timestamp).
+    public let completed_at: String?
+    /// Error message if the job failed.
+    public let error_message: String?
 }

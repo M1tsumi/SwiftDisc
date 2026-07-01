@@ -22,16 +22,16 @@ struct ComponentsV2BotMain {
                     channelId: channelId,
                     content: "Welcome! Use the menu below:",
                     components: [.actionRow(row)],
-                    flags: 1 << 15
+                    flags: .isComponentsV2
                 )
-                print("Components v2 message sent (flags: \(1 << 15))")
+                print("Components v2 message sent (flags: isComponentsV2)")
             }
         }
 
         await client.setOnInteractionCreate { interaction in
             guard let data = interaction.data else { return }
 
-            if interaction.type == 3, let customId = data.custom_id {
+            if interaction.type == .messageComponent, let customId = data.custom_id {
                 if customId == "channel_picker" {
                     let input = MessageComponent.TextInput(
                         custom_id: "feedback_text",
@@ -55,7 +55,7 @@ struct ComponentsV2BotMain {
                         )
                     }
                 }
-            } else if interaction.type == 5, data.custom_id == "feedback_modal" {
+            } else if interaction.type == .modalSubmit, data.custom_id == "feedback_modal" {
                 print("Modal submitted!")
                 Task {
                     try? await client.createInteractionResponse(

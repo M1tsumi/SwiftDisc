@@ -89,8 +89,9 @@ actor EventDispatcher {
             await client.cache.upsert(user: ev.user)
             if let cb = await client.onGuildMemberUpdate { await cb(ev) }
 
-        case .guildMembersChunk(let chunk):
-            for member in chunk.members { if let user = member.user { await client.cache.upsert(user: user) } }
+        case .guildMembersChunk(let ev):
+            for member in ev.members { if let user = member.user { await client.cache.upsert(user: user) } }
+            if let cb = await client.onGuildMembersChunk { await cb(ev) }
 
         // MARK: Roles
         case .guildRoleCreate(let ev):
@@ -105,12 +106,13 @@ actor EventDispatcher {
             await client.cache.removeRole(id: ev.role_id, guildId: ev.guild_id)
             if let cb = await client.onGuildRoleDelete { await cb(ev) }
 
-        // MARK: Emojis / Stickers (no callback – stream-only)
+        // MARK: Emojis / Stickers
         case .guildEmojisUpdate(let ev):
             await client.cache.upsert(emojis: ev.emojis, guildId: ev.guild_id)
+            if let cb = await client.onGuildEmojisUpdate { await cb(ev) }
 
-        case .guildStickersUpdate:
-            break
+        case .guildStickersUpdate(let ev):
+            if let cb = await client.onGuildStickersUpdate { await cb(ev) }
 
         // MARK: Channels
         case .channelCreate(let channel):
@@ -125,9 +127,12 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: channel.id)
             if let cb = await client.onChannelDelete { await cb(channel) }
 
-        // MARK: Voice
-        // Voice events are not currently modeled in DiscordEvent enum
-        // These are handled via raw events if needed
+        // MARK: Voice Channel Status
+        case .voiceChannelStatusUpdate(let ev):
+            if let cb = await client.onVoiceChannelStatusUpdate { await cb(ev) }
+
+        case .voiceChannelStartTimeUpdate(let ev):
+            if let cb = await client.onVoiceChannelStartTimeUpdate { await cb(ev) }
 
         // MARK: Threads
         case .threadCreate(let ch):
@@ -142,14 +147,15 @@ actor EventDispatcher {
             await client.cache.removeChannel(id: ch.id)
             if let cb = await client.onThreadDelete { await cb(ch) }
 
-        case .threadMemberUpdate:
-            break
+        case .threadMemberUpdate(let ev):
+            if let cb = await client.onThreadMemberUpdate { await cb(ev) }
 
         case .threadMembersUpdate(let ev):
             if let cb = await client.onThreadMembersUpdate { await cb(ev) }
 
         case .threadListSync(let ev):
             for thread in ev.threads { await client.cache.upsert(channel: thread) }
+            if let cb = await client.onThreadListSync { await cb(ev) }
 
         // MARK: Application Commands
         case .applicationCommandPermissionsUpdate(let ev):
@@ -158,6 +164,7 @@ actor EventDispatcher {
         // MARK: Channel Info
         case .channelInfo(let channel):
             await client.cache.upsert(channel: channel)
+            if let cb = await client.onChannelInfo { await cb(channel) }
 
         // MARK: Interactions
         case .interactionCreate(let interaction):
@@ -165,7 +172,7 @@ actor EventDispatcher {
                 await client.cache.ensureChannelStub(id: cid)
             }
             if let cb = await client.onInteractionCreate { await cb(interaction) }
-            if interaction.type == 4, let ac = await client.autocomplete {
+            if interaction.type == .autocomplete, let ac = await client.autocomplete {
                 await ac.handle(interaction: interaction, client: client)
             } else if let s = await client.slashCommands {
                 await s.handle(interaction: interaction, client: client)
@@ -180,8 +187,8 @@ actor EventDispatcher {
             await client.cache.upsert(user: ev.user)
             if let cb = await client.onPresenceUpdate { await cb(ev) }
 
-        case .channelPinsUpdate:
-            break
+        case .channelPinsUpdate(let ev):
+            if let cb = await client.onChannelPinsUpdate { await cb(ev) }
 
         // MARK: Bans
         case .guildBanAdd(let ev):
@@ -190,20 +197,35 @@ actor EventDispatcher {
         case .guildBanRemove(let ev):
             if let cb = await client.onGuildBanRemove { await cb(ev) }
 
-        // MARK: Webhooks / Integrations / Invites (stream-only)
-        case .webhooksUpdate, .guildIntegrationsUpdate, .inviteCreate, .inviteDelete:
-            break
+        // MARK: Webhooks / Integrations / Invites
+        case .webhooksUpdate(let ev):
+            if let cb = await client.onWebhooksUpdate { await cb(ev) }
+
+        case .guildIntegrationsUpdate(let ev):
+            if let cb = await client.onGuildIntegrationsUpdate { await cb(ev) }
+
+        case .inviteCreate(let ev):
+            if let cb = await client.onInviteCreate { await cb(ev) }
+
+        case .inviteDelete(let ev):
+            if let cb = await client.onInviteDelete { await cb(ev) }
 
         // MARK: AutoMod
-        case .autoModerationRuleCreate, .autoModerationRuleUpdate, .autoModerationRuleDelete:
-            break
+        case .autoModerationRuleCreate(let ev):
+            if let cb = await client.onAutoModerationRuleCreate { await cb(ev) }
+
+        case .autoModerationRuleUpdate(let ev):
+            if let cb = await client.onAutoModerationRuleUpdate { await cb(ev) }
+
+        case .autoModerationRuleDelete(let ev):
+            if let cb = await client.onAutoModerationRuleDelete { await cb(ev) }
 
         case .autoModerationActionExecution(let ev):
             if let cb = await client.onAutoModerationActionExecution { await cb(ev) }
 
-        // MARK: Audit Log (stream-only)
-        case .guildAuditLogEntryCreate:
-            break
+        // MARK: Audit Log
+        case .guildAuditLogEntryCreate(let ev):
+            if let cb = await client.onGuildAuditLogEntryCreate { await cb(ev) }
 
         // MARK: Scheduled Events
         case .guildScheduledEventCreate(let ev):
@@ -215,8 +237,11 @@ actor EventDispatcher {
         case .guildScheduledEventDelete(let ev):
             if let cb = await client.onGuildScheduledEventDelete { await cb(ev) }
 
-        case .guildScheduledEventUserAdd, .guildScheduledEventUserRemove:
-            break
+        case .guildScheduledEventUserAdd(let ev):
+            if let cb = await client.onGuildScheduledEventUserAdd { await cb(ev) }
+
+        case .guildScheduledEventUserRemove(let ev):
+            if let cb = await client.onGuildScheduledEventUserRemove { await cb(ev) }
 
         // MARK: Polls
         case .pollVoteAdd(let ev):
@@ -245,8 +270,9 @@ actor EventDispatcher {
         case .entitlementDelete(let ev):
             if let cb = await client.onEntitlementDelete { await cb(ev) }
 
-        case .userUpdate:
-            break
+        case .userUpdate(let ev):
+            if let cb = await client.onUserUpdate { await cb(ev) }
+
         // MARK: Raw / Other
         case .raw:
             break

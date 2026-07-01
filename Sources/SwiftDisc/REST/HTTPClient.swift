@@ -383,6 +383,41 @@ final class HTTPClient: @unchecked Sendable {
         throw makeAPIError(statusCode: http.statusCode, data: data, debugContext: "Endpoint: DELETE \(path)")
     }
 
+    func putMultipart<B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) {
+        for file in files {
+            if file.data.count > configuration.maxUploadBytes {
+                throw DiscordError.validation("File \(file.filename) exceeds maxUploadBytes=\(configuration.maxUploadBytes)")
+            }
+        }
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let routeKey = makeRouteKey(method: "PUT", path: trimmed)
+        let boundary = makeBoundary()
+        let jsonData = try? jsonBody.map { try JSONCoders.encoder.encode($0) }
+        let (respData, http) = try await executeWithRetry(routeKey: routeKey, isIdempotent: false) {
+            var url = configuration.restBase
+            url.appendPathComponent(trimmed)
+            let body = buildMultipartBody(jsonPayload: jsonData ?? nil, files: files, boundary: boundary)
+            var reqHeaders: [String: String] = ["Content-Type": "multipart/form-data; boundary=\(boundary)"]
+            if let reason {
+                if let encoded = reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                    reqHeaders["X-Audit-Log-Reason"] = encoded
+                }
+            }
+            let resp = try await transport.request(method: "PUT", url: url, body: body, headers: reqHeaders)
+            guard let http = HTTPURLResponse(url: url, statusCode: resp.statusCode, httpVersion: nil, headerFields: resp.headers) else {
+                throw DiscordError.network(NSError(domain: "InvalidResponse", code: -1))
+            }
+            return (resp.data, http)
+        }
+        if (200..<300).contains(http.statusCode) { return }
+        throw makeAPIError(statusCode: http.statusCode, data: respData, debugContext: "Endpoint: PUT \(path)")
+    }
+
+    func putFile(path: String, data: Data, filename: String, reason: String? = nil) async throws(DiscordError) {
+        let file = FileAttachment(filename: filename, data: data)
+        try await putMultipart(path: path, jsonBody: Optional<String>.none, files: [file], reason: reason)
+    }
+
     // MARK: - Sticker-specific multipart
 
     func postStickerMultipart<T: Decodable>(path: String, name: String, description: String?, tags: String, file: FileAttachment, reason: String? = nil) async throws(DiscordError) -> T {

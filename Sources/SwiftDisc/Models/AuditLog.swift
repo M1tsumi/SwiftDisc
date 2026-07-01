@@ -1,5 +1,81 @@
 import Foundation
 
+/// The type of an audit log event.
+public enum AuditLogEventType: Int, Codable, Sendable {
+    case guildUpdate = 1
+    case channelCreate = 10
+    case channelUpdate = 11
+    case channelDelete = 12
+    case channelOverwriteCreate = 13
+    case channelOverwriteUpdate = 14
+    case channelOverwriteDelete = 15
+    case memberKick = 20
+    case memberPrune = 21
+    case memberBanAdd = 22
+    case memberBanRemove = 23
+    case memberUpdate = 24
+    case memberRoleUpdate = 25
+    case memberMove = 26
+    case memberDisconnect = 27
+    case botAdd = 28
+    case roleCreate = 30
+    case roleUpdate = 31
+    case roleDelete = 32
+    case inviteCreate = 40
+    case inviteUpdate = 41
+    case inviteDelete = 42
+    case webhookCreate = 50
+    case webhookUpdate = 51
+    case webhookDelete = 52
+    case emojiCreate = 60
+    case emojiUpdate = 61
+    case emojiDelete = 62
+    case messageDelete = 72
+    case messageBulkDelete = 73
+    case messagePin = 74
+    case messageUnpin = 75
+    case integrationCreate = 80
+    case integrationUpdate = 81
+    case integrationDelete = 82
+    case stageInstanceCreate = 83
+    case stageInstanceUpdate = 84
+    case stageInstanceDelete = 85
+    case stickerCreate = 90
+    case stickerUpdate = 91
+    case stickerDelete = 92
+    case scheduledEventCreate = 100
+    case scheduledEventUpdate = 101
+    case scheduledEventDelete = 102
+    case scheduledEventExceptionCreate = 103
+    case scheduledEventExceptionUpdate = 104
+    case scheduledEventExceptionDelete = 105
+    case threadCreate = 110
+    case threadUpdate = 111
+    case threadDelete = 112
+    case permissionOverwriteType = 121
+    case autoModerationRuleCreate = 140
+    case autoModerationRuleUpdate = 141
+    case autoModerationRuleDelete = 142
+    case autoModerationBlockMessage = 143
+    case autoModerationFlagToChannel = 144
+    case autoModerationUserCommunicationDisabled = 145
+    case creatorMonoRequestCreated = 150
+    case creatorMonoTermsAccepted = 151
+    case onboardingCreate = 160
+    case onboardingUpdate = 161
+    case homeSettingsCreate = 170
+    case homeSettingsUpdate = 171
+    case voiceChannelStatusUpdate = 192
+    case voiceChannelStatusDelete = 193
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = AuditLogEventType(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a guild audit log.
 public struct AuditLog: Codable, Hashable, Sendable {
     public let audit_log_entries: [AuditLogEntry]
@@ -26,11 +102,13 @@ public struct AuditLogEntry: Codable, Hashable, Sendable {
         public let role_name: String?
         public let type: String?
         public let application_id: ApplicationID?
+        /// Voice channel status (for VOICE_CHANNEL_STATUS_UPDATE entries).
+        public let status: String?
     }
     public let id: AuditLogEntryID
     public let target_id: String?
     public let user_id: UserID?
-    public let action_type: Int
+    public let action_type: AuditLogEventType
     public let changes: [Change]?
     public let options: OptionalInfo?
     public let reason: String?

@@ -19,9 +19,13 @@ public struct FileAttachment: Sendable {
 public struct PartialAttachment: Encodable, Hashable, Sendable {
     public let id: AttachmentID
     public let description: String?
+    /// Whether the attachment is marked as a spoiler.
+    /// Added 2026-06-24 per Discord API changelog.
+    public let is_spoiler: Bool?
 
-    public init(id: AttachmentID, description: String? = nil) {
+    public init(id: AttachmentID, description: String? = nil, is_spoiler: Bool? = nil) {
         self.id = id
         self.description = description
+        self.is_spoiler = is_spoiler
     }
 }

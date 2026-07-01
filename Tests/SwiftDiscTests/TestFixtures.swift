@@ -74,7 +74,7 @@ enum TestFixtures {
         return Interaction(
             id: interactionId,
             application_id: appId,
-            type: 3,
+            type: .messageComponent,
             data: data,
             guild_id: gid,
             channel: nil,

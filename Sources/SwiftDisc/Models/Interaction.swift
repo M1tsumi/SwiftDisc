@@ -1,26 +1,25 @@
 import Foundation
 
+/// The type of a Discord interaction.
+public enum InteractionType: Int, Codable, Sendable {
+    case ping = 1
+    case applicationCommand = 2
+    case messageComponent = 3
+    case autocomplete = 4
+    case modalSubmit = 5
+    case unknown = -1
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = InteractionType(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a Discord interaction.
 ///
 /// Interactions are the primary way users interact with bots through slash commands,
 /// buttons, select menus, modals, and context menus.
-///
-/// ## Interaction Types
-/// - `1`: PING
-/// - `2`: APPLICATION_COMMAND (slash command)
-/// - `3`: MESSAGE_COMPONENT (button/select menu)
-/// - `4`: AUTOCOMPLETE
-/// - `5`: MODAL_SUBMIT
-///
-/// ## Example
-///
-/// ```swift
-/// await client.setOnInteraction { interaction in
-///     guard interaction.type == 2 else { return }
-///     guard let data = interaction.data else { return }
-///     print("Command: \(data.name ?? "unknown")")
-/// }
-/// ```
 ///
 /// ## Related Topics
 /// - ``DiscordClient/slashCommands``
@@ -33,8 +32,8 @@ public struct Interaction: Codable, Hashable, Sendable {
     /// The ID of the application the interaction is for.
     public let application_id: ApplicationID
     
-    /// The type of interaction (1-5, see Interaction Types in struct documentation).
-    public let type: Int
+    /// The type of interaction.
+    public let type: InteractionType
     
     /// The command data for the interaction.
     public let data: ApplicationCommandData?
