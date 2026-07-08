@@ -1,5 +1,43 @@
 import Foundation
 
+/// The type of a Discord sticker.
+public enum StickerType: Int, Codable, Sendable {
+    /// Official sticker in a pack.
+    case standard = 1
+    /// Custom sticker uploaded to a guild.
+    case guild = 2
+    /// Nitro sticker.
+    case nitro = 3
+    /// Unknown sticker type (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = StickerType(rawValue: rawValue) ?? .unknown
+    }
+}
+
+/// The format type of a Discord sticker.
+public enum StickerFormatType: Int, Codable, Sendable {
+    /// PNG format.
+    case png = 1
+    /// APNG format.
+    case apng = 2
+    /// Lottie format.
+    case lottie = 3
+    /// GIF format.
+    case gif = 4
+    /// Unknown sticker format type (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = StickerFormatType(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a Discord sticker.
 ///
 /// Stickers are custom images that can be added to messages.
@@ -27,10 +65,10 @@ public struct Sticker: Codable, Hashable, Sendable {
     public let tags: String?
     
     /// The sticker type.
-    public let type: Int?
+    public let type: StickerType?
     
     /// The sticker format type.
-    public let format_type: Int?
+    public let format_type: StickerFormatType?
     
     /// Whether the sticker is available.
     public let available: Bool?
@@ -50,7 +88,7 @@ public struct StickerItem: Codable, Hashable, Sendable {
     public let name: String
     
     /// The sticker format type.
-    public let format_type: Int
+    public let format_type: StickerFormatType
 }
 
 /// Represents a Discord sticker pack.

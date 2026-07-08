@@ -1,5 +1,23 @@
 import Foundation
 
+/// The type of a Discord invite.
+public enum InviteType: Int, Codable, Sendable {
+    /// Guild invite.
+    case guild = 0
+    /// Group DM invite.
+    case groupDm = 1
+    /// Friend invite.
+    case friend = 2
+    /// Unknown invite type (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = InviteType(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a Discord invite.
 ///
 /// Invites are used to invite users to join a guild or group DM.
@@ -30,7 +48,7 @@ public struct Invite: Codable, Hashable, Sendable {
         public let name: String?
         
         /// The channel type.
-        public let type: Int?
+        public let type: ChannelType?
     }
     
     /// Partial role returned on community invite objects.
@@ -60,8 +78,8 @@ public struct Invite: Codable, Hashable, Sendable {
         public let unicode_emoji: String?
     }
 
-    /// The type of invite (0 = GUILD, 1 = GROUP_DM, 2 = FRIEND).
-    public let type: Int?
+    /// The type of invite.
+    public let type: InviteType?
     
     /// The invite code.
     public let code: String

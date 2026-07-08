@@ -403,6 +403,22 @@ public actor DiscordClient {
     public var onEntitlementUpdate: (@Sendable (Entitlement) async -> Void)?
     public var onEntitlementDelete: (@Sendable (Entitlement) async -> Void)?
 
+    // -- Subscriptions (Monetization) --
+    public var onSubscriptionCreate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionUpdate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionDelete: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionCreate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionUpdate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionDelete: (@Sendable (AppSubscription) async -> Void)?
+
+    // -- Stage Instances --
+    public var onStageInstanceCreate: (@Sendable (StageInstance) async -> Void)?
+    public var onStageInstanceUpdate: (@Sendable (StageInstance) async -> Void)?
+    public var onStageInstanceDelete: (@Sendable (StageInstance) async -> Void)?
+
+    // -- Guild Join Requests --
+    public var onGuildJoinRequestUpdate: (@Sendable (GuildJoinRequestUpdate) async -> Void)?
+
     // -- Soundboard --
     public var onSoundboardSoundCreate: (@Sendable (SoundboardSound) async -> Void)?
     public var onSoundboardSoundUpdate: (@Sendable (SoundboardSound) async -> Void)?

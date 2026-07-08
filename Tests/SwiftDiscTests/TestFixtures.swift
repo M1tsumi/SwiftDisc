@@ -82,7 +82,7 @@ enum TestFixtures {
             member: nil,
             user: nil,
             token: token,
-            version: nil,
+            version: 1,
             message: nil,
             app_permissions: nil,
             locale: nil,

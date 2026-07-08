@@ -1,5 +1,23 @@
 import Foundation
 
+/// The type of a Discord webhook.
+public enum WebhookType: Int, Codable, Sendable {
+    /// Incoming webhook.
+    case incoming = 1
+    /// Channel follower webhook.
+    case channelFollower = 2
+    /// Application webhook.
+    case application = 3
+    /// Unknown webhook type (forward compatibility).
+    case unknown = 999
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int.self)
+        self = WebhookType(rawValue: rawValue) ?? .unknown
+    }
+}
+
 /// Represents a Discord webhook.
 ///
 /// Webhooks are a way to send messages to Discord channels without using a bot account.
@@ -17,7 +35,7 @@ public struct Webhook: Codable, Hashable, Sendable {
     public let id: WebhookID
     
     /// The webhook type.
-    public let type: Int
+    public let type: WebhookType
     
     /// The channel ID the webhook is for.
     public let channel_id: ChannelID?

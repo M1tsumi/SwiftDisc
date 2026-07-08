@@ -296,6 +296,16 @@ actor GatewayClient {
         add("ENTITLEMENT_DELETE",          Entitlement.self,                    { .entitlementDelete($0) })
         add("INVITE_CREATE",               InviteCreate.self,                   { .inviteCreate($0) })
         add("INVITE_DELETE",               InviteDelete.self,                   { .inviteDelete($0) })
+        add("STAGE_INSTANCE_CREATE",       StageInstance.self,                  { .stageInstanceCreate($0) })
+        add("STAGE_INSTANCE_UPDATE",       StageInstance.self,                  { .stageInstanceUpdate($0) })
+        add("STAGE_INSTANCE_DELETE",       StageInstance.self,                  { .stageInstanceDelete($0) })
+        add("SUBSCRIPTION_CREATE",         AppSubscription.self,                { .subscriptionCreate($0) })
+        add("SUBSCRIPTION_UPDATE",         AppSubscription.self,                { .subscriptionUpdate($0) })
+        add("SUBSCRIPTION_DELETE",         AppSubscription.self,                { .subscriptionDelete($0) })
+        add("SUBSCRIPTION_GROUP_SUBSCRIPTION_CREATE", AppSubscription.self,     { .subscriptionGroupSubscriptionCreate($0) })
+        add("SUBSCRIPTION_GROUP_SUBSCRIPTION_UPDATE", AppSubscription.self,     { .subscriptionGroupSubscriptionUpdate($0) })
+        add("SUBSCRIPTION_GROUP_SUBSCRIPTION_DELETE", AppSubscription.self,     { .subscriptionGroupSubscriptionDelete($0) })
+        add("GUILD_JOIN_REQUEST_UPDATE",   GuildJoinRequestUpdate.self,         { .guildJoinRequestUpdate($0) })
         // INTERACTION_CREATE is handled separately because it has diagnostic logging on failure
 
         return table

@@ -337,6 +337,19 @@ public enum DiscordEvent: Hashable, Sendable {
     case entitlementCreate(Entitlement)
     case entitlementUpdate(Entitlement)
     case entitlementDelete(Entitlement)
+    // Stage instances
+    case stageInstanceCreate(StageInstance)
+    case stageInstanceUpdate(StageInstance)
+    case stageInstanceDelete(StageInstance)
+    // Subscription events (monetization)
+    case subscriptionCreate(AppSubscription)
+    case subscriptionUpdate(AppSubscription)
+    case subscriptionDelete(AppSubscription)
+    case subscriptionGroupSubscriptionCreate(AppSubscription)
+    case subscriptionGroupSubscriptionUpdate(AppSubscription)
+    case subscriptionGroupSubscriptionDelete(AppSubscription)
+    // Guild join request
+    case guildJoinRequestUpdate(GuildJoinRequestUpdate)
     // Session events
     /// The gateway session was invalidated and a fresh identify is required.
     case sessionInvalidated
@@ -591,6 +604,30 @@ public struct ResumePayload: Codable, Sendable {
 ///
 /// Used to set activities, status, and AFK state.
 public struct PresenceUpdatePayload: Codable, Sendable {
+    /// The type of a Discord activity (rich presence).
+    public enum ActivityType: Int, Codable, Sendable {
+        /// Game activity.
+        case game = 0
+        /// Streaming activity.
+        case streaming = 1
+        /// Listening activity.
+        case listening = 2
+        /// Watching activity.
+        case watching = 3
+        /// Custom activity.
+        case custom = 4
+        /// Competing activity.
+        case competing = 5
+        /// Unknown activity type (forward compatibility).
+        case unknown = 999
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(Int.self)
+            self = ActivityType(rawValue: rawValue) ?? .unknown
+        }
+    }
+
     /// Represents a Discord activity (rich presence).
     public struct Activity: Codable, Hashable, Sendable { 
         /// Start and end timestamps for an activity.
@@ -617,7 +654,7 @@ public struct PresenceUpdatePayload: Codable, Sendable {
             public let match: String?
         }
         public let name: String
-        public let type: Int
+        public let type: ActivityType
         public let state: String?
         public let details: String?
         public let timestamps: Timestamps?
@@ -627,7 +664,7 @@ public struct PresenceUpdatePayload: Codable, Sendable {
         public let secrets: Secrets?
         public init(
             name: String,
-            type: Int,
+            type: ActivityType,
             state: String? = nil,
             details: String? = nil,
             timestamps: Timestamps? = nil,
@@ -798,6 +835,18 @@ public struct SoundboardSound: Codable, Hashable, Sendable {
 // MARK: - Entitlements
 
 // Entitlement model in Models/Monetization.swift
+
+// MARK: - Guild Join Requests
+
+/// Sent when a user's join request for a guild is updated.
+public struct GuildJoinRequestUpdate: Codable, Hashable, Sendable {
+    public let user_id: UserID
+    public let guild_id: GuildID
+    public let status: String
+    public let created_at: String
+    public let last_seen_at: String?
+    public let rejection_reason: String?
+}
 
 // MARK: - Voice Channel Status
 
