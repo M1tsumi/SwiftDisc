@@ -494,7 +494,7 @@ final class HTTPClient: @unchecked Sendable {
         return body
     }
 
-    private func makeRouteKey(method: String, path: String) -> String {
+    func makeRouteKey(method: String, path: String) -> String {
         let components = path.split(separator: "/").map { String($0) }
         var majorParam: String?
         var majorParamIndex: Int?
