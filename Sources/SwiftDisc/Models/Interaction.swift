@@ -56,8 +56,11 @@ public struct Interaction: Codable, Hashable, Sendable {
     /// The interaction token used for follow-up responses.
     public let token: String
     
-    /// The version of the interaction.
-    public let version: Int
+    /// The raw version stored from the API (may be absent in older payloads).
+    private let _version: Int?
+    
+    /// The version of the interaction (defaults to 1 when absent from the payload).
+    public var version: Int { _version ?? 1 }
     
     /// The message the interaction was sent for (component interactions only).
     public let message: Box<Message>?
@@ -80,29 +83,46 @@ public struct Interaction: Codable, Hashable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case id, application_id, type, data, guild_id, channel, channel_id
-        case member, user, token, version, message, app_permissions
+        case member, user, token, _version = "version", message, app_permissions
         case locale, guild_locale, authorizing_integration_owners, context
     }
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(InteractionID.self, forKey: .id)
-        application_id = try container.decode(ApplicationID.self, forKey: .application_id)
-        type = try container.decode(InteractionType.self, forKey: .type)
-        data = try container.decodeIfPresent(ApplicationCommandData.self, forKey: .data)
-        guild_id = try container.decodeIfPresent(GuildID.self, forKey: .guild_id)
-        channel = try container.decodeIfPresent(ResolvedChannel.self, forKey: .channel)
-        channel_id = try container.decodeIfPresent(ChannelID.self, forKey: .channel_id)
-        member = try container.decodeIfPresent(GuildMember.self, forKey: .member)
-        user = try container.decodeIfPresent(User.self, forKey: .user)
-        token = try container.decode(String.self, forKey: .token)
-        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
-        message = try container.decodeIfPresent(Box<Message>.self, forKey: .message)
-        app_permissions = try container.decodeIfPresent(String.self, forKey: .app_permissions)
-        locale = try container.decodeIfPresent(String.self, forKey: .locale)
-        guild_locale = try container.decodeIfPresent(String.self, forKey: .guild_locale)
-        authorizing_integration_owners = try container.decodeIfPresent([String: String].self, forKey: .authorizing_integration_owners)
-        context = try container.decodeIfPresent(Int.self, forKey: .context)
+    public init(
+        id: InteractionID,
+        application_id: ApplicationID,
+        type: InteractionType,
+        data: ApplicationCommandData? = nil,
+        guild_id: GuildID? = nil,
+        channel: ResolvedChannel? = nil,
+        channel_id: ChannelID? = nil,
+        member: GuildMember? = nil,
+        user: User? = nil,
+        token: String,
+        version: Int? = nil,
+        message: Box<Message>? = nil,
+        app_permissions: String? = nil,
+        locale: String? = nil,
+        guild_locale: String? = nil,
+        authorizing_integration_owners: [String: String]? = nil,
+        context: Int? = nil
+    ) {
+        self.id = id
+        self.application_id = application_id
+        self.type = type
+        self.data = data
+        self.guild_id = guild_id
+        self.channel = channel
+        self.channel_id = channel_id
+        self.member = member
+        self.user = user
+        self.token = token
+        self._version = version
+        self.message = message
+        self.app_permissions = app_permissions
+        self.locale = locale
+        self.guild_locale = guild_locale
+        self.authorizing_integration_owners = authorizing_integration_owners
+        self.context = context
     }
 
     // MARK: - Nested Types
