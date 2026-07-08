@@ -133,10 +133,29 @@ public struct EmbedBuilder: Sendable {
     /// - Returns: A new builder with the timestamp applied.
     public func timestamp(_ date: Date) -> EmbedBuilder {
         var c = self
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        c.timestamp = formatter.string(from: date)
+        c.timestamp = Converters.formatDateAsISO8601(date)
         return c
+    }
+
+    /// Create a success embed with green color and checkmark prefix.
+    /// - Parameter message: The success message.
+    /// - Returns: A new builder with green color and description set.
+    public static func success(_ message: String) -> EmbedBuilder {
+        EmbedBuilder().color(Converters.discordGreen).description(message)
+    }
+
+    /// Create an error embed with red color and crossmark prefix.
+    /// - Parameter message: The error message.
+    /// - Returns: A new builder with red color and description set.
+    public static func error(_ message: String) -> EmbedBuilder {
+        EmbedBuilder().color(Converters.discordRed).description(message)
+    }
+
+    /// Create an info embed with blurple color.
+    /// - Parameter message: The info message.
+    /// - Returns: A new builder with blurple color and description set.
+    public static func info(_ message: String) -> EmbedBuilder {
+        EmbedBuilder().color(Converters.discordBlurple).description(message)
     }
 
     /// Finalizes the builder and returns the composed `Embed`.

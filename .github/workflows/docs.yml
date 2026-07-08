@@ -20,11 +20,9 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: Install Swift 6.2
-        uses: compnerd/gha-setup-swift@main
+        uses: swift-actions/setup-swift@v2
         with:
-          source: swift.org
-          swift-version: swift-6.2-release
-          swift-build: 6.2-RELEASE
+          swift-version: "6.2"
 
       - name: Generate Documentation
         run: |
@@ -32,6 +30,9 @@ jobs:
           trap restore EXIT
           sed -i.bak '/^    dependencies: \[/s/\[/[.package(url: "https:\/\/github.com\/apple\/swift-docc-plugin.git", from: "1.4.4"),/' Package.swift && rm -f Package.swift.bak
           swift package --allow-writing-to-directory documentation generate-documentation --target SwiftDisc --output-path documentation --transform-for-static-hosting --hosting-base-path SwiftDisc
+
+      - name: Verify documentation was generated
+        run: test -f documentation/index.html || { echo "documentation/index.html missing"; exit 1; }
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

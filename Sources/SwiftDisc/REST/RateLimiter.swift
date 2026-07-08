@@ -35,6 +35,7 @@ actor RateLimiter {
                 try await backoff(after: delay)
             }
         }
+        // Append after backoff so waited requests count against the 50/s budget correctly
         globalRequestTimestamps.append(Date())
 
         // Respect reactive global rate limit if Discord returned a 429 global.
@@ -66,8 +67,11 @@ actor RateLimiter {
     }
 
     func updateFromHeaders(routeKey: String, headers: [String: String]) {
-        // Convert headers to lowercase dictionary for efficient lookup
-        let lowercasedHeaders = Dictionary(uniqueKeysWithValues: headers.map { ($0.key.lowercased(), $0.value) })
+        // Convert headers to lowercase dictionary for efficient lookup.
+        // Use reduce to safely handle duplicate keys (case-insensitive duplicates).
+        let lowercasedHeaders: [String: String] = headers.reduce(into: [:]) { result, pair in
+            result[pair.key.lowercased()] = pair.value
+        }
 
         func header(_ key: String) -> String? {
             lowercasedHeaders[key.lowercased()]
@@ -155,6 +159,7 @@ actor RateLimiter {
     func clearBucket(routeKey: String) {
         let bucketKey = routeKeyToBucket[routeKey] ?? routeKey
         bucketStates.removeValue(forKey: bucketKey)
+        routeKeyToBucket.removeValue(forKey: routeKey)
     }
 
     func clearAllBuckets() {

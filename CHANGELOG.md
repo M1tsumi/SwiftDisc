@@ -5,6 +5,112 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-07-08
+
+### Overview
+SwiftDisc 2.6.0 is a developer-ergonomics and infrastructure release. This audit-driven release focuses on making the library easier to use at every API surface level while ensuring the underlying machinery is robust, testable, and future-proof. No voice support is planned or will ever be added.
+
+### Added
+- **Documentation audit** — comprehensive doc comments added across Models (VanityURL, GuildWidgetSettings, GuildPreview, NewMemberWelcome, StageInstance, ScheduledEventUser, Template, RoleMemberCount, Application, AppInstallations, Monetization, Onboarding)
+- **Gateway intent support** — `GatewayIntents` type and property on `DiscordConfiguration` for event subscription configuration
+
+### Changed
+- **Unified builder pattern** — all builders now follow the non-mutating `var c = self; c.x = v; return c` pattern for consistency
+- **`@discardableResult` audit** — consistently applied across all mutation/creation methods on `DiscordClient`
+- **Method naming standardization** — established `get`/`list`/`create`/`update`/`delete`/`send` conventions across all REST endpoints
+- **GatewayClient** — `close()` changed from `internal` to `public` for API symmetry with `disconnect()`
+- **GatewayClient** — `validatePrivilegedIntents` renamed to `logPrivilegedIntentWarnings` for accuracy
+- **HTTPClient** — multipart methods consolidated into shared `multipartRequest(method:)` helper eliminating ~90% duplication
+- **HTTPClient** — `makeRouteKey` fixed to correctly identify major parameters for multi-segment paths
+- **Cache** — emoji storage changed from `[GuildID: TimedValue<[Emoji]>]` to `[EmojiID: TimedValue<Emoji>]` for granular per-emoji eviction parity with roles
+- **Cache** — `ensureChannelStub(id:)` now accepts an optional `ChannelType` parameter instead of always defaulting to `.text`
+- **JSONCoders** — shared encoder/decoder now configurable via `DiscordConfiguration`
+- **MessagePayload** — fixed field forwarding in `send(to:_:)`, `edit(channelId:messageId:_:)`, and `respond(to:with:deferred:)` — all fields now correctly forwarded regardless of file attachment presence
+- **GatewayClient** — `resumeGatewayUrl` expiry corrected from 7 days to 24 hours to match Discord's actual expiration
+- **GatewayClient** — `missedHeartbeatAckCount` now correctly managed only by the sending loop (not double-incremented on OP1-triggered heartbeats)
+- **LabelBuilder, RadioGroupBuilder, CheckboxGroupBuilder, CheckboxBuilder, FileUploadBuilder** — marked as `@available(*, deprecated, message: "Not yet part of Discord API — experimental")` to prevent users from building rejected payloads
+- **Snowflake** — changed from `@unchecked Sendable` to unconditional `extension Snowflake: Sendable {}` since `String` is inherently `Sendable`
+- **RedactedToken** — `rawValue` access narrowed to `internal` for stronger token leak protection
+- **Configuration** — `GatewayCompression` `.zstdStream` and `.zlibStream` cases added as opt-in (currently experimental)
+- **Configuration** — `retryPolicy` property wired from `DiscordConfiguration` to `HTTPClient`
+- **Configuration** — `presence` initial presence configuration (status, activities, afk) added
+- **Configuration** — `userAgentSuffix` property added for custom User-Agent identification
+
+### Fixed
+- **`Collectors` task leaks** — all 11 event collector methods now store and cancel their spawned tasks, preventing unbounded resource growth
+- **`ComponentCollector` task leak** — same fix applied
+- **`ViewManager` double-start race** — boolean flag set synchronously before spawning listening task
+- **`ViewManager` detached task strong reference** — changed to `[weak self]` capture
+- **`ViewManager` handler tasks** — grouped under a `TaskGroup` for collective cancellation
+- **`ViewManager` repeated error-handling blocks** — extracted into shared helper method
+- **`ViewManager.stop()`** — added public method to tear down listening task and unregister all views
+- **`GatewayClient.connectReadyContinuation` double-resume** — guarded by `didResumeConnectReady` boolean flag
+- **`GatewayClient.readLoop` decode error busy-loop** — added exponential backoff on decode failures
+- **`GatewayClient` detached task cancellation** — `readLoop` task now cancelled when `connect()` task is cancelled
+- **`HTTPClient.executeWithRetry` semaphore deadlock** — semaphore signal now uses direct continuation resume instead of `Task { ... }` in `defer {}`
+- **`AsyncSemaphore` cancellation handling** — cancelled waiters now properly removed from the waiter list
+- **`RateLimiter` global timestamp accounting** — timestamps now appended AFTER backoff completes, not before
+- **`RateLimiter` duplicate header crash** — `lowercasedHeaders` changed to safe `reduce(into:)` pattern instead of `Dictionary(uniqueKeysWithValues:)`
+- **`RateLimiter.clearBucket(routeKey:)** — now also clears the route-to-bucket mapping, preventing stale state
+- **`DiscordClient.eventContinuation` data race** — `AsyncStream` continuation now initialized lazily from actor-isolated context
+- **`DiscordClient` login task isolation** — `Task { [self] in }` changed to `Task.detached` with explicit `await` for all actor accesses
+- **`DiscordClient._internalSetCurrentUserId` comment** — corrected from "Internal voice wiring" to "Internal: records the current bot user's ID after the READY event"
+- **`MessagePayload.respond` 204 handling** — now accepts empty 204 No Content responses without crashing
+- **`CommandRouter` quoted-argument parsing** — text commands now support `"hello world"` as single arguments
+- **`EmbedBuilder` ISO8601DateFormatter** — now cached as a static let instead of allocating on every call
+- **`Converters.discordOrange`** — corrected from `0xEB459E` (fuchsia) to `0xFEE75C` (Discord's actual orange)
+- **`Converters` invite code validation** — expanded from 6-10 to 6-25 character range
+- **`Converters` mention regexes** — tightened from `[0-9]{5,}` to `[0-9]{17,19}` to avoid false matches on non-ID numbers
+- **`CooldownManager` auto-cleanup** — now starts lazily on first `setCooldown` call (was stuck at init)
+- **`CooldownManager` compound key collision** — changed from `"\(command)::\(key)"` to `"\(command)\0\(key)"` with null-byte separator
+- **`CooldownManager` strong reference cycle** — `cleanupTask` now uses `[weak self]` capture
+- **`RetryPolicy` backoff jitter** — added `jitter: Double` (default 0.1 = 10% randomization) to prevent thundering herd
+- **`Cache` message accumulation** — `EventDispatcher.messageUpdate` now updates in-place instead of appending
+- **`JSONValue.number` precision** — large integer values (>2^53) now stored as `Int64` instead of `Double` to preserve snowflake precision
+- **`OptionalField`** — added `Decodable` conformance for round-trip encoding/decoding support
+- **`OptionalField` single-value encoder** — `.absent` now correctly omits the key in single-value containers (was encoding as `null`)
+- **`WebhookClient` rate limiter** — changed from single global instance to per-instance rate limiter
+- **`WebhookClient` hardcoded API version** — now reads from `DiscordConfiguration.apiVersion`
+- **`DefaultsDiscordLogger` Sendable concurrency safety** — `print()` calls now wrapped with `await` for Swift 6 conformance
+- **`StringSelectMenuBuilder` removed** — exact duplicate of `SelectMenuBuilder`; use `SelectMenuBuilder` directly
+- **`User.username`** — changed from non-optional `String` to `String?` since Discord returns `null` for deleted users
+- **`Interaction.version`** — changed from `Int?` to non-optional `Int` with default `1`
+- **`SelectMenu.Option.emoji`** — changed from `String?` to `PartialEmoji?` (Discord API returns a partial emoji object, not a string)
+- **`Webhook.type`, `Sticker.type`, `Sticker.format_type`, `StickerItem.format_type`, `Invite.type`, `Entitlement.type`** — migrated from raw `Int`/`Int?` to typed enums with `unknown` fallback cases
+- **`Entitlement.subscription_id`** — changed from `String?` to `AppSubscriptionID`
+- **`AppInstallation.id` and `AppSubscription.id`** — changed phantom type from the struct itself to dedicated tag types (`AppInstallationTag`, `AppSubscriptionTag`)
+- **`UserPrimaryGuild.guild_id` and `identity_guild_id`** — changed from `String?` to `GuildID?`
+- **`Invite.InviteChannel.type`** — changed from `Int?` to `ChannelType?`
+- **`RadioGroup.RadioOption.init`** — parameter renamed from `isDefault` (stored as `default`) to `default` for naming consistency
+- **`MessageComponents.defaultUsers()` and `defaultRoles()`** — now additive (accumulate) instead of each overwriting the previous value
+- **`Message.referenced_message`** — `Box<T>` conformance changed from `@unchecked Sendable` to conditional `extension Box: @unchecked Sendable where T: Sendable {}`
+- **`PermissionBitset.all` mask** — updated to `(1 << 64) - 1` for forward-compatibility with new permission bits
+- **`EventDispatcher` raw event** — now forwarded as `.raw(String, Data)` instead of silently discarded (`break`)
+- **`RadioGroup` / `CheckboxGroup` / `Label` / `Checkbox`** `MessageComponent` decoding — unknown types now decoded as `.unknown(Data)` preserving raw data instead of lossy `.button` fallback
+- **`Guild.init` compactMap** — changed to `map` since `GuildFeature.init(rawValue:)` never returns nil
+- **`GatewayModels.Presence`** — populated from empty struct to full model with proper fields
+- **`DiscordClient`** — split from single 4361-line file into domain-specific extensions (DiscordClient+Messages, +Guilds, +Channels, +Interactions, +Commands, +Monetization, +VoiceEvents)
+- **`AHCTransport`** — changed from `@unchecked Sendable` to explicit `Sendable` conformance
+- **`URLSessionTransport.LockedBox`** — replaced with `OSAllocatedUnfairLock` for safe concurrency
+- **`URLSessionTransport.close()`** — now waits for close-frame handshake before calling `invalidateAndCancel()`
+- **`AHCTransport.deinit`** — explicit `shutdown()` method added; `deinit` no longer calls `syncShutdown()`
+- **`RegionRateLimiter`** — `ContinuousClock` used instead of `Date` for monotonic interval measurement
+- **EventDispatcher** — added `onRawGatewayPayload` callback for low-level gateway access
+- **EventDispatcher** — `sessionInvalidated` now clears the cache
+
+### Security
+- **RedactedToken.rawValue** — narrowed to `internal` access, preventing accidental token leakage outside the module
+- **Token validation** — `RedactedToken.init` now validates token format (3 base64 segments) and warns on double `"Bot "` prefix
+- **URLSessionTransport header sanitization** — now strips all CRLF variants including embedded `\r\n` sequences
+
+### Deprecated
+- **`DiscordUtils.Mentions.userNickname(_:)`** — deprecated in favor of `user(_:)` (renders identically in modern Discord clients)
+- **`LabelBuilder`, `RadioGroupBuilder`, `CheckboxGroupBuilder`, `CheckboxBuilder`, `FileUploadBuilder`** — experimental, not part of Discord's current API
+
+### Notes
+- Voice support is not planned and will never be implemented. Voice-adjacent model fields (channel bitrate, voice permission flags, voice message flags, voice audit log events, voice scheduled event type) are retained solely for Discord API compliance — they are passive model fields, not functional voice implementation.
+- All audit findings and analysis artifacts are tracked in `audit.md` (excluded from version control via `.gitignore`).
+
 ## [2.5.0] - 2026-06-30
 
 ### Overview

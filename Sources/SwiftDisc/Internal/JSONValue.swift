@@ -17,11 +17,24 @@ public enum JSONValue: Codable, Hashable, Sendable {
         if container.decodeNil() { self = .null; return }
         if let v = try? container.decode(String.self) { self = .string(v); return }
         if let v = try? container.decode(Int.self) { self = .int(v); return }
+        if let v = try? container.decode(UInt64.self), let intV = Int(exactly: v) { self = .int(intV); return }
         if let v = try? container.decode(Double.self) { self = .number(v); return }
         if let v = try? container.decode(Bool.self) { self = .bool(v); return }
         if let v = try? container.decode([String: JSONValue].self) { self = .object(v); return }
         if let v = try? container.decode([JSONValue].self) { self = .array(v); return }
         self = .null
+    }
+
+    public var description: String {
+        switch self {
+        case .string(let s): return "\"\(s)\""
+        case .number(let n): return String(n)
+        case .int(let i): return String(i)
+        case .bool(let b): return String(b)
+        case .object(let o): return o.description
+        case .array(let a): return a.description
+        case .null: return "null"
+        }
     }
 
     /// Returns a plain-string representation of a scalar JSONValue, or nil for objects/arrays/null.

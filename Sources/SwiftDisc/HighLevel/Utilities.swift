@@ -50,7 +50,7 @@ public enum BotUtils: Sendable {
     /// - Parameter content: The message text to scan.
     /// - Returns: An array of user ID strings found in the content, in order of appearance.
     public static func extractMentions(_ content: String) -> [String] {
-        let pattern = #"<@!?([0-9]{5,})>"#
+        let pattern = #"<@!?([0-9]{17,19})>"#
         guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(location: 0, length: content.utf16.count)
         var ids: [String] = []
@@ -79,7 +79,7 @@ public enum BotUtils: Sendable {
     /// - Parameter content: The message text to scan.
     /// - Returns: An array of role ID strings found in the content.
     public static func extractRoleMentions(_ content: String) -> [String] {
-        let pattern = #"<@&([0-9]{5,})>"#
+        let pattern = #"<@&([0-9]{17,19})>"#
         guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(location: 0, length: content.utf16.count)
         var ids: [String] = []
@@ -98,7 +98,7 @@ public enum BotUtils: Sendable {
     /// - Parameter content: The message text to scan.
     /// - Returns: An array of channel ID strings found in the content.
     public static func extractChannelMentions(_ content: String) -> [String] {
-        let pattern = #"<#([0-9]{5,})>"#
+        let pattern = #"<#([0-9]{17,19})>"#
         guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(location: 0, length: content.utf16.count)
         var ids: [String] = []
@@ -116,9 +116,9 @@ public enum BotUtils: Sendable {
     /// - Returns: The content with all mentions removed.
     public static func stripMentions(_ content: String) -> String {
         var result = content
-        result = result.replacingOccurrences(of: #"<@!?[0-9]{5,}>"#, with: "", options: .regularExpression)
-        result = result.replacingOccurrences(of: #"<@&[0-9]{5,}>"#, with: "", options: .regularExpression)
-        result = result.replacingOccurrences(of: #"<#[0-9]{5,}>"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"<@!?[0-9]{17,19}>"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"<@&[0-9]{17,19}>"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"<#[0-9]{17,19}>"#, with: "", options: .regularExpression)
         return result
     }
     

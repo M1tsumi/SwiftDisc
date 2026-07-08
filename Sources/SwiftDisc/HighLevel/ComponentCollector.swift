@@ -6,18 +6,19 @@ public extension DiscordClient {
     func createComponentCollector(customId: String? = nil, timeout: TimeInterval? = nil, max: Int? = nil) -> AsyncStream<Interaction> {
         AsyncStream { continuation in
             var collected = 0
+            var timeoutTask: Task<Void, Never>?
 
             let task = Task {
                 for await event in self.events {
                     switch event {
                     case .interactionCreate(let interaction):
-                        // component interactions typically have a data.custom_id field
                         if let data = interaction.data, data.custom_id != nil {
                             if let cid = customId, data.custom_id != cid { continue }
                             continuation.yield(interaction)
                             collected += 1
                             if let max, collected >= max {
                                 continuation.finish()
+                                timeoutTask?.cancel()
                                 return
                             }
                         }
@@ -25,10 +26,11 @@ public extension DiscordClient {
                     }
                 }
                 continuation.finish()
+                timeoutTask?.cancel()
             }
 
             if let t = timeout {
-                Task {
+                timeoutTask = Task {
                     try? await Task.sleep(nanoseconds: UInt64(t * 1_000_000_000))
                     continuation.finish()
                     task.cancel()

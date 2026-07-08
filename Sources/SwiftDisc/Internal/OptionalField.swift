@@ -35,7 +35,7 @@ import Foundation
 /// field entirely when `.absent`). Use the helper
 /// ``Swift/KeyedEncodingContainer/encode(_:forKey:)-(OptionalField)`` provided
 /// in this file, which handles all three cases automatically.
-public enum OptionalField<Wrapped: Encodable & Sendable>: Encodable, Sendable {
+public enum OptionalField<Wrapped: Codable & Sendable>: Codable, Sendable {
     /// Field is absent from the payload (key omitted entirely).
     case absent
     /// Field is present with an explicit JSON `null`.
@@ -53,6 +53,16 @@ public enum OptionalField<Wrapped: Encodable & Sendable>: Encodable, Sendable {
     public var wrappedValue: Wrapped? {
         if case .value(let v) = self { return v }
         return nil
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .null
+        } else {
+            let value = try container.decode(Wrapped.self)
+            self = .value(value)
+        }
     }
 
     public func encode(to encoder: Encoder) throws {

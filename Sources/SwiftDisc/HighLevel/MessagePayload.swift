@@ -169,8 +169,11 @@ public extension DiscordClient {
                 content: payload.content.wrappedValue,
                 embeds: payload.embeds,
                 components: payload.components,
+                allowedMentions: payload.allowedMentions,
+                messageReference: payload.messageReference,
                 tts: payload.tts,
                 flags: payload.flags,
+                stickerIds: payload.stickerIds,
                 poll: payload.poll,
                 files: files
             )
@@ -199,6 +202,11 @@ public extension DiscordClient {
                 content: payload.content,
                 embeds: payload.embeds,
                 components: payload.components,
+                allowedMentions: payload.allowedMentions,
+                flags: payload.flags,
+                tts: payload.tts,
+                stickerIds: payload.stickerIds,
+                poll: payload.poll,
                 files: files
             )
         }
@@ -207,7 +215,12 @@ public extension DiscordClient {
             messageId: messageId,
             content: payload.content,
             embeds: payload.embeds,
-            components: payload.components
+            components: payload.components,
+            allowedMentions: payload.allowedMentions,
+            flags: payload.flags,
+            tts: payload.tts,
+            stickerIds: payload.stickerIds,
+            poll: payload.poll
         )
     }
 
@@ -230,6 +243,9 @@ public extension DiscordClient {
             let flags: MessageFlags?
             let tts: Bool?
             let allowed_mentions: AllowedMentions?
+            let message_reference: MessageReference?
+            let sticker_ids: [StickerID]?
+            let poll: Poll?
         }
         struct Body: Encodable, Sendable {
             let type: Int
@@ -241,7 +257,10 @@ public extension DiscordClient {
             components: payload.components,
             flags: payload.flags,
             tts: payload.tts,
-            allowed_mentions: payload.allowedMentions
+            allowed_mentions: payload.allowedMentions,
+            message_reference: payload.messageReference,
+            sticker_ids: payload.stickerIds,
+            poll: payload.poll
         )
         struct Ack: Decodable, Sendable {
         }
