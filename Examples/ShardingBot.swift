@@ -11,7 +11,7 @@ struct ShardingBotMain {
             identifyConcurrency: .respectDiscordLimits,
             fallbackPresence: .init(
                 activities: [
-                    .init(name: "with shards", type: 0)
+                    .init(name: "with shards", type: .game)
                 ],
                 status: "online",
                 afk: false

@@ -33,7 +33,7 @@ final class CacheTests: XCTestCase {
         await cache.upsert(channel: channel)
         let retrieved = await cache.getChannel(id: ChannelID("ch1"))
         XCTAssertEqual(retrieved?.name, "test-channel")
-        XCTAssertEqual(retrieved?.type, .guildText)
+        XCTAssertEqual(retrieved?.type, .text)
     }
 
     func testUpsertAndGetGuild() async throws {
@@ -90,9 +90,12 @@ final class CacheTests: XCTestCase {
 
         await cache.clear()
 
-        XCTAssertNil(await cache.getUser(id: UserID("u1")))
-        XCTAssertNil(await cache.getChannel(id: ChannelID("ch1")))
-        XCTAssertNil(await cache.getGuild(id: GuildID("g1")))
+        let u = await cache.getUser(id: UserID("u1"))
+        XCTAssertNil(u)
+        let c = await cache.getChannel(id: ChannelID("ch1"))
+        XCTAssertNil(c)
+        let g = await cache.getGuild(id: GuildID("g1"))
+        XCTAssertNil(g)
     }
 
     func testRemoveMessagesForChannel() async throws {
@@ -116,18 +119,17 @@ final class CacheTests: XCTestCase {
 
     func testEnsureChannelStub() async throws {
         let cache = Cache()
-        await cache.ensureChannelStub(id: ChannelID("stub1"), type: .guildText)
+        await cache.ensureChannelStub(id: ChannelID("stub1"), type: .text)
         let channel = await cache.getChannel(id: ChannelID("stub1"))
         XCTAssertNotNil(channel)
         XCTAssertEqual(channel?.id.rawValue, "stub1")
-        XCTAssertEqual(channel?.type, .guildText)
+        XCTAssertEqual(channel?.type, .text)
 
-        // Ensure it does not overwrite existing
         let existing = TestFixtures.makeChannel(id: "stub1", name: "real-name")
         await cache.upsert(channel: existing)
         await cache.ensureChannelStub(id: ChannelID("stub1"), type: .dm)
         let after = await cache.getChannel(id: ChannelID("stub1"))
         XCTAssertEqual(after?.name, "real-name")
-        XCTAssertEqual(after?.type, .guildText)
+        XCTAssertEqual(after?.type, .text)
     }
 }

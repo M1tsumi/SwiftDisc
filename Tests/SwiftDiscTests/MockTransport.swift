@@ -16,7 +16,7 @@ actor MockHTTPTransport: HTTPTransport {
         let path = url.path
         requestedPaths.append("\(method):\(path)")
         guard var queue = responseQueues[path], !queue.isEmpty else {
-            throw DiscordError.http(statusCode: 404, message: "No mock response for \(path)")
+            throw DiscordError.http(404, "No mock response for \(path)")
         }
         let response = queue.removeFirst()
         if queue.isEmpty {
@@ -36,33 +36,39 @@ actor MockHTTPTransport: HTTPTransport {
 }
 
 /// A mock WebSocket transport that simulates gateway events.
-actor MockWebSocketTransport: WebSocketTransport {
-    private var messages: [WebSocketMessage] = []
-    private var sentMessages: [String] = []
+final class MockWebSocketTransport: @unchecked Sendable, WebSocketTransport {
+    private let lock = NSLock()
+    private var _messages: [WebSocketMessage] = []
+    private var _sentMessages: [String] = []
     private var _closeCode: Int? = nil
     private var _shouldThrowOnReceive = false
 
-    var closeCode: Int? { _closeCode }
+    var closeCode: Int? { lock.withLock { _closeCode } }
 
-    func addMessage(_ message: WebSocketMessage) { messages.append(message) }
-    func addString(_ text: String) { messages.append(.string(text)) }
+    func addMessage(_ message: WebSocketMessage) { lock.withLock { _messages.append(message) } }
+    func addString(_ text: String) { lock.withLock { _messages.append(.string(text)) } }
 
     func receive() async throws -> WebSocketMessage {
-        if _shouldThrowOnReceive { throw DiscordError.gateway("Simulated receive error") }
-        guard !messages.isEmpty else { throw DiscordError.gateway("No mock messages") }
-        return messages.removeFirst()
+        try Task.checkCancellation()
+        if lock.withLock({ _shouldThrowOnReceive }) {
+            throw DiscordError.gateway("Simulated receive error")
+        }
+        if let msg = lock.withLock({ _messages.isEmpty ? nil : _messages.removeFirst() }) {
+            return msg
+        }
+        throw DiscordError.gateway("No mock messages")
     }
 
     func send(_ message: WebSocketMessage) async throws {
-        if case .string(let text) = message { sentMessages.append(text) }
+        if case .string(let text) = message { lock.withLock { _sentMessages.append(text) } }
     }
 
     func sendPing() async throws {}
-    func close() async { _closeCode = 1000 }
-    func forceClose() async { _closeCode = 1006 }
+    func close() async { lock.withLock { _closeCode = 1000 } }
+    func forceClose() async { lock.withLock { _closeCode = 1006 } }
 
-    func getSentMessages() -> [String] { sentMessages }
-    func setThrowOnReceive(_ shouldThrow: Bool) { _shouldThrowOnReceive = shouldThrow }
+    func getSentMessages() -> [String] { lock.withLock { _sentMessages } }
+    func setThrowOnReceive(_ shouldThrow: Bool) { lock.withLock { _shouldThrowOnReceive = shouldThrow } }
 }
 
 /// Minimal VoiceState struct for API compliance (voice not yet planned).

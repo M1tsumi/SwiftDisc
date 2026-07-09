@@ -2,6 +2,11 @@ import XCTest
 @testable import SwiftDisc
 
 final class HTTPClientTests: XCTestCase {
+    private actor EventCapture {
+        var event: RateLimitEvent?
+        func set(_ e: RateLimitEvent) { event = e }
+    }
+
     private struct TestResponse: Codable, Sendable {
         let id: String
         let value: String
@@ -13,7 +18,7 @@ final class HTTPClientTests: XCTestCase {
         let client = HTTPClient(token: "test_token", configuration: config, transport: transport)
 
         let responseData = try JSONEncoder().encode(TestResponse(id: "42", value: "hello"))
-        let path = "/v10/test/endpoint"
+        let path = "/api/v10/test/endpoint"
         await transport.addResponse(for: path, data: responseData)
 
         let result: TestResponse = try await client.get(path: "test/endpoint")
@@ -22,15 +27,15 @@ final class HTTPClientTests: XCTestCase {
     }
 
     func testRateLimitHeaderParsing() async throws {
-        var capturedEvent: RateLimitEvent?
+        let capture = EventCapture()
         let config = DiscordConfiguration(onRateLimit: { event in
-            capturedEvent = event
+            Task { await capture.set(event) }
         })
         let transport = MockHTTPTransport()
         let client = HTTPClient(token: "test_token", configuration: config, transport: transport)
 
         let responseData = try JSONEncoder().encode(["ok": true])
-        let path = "/v10/channels/123/messages"
+        let path = "/api/v10/channels/123/messages"
         await transport.addResponse(
             for: path,
             data: responseData,
@@ -44,7 +49,8 @@ final class HTTPClientTests: XCTestCase {
         let result: [String: Bool] = try await client.get(path: "channels/123/messages")
         XCTAssertEqual(result["ok"], true)
 
-        let event = try XCTUnwrap(capturedEvent)
+        let captured = await capture.event
+        let event = try XCTUnwrap(captured)
         XCTAssertEqual(event.remaining, 4)
         XCTAssertEqual(event.limit, 5)
         XCTAssertFalse(event.isGlobal)
@@ -56,7 +62,7 @@ final class HTTPClientTests: XCTestCase {
         let client = HTTPClient(token: "test_token", configuration: config, transport: transport)
 
         let successData = try JSONEncoder().encode(TestResponse(id: "1", value: "ok"))
-        let path = "/v10/guilds/111/channels"
+        let path = "/api/v10/guilds/111/channels"
 
         // First call returns 429 with minimal retry-after
         await transport.addResponse(

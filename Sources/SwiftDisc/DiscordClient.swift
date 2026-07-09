@@ -2168,7 +2168,7 @@ public actor DiscordClient {
     public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
         let act = PresenceUpdatePayload.Activity(
             name: name,
-            type: type,
+            type: PresenceUpdatePayload.ActivityType(rawValue: type) ?? .game,
             state: state,
             details: details,
             timestamps: nil,

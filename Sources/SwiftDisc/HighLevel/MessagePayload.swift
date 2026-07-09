@@ -202,12 +202,12 @@ public extension DiscordClient {
                 content: payload.content,
                 embeds: payload.embeds,
                 components: payload.components,
+                files: files,
                 allowedMentions: payload.allowedMentions,
                 flags: payload.flags,
                 tts: payload.tts,
                 stickerIds: payload.stickerIds,
-                poll: payload.poll,
-                files: files
+                poll: payload.poll
             )
         }
         return try await editMessage(
