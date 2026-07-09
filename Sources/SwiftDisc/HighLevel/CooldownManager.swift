@@ -51,7 +51,7 @@ public actor CooldownManager {
     
     /// Clears all cooldowns for a specific command across all keys.
     public func clearCommandCooldowns(command: String) {
-        let prefix = "\(command)::"
+        let prefix = "\(command)\0"
         store = store.filter { !$0.key.hasPrefix(prefix) }
     }
 

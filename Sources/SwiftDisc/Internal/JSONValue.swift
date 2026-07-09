@@ -3,7 +3,7 @@ import Foundation
 /// A dynamically-typed JSON value for flexible decoding.
 ///
 /// Used when Discord returns values whose type varies by context.
-public enum JSONValue: Codable, Hashable, Sendable {
+public enum JSONValue: Codable, Hashable, Sendable, CustomStringConvertible {
     case string(String)
     case number(Double)
     case int(Int)

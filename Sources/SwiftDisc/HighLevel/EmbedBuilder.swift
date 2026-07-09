@@ -137,14 +137,14 @@ public struct EmbedBuilder: Sendable {
         return c
     }
 
-    /// Create a success embed with green color and checkmark prefix.
+    /// Create a success embed with green color.
     /// - Parameter message: The success message.
     /// - Returns: A new builder with green color and description set.
     public static func success(_ message: String) -> EmbedBuilder {
         EmbedBuilder().color(Converters.discordGreen).description(message)
     }
 
-    /// Create an error embed with red color and crossmark prefix.
+    /// Create an error embed with red color.
     /// - Parameter message: The error message.
     /// - Returns: A new builder with red color and description set.
     public static func error(_ message: String) -> EmbedBuilder {

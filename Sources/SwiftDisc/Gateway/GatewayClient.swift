@@ -595,7 +595,7 @@ actor GatewayClient {
 
     /// Logs a warning for each privileged intent used. This is a diagnostic helper and does not
     /// verify the Developer Portal configuration.
-    public static func logPrivilegedIntentWarnings(_ intents: GatewayIntents, logger: (any DiscordLogger)? = nil) {
+    static func logPrivilegedIntentWarnings(_ intents: GatewayIntents, logger: (any DiscordLogger)? = nil) {
         let privileged: [(GatewayIntents, String)] = [
             (.guildMembers, "GUILD_MEMBERS"),
             (.guildPresences, "GUILD_PRESENCES"),

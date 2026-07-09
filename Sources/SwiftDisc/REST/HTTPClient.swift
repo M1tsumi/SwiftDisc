@@ -43,7 +43,9 @@ private func parseRetryAfter(data: Data) -> TimeInterval {
 /// Handles cancellation by removing cancelled waiters from the queue.
 private actor AsyncSemaphore {
     private var value: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var nextId: Int = 0
+    private var waiters: [Int: CheckedContinuation<Void, Never>] = [:]
+    private var waiterOrder: [Int] = []
 
     init(value: Int) {
         self.value = value
@@ -54,29 +56,32 @@ private actor AsyncSemaphore {
             value -= 1
             return
         }
+        let id = nextId
+        nextId += 1
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
-                waiters.append(continuation)
+                waiters[id] = continuation
+                waiterOrder.append(id)
             }
         } onCancel: {
-            Task { await self.removeCancelledWaiter() }
+            Task { await self.removeCancelledWaiter(id) }
         }
     }
 
-    private func removeCancelledWaiter() {
-        // Continuation was already resumed by cancellation, just remove from list
-        if !waiters.isEmpty {
-            waiters.removeFirst()
-        }
+    private func removeCancelledWaiter(_ id: Int) {
+        waiters.removeValue(forKey: id)
+        waiterOrder.removeAll { $0 == id }
     }
 
     func signal() {
-        if let waiter = waiters.first {
-            waiters.removeFirst()
-            waiter.resume()
-        } else {
-            value += 1
+        while let id = waiterOrder.first {
+            waiterOrder.removeFirst()
+            if let waiter = waiters.removeValue(forKey: id) {
+                waiter.resume()
+                return
+            }
         }
+        value += 1
     }
 }
 
@@ -653,11 +658,11 @@ final class HTTPClient: @unchecked Sendable {
         throw DiscordError.unavailable
     }
 
-    func postStickerMultipart<T: Decodable, B: Encodable>(path: String, jsonBody: B, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) -> T {
+    func postStickerMultipart<T: Decodable>(path: String, name: String, description: String?, tags: String, file: FileAttachment, reason: String? = nil) async throws(DiscordError) -> T {
         throw DiscordError.unavailable
     }
 
-    func putFile(path: String, file: FileAttachment, reason: String? = nil) async throws(DiscordError) {
+    func putFile(path: String, data: Data, filename: String, reason: String? = nil) async throws(DiscordError) {
         throw DiscordError.unavailable
     }
 }

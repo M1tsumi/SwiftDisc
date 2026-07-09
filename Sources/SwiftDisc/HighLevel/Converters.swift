@@ -114,8 +114,6 @@ public enum Converters: Sendable {
     public static let discordYellow: Int = 0xFEE75C
     /// Discord fuchsia/pink color (used for stage channels)
     public static let discordFuchsia: Int = 0xEB459E
-    /// Discord orange color
-    public static let discordOrange: Int = 0xFEE75C
     
     // MARK: - Emoji Parsing
     
