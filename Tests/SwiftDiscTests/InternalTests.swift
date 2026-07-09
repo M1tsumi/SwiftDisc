@@ -79,21 +79,21 @@ final class InternalTests: XCTestCase {
     }
 
     func testRetryPolicyBackoffDelay() {
-        let policy = RetryPolicy(maxAttempts: 4, baseDelay: 0.5, maxDelay: 4.0)
+        let policy = RetryPolicy(maxAttempts: 4, baseDelay: 0.5, maxDelay: 4.0, jitter: 0)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 1), 0.5)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 2), 1.0)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 3), 2.0)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 4), 4.0)
-        XCTAssertEqual(policy.backoffDelay(forAttempt: 5), 4.0) // Capped at maxDelay
+        XCTAssertEqual(policy.backoffDelay(forAttempt: 5), 4.0)
     }
 
     func testRetryPolicyBackoffDelayCappedAtMax() {
-        let policy = RetryPolicy(maxAttempts: 10, baseDelay: 0.5, maxDelay: 2.0)
+        let policy = RetryPolicy(maxAttempts: 10, baseDelay: 0.5, maxDelay: 2.0, jitter: 0)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 1), 0.5)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 2), 1.0)
         XCTAssertEqual(policy.backoffDelay(forAttempt: 3), 2.0)
-        XCTAssertEqual(policy.backoffDelay(forAttempt: 4), 2.0) // Capped
-        XCTAssertEqual(policy.backoffDelay(forAttempt: 10), 2.0) // Still capped
+        XCTAssertEqual(policy.backoffDelay(forAttempt: 4), 2.0)
+        XCTAssertEqual(policy.backoffDelay(forAttempt: 10), 2.0)
     }
 
     func testRetryPolicyPreconditions() {

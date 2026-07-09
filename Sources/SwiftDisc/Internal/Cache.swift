@@ -61,9 +61,30 @@ public actor Cache {
         public var maxEmojiEntries: Int?
         
         /// Creates a new cache configuration.
-        public init(userTTL: TimeInterval? = nil, channelTTL: TimeInterval? = nil, guildTTL: TimeInterval? = nil, roleTTL: TimeInterval? = nil, emojiTTL: TimeInterval? = nil, maxMessagesPerChannel: Int = 50, maxUsers: Int? = 50_000, maxChannels: Int? = 50_000, maxGuilds: Int? = 10_000, maxRolesPerGuild: Int? = 500, maxEmojiEntries: Int? = 500) {
-            self.userTTL = userTTL; self.channelTTL = channelTTL; self.guildTTL = guildTTL; self.roleTTL = roleTTL; self.emojiTTL = emojiTTL; self.maxMessagesPerChannel = maxMessagesPerChannel
-            self.maxUsers = maxUsers; self.maxChannels = maxChannels; self.maxGuilds = maxGuilds; self.maxRolesPerGuild = maxRolesPerGuild; self.maxEmojiEntries = maxEmojiEntries
+        public init(
+            userTTL: TimeInterval? = nil,
+            channelTTL: TimeInterval? = nil,
+            guildTTL: TimeInterval? = nil,
+            roleTTL: TimeInterval? = nil,
+            emojiTTL: TimeInterval? = nil,
+            maxMessagesPerChannel: Int = 50,
+            maxUsers: Int? = 50_000,
+            maxChannels: Int? = 50_000,
+            maxGuilds: Int? = 10_000,
+            maxRolesPerGuild: Int? = 500,
+            maxEmojiEntries: Int? = 500
+        ) {
+            self.userTTL = userTTL
+            self.channelTTL = channelTTL
+            self.guildTTL = guildTTL
+            self.roleTTL = roleTTL
+            self.emojiTTL = emojiTTL
+            self.maxMessagesPerChannel = maxMessagesPerChannel
+            self.maxUsers = maxUsers
+            self.maxChannels = maxChannels
+            self.maxGuilds = maxGuilds
+            self.maxRolesPerGuild = maxRolesPerGuild
+            self.maxEmojiEntries = maxEmojiEntries
         }
     }
 
@@ -125,16 +146,17 @@ public actor Cache {
     /// - Parameter configuration: The cache configuration.
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
-        self.evictionTask = nil
         let hasTTL = configuration.userTTL != nil
             || configuration.channelTTL != nil
             || configuration.guildTTL != nil
             || configuration.roleTTL != nil
             || configuration.emojiTTL != nil
         if hasTTL {
-            Task { @Sendable in
-                await self.startEvictionTaskIfNeeded()
+            self.evictionTask = Task { @Sendable [self] in
+                await self.evictionLoop()
             }
+        } else {
+            self.evictionTask = nil
         }
     }
 
@@ -160,10 +182,12 @@ public actor Cache {
     ///
     /// Used when only the channel ID is known from events like MESSAGE_CREATE.
     ///
-    /// - Parameter id: The channel ID.
-    public func ensureChannelStub(id: ChannelID) {
+    /// - Parameters:
+    ///   - id: The channel ID.
+    ///   - type: The channel type (defaults to .text).
+    public func ensureChannelStub(id: ChannelID, type: ChannelType = .text) {
         if channelsTimed[id] == nil {
-            channelsTimed[id] = TimedValue(value: Channel(id: id, type: .text), storedAt: Date())
+            channelsTimed[id] = TimedValue(value: Channel(id: id, type: type), storedAt: Date())
         }
     }
 
@@ -276,6 +300,36 @@ public actor Cache {
         return tv.value.first { $0.id == id }
     }
 
+    /// Clears the entire cache.
+    public func clear() {
+        usersTimed.removeAll()
+        channelsTimed.removeAll()
+        guildsTimed.removeAll()
+        rolesByGuild.removeAll()
+        emojisByGuild.removeAll()
+        recentMessagesByChannel.removeAll()
+        messageToChannelIndex.removeAll()
+    }
+
+    /// Removes all cached messages for a given channel.
+    ///
+    /// - Parameter channelId: The channel ID whose messages should be removed.
+    public func removeMessagesForChannel(channelId: ChannelID) {
+        if let messages = recentMessagesByChannel.removeValue(forKey: channelId) {
+            for message in messages {
+                messageToChannelIndex.removeValue(forKey: message.id)
+            }
+        }
+    }
+
+    /// Retrieves cached messages for a given channel.
+    ///
+    /// - Parameter channelId: The channel ID.
+    /// - Returns: The cached messages for the channel, or an empty array if none.
+    public func getMessages(channelId: ChannelID) -> [Message] {
+        recentMessagesByChannel[channelId] ?? []
+    }
+
     /// Adds a message to the recent messages cache.
     ///
     /// - Parameter message: The message to add.
@@ -307,6 +361,13 @@ public actor Cache {
             recentMessagesByChannel[channelId] = arr
         }
         messageToChannelIndex.removeValue(forKey: id)
+    }
+
+    /// Removes a user from the cache.
+    ///
+    /// - Parameter id: The user ID to remove.
+    public func removeUser(id: UserID) {
+        usersTimed.removeValue(forKey: id)
     }
 
     /// Retrieves a user from the cache.

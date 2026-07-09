@@ -3,7 +3,7 @@ import Foundation
 /// A builder for constructing Discord rich presence activities.
 public struct ActivityBuilder: Sendable {
     private var name: String
-    private var type: Int = 0 // 0 = playing, 2 = listening, 3 = watching, etc.
+    private var type: PresenceUpdatePayload.ActivityType = .game
     private var state: String?
     private var details: String?
     private var start: Int64?
@@ -22,11 +22,14 @@ public struct ActivityBuilder: Sendable {
 
     public init(name: String) { self.name = name }
 
-    public func playing() -> ActivityBuilder { var c = self; c.type = 0; return c }
-    public func streaming() -> ActivityBuilder { var c = self; c.type = 1; return c }
-    public func listening() -> ActivityBuilder { var c = self; c.type = 2; return c }
-    public func watching() -> ActivityBuilder { var c = self; c.type = 3; return c }
-    public func competing() -> ActivityBuilder { var c = self; c.type = 5; return c }
+    /// Set the activity type by raw Int value (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 4=Custom, 5=Competing).
+    /// Unknown values default to .game.
+    public func type(_ raw: Int) -> ActivityBuilder { var c = self; c.type = PresenceUpdatePayload.ActivityType(rawValue: raw) ?? .game; return c }
+    public func playing() -> ActivityBuilder { var c = self; c.type = .game; return c }
+    public func streaming() -> ActivityBuilder { var c = self; c.type = .streaming; return c }
+    public func listening() -> ActivityBuilder { var c = self; c.type = .listening; return c }
+    public func watching() -> ActivityBuilder { var c = self; c.type = .watching; return c }
+    public func competing() -> ActivityBuilder { var c = self; c.type = .competing; return c }
 
     public func state(_ v: String) -> ActivityBuilder { var c = self; c.state = v; return c }
     public func details(_ v: String) -> ActivityBuilder { var c = self; c.details = v; return c }

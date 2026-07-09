@@ -2,6 +2,13 @@ import Foundation
 
 /// Converter utilities for common command argument types.
 public enum Converters: Sendable {
+    /// Shared ISO8601 date formatter with internet date-time and fractional seconds support.
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
     // MARK: - Snowflake Parsing
     
     /// Parse a raw argument as a Snowflake<T> by accepting plain ids or mention forms like `<@1234>` or `<@!1234>`.
@@ -52,16 +59,12 @@ public enum Converters: Sendable {
     
     /// Format a Date as an ISO8601 string suitable for Discord.
     public static func formatDateAsISO8601(_ date: Date) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: date)
+        iso8601Formatter.string(from: date)
     }
     
     /// Parse an ISO8601 string to a Date.
     public static func parseISO8601(_ string: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: string)
+        iso8601Formatter.date(from: string)
     }
     
     /// Convert a duration string (e.g., "1h30m", "45s", "2d") to seconds.
@@ -109,8 +112,8 @@ public enum Converters: Sendable {
     public static let discordRed: Int = 0xED4245
     /// Discord yellow color
     public static let discordYellow: Int = 0xFEE75C
-    /// Discord orange color
-    public static let discordOrange: Int = 0xEB459E
+    /// Discord fuchsia/pink color (used for stage channels)
+    public static let discordFuchsia: Int = 0xEB459E
     
     // MARK: - Emoji Parsing
     
@@ -144,8 +147,8 @@ public enum Converters: Sendable {
     
     /// Validate a Discord invite code.
     public static func isValidInviteCode(_ code: String) -> Bool {
-        // Discord invite codes are typically alphanumeric, 6-10 characters
-        let pattern = "^[a-zA-Z0-9]{6,10}$"
+        // Discord invite codes are alphanumeric, typically 6-25 characters
+        let pattern = "^[a-zA-Z0-9]{6,25}$"
         return code.range(of: pattern, options: .regularExpression) != nil
     }
 }

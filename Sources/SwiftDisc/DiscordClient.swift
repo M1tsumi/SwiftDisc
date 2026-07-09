@@ -403,6 +403,22 @@ public actor DiscordClient {
     public var onEntitlementUpdate: (@Sendable (Entitlement) async -> Void)?
     public var onEntitlementDelete: (@Sendable (Entitlement) async -> Void)?
 
+    // -- Subscriptions (Monetization) --
+    public var onSubscriptionCreate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionUpdate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionDelete: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionCreate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionUpdate: (@Sendable (AppSubscription) async -> Void)?
+    public var onSubscriptionGroupSubscriptionDelete: (@Sendable (AppSubscription) async -> Void)?
+
+    // -- Stage Instances --
+    public var onStageInstanceCreate: (@Sendable (StageInstance) async -> Void)?
+    public var onStageInstanceUpdate: (@Sendable (StageInstance) async -> Void)?
+    public var onStageInstanceDelete: (@Sendable (StageInstance) async -> Void)?
+
+    // -- Guild Join Requests --
+    public var onGuildJoinRequestUpdate: (@Sendable (GuildJoinRequestUpdate) async -> Void)?
+
     // -- Soundboard --
     public var onSoundboardSoundCreate: (@Sendable (SoundboardSound) async -> Void)?
     public var onSoundboardSoundUpdate: (@Sendable (SoundboardSound) async -> Void)?
@@ -800,6 +816,7 @@ public actor DiscordClient {
     /// ```
     ///
     /// - Note: Only messages in news channels can be crossposted.
+    @discardableResult
     public func crosspostMessage(channelId: ChannelID, messageId: MessageID) async throws -> Message {
         struct Empty: Encodable, Sendable {
         }
@@ -994,13 +1011,23 @@ public actor DiscordClient {
         embeds: [Embed]? = nil,
         components: [MessageComponent]? = nil,
         files: [FileAttachment]? = nil,
-        attachments: [PartialAttachment]? = nil
+        attachments: [PartialAttachment]? = nil,
+        allowedMentions: AllowedMentions? = nil,
+        flags: MessageFlags? = nil,
+        tts: Bool? = nil,
+        stickerIds: [StickerID]? = nil,
+        poll: Poll? = nil
     ) async throws -> Message {
         struct Payload: Encodable, Sendable {
             let content: OptionalField<String>
             let embeds: [Embed]?
             let components: [MessageComponent]?
             let attachments: [PartialAttachment]?
+            let allowed_mentions: AllowedMentions?
+            let flags: MessageFlags?
+            let tts: Bool?
+            let sticker_ids: [StickerID]?
+            let poll: Poll?
 
             func encode(to encoder: Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
@@ -1008,13 +1035,18 @@ public actor DiscordClient {
                 if let embeds = embeds { try container.encode(embeds, forKey: .embeds) }
                 if let components = components { try container.encode(components, forKey: .components) }
                 if let attachments = attachments { try container.encode(attachments, forKey: .attachments) }
+                if let allowed_mentions = allowed_mentions { try container.encode(allowed_mentions, forKey: .allowed_mentions) }
+                if let flags = flags { try container.encode(flags, forKey: .flags) }
+                if let tts = tts { try container.encode(tts, forKey: .tts) }
+                if let sticker_ids = sticker_ids { try container.encode(sticker_ids, forKey: .sticker_ids) }
+                if let poll = poll { try container.encode(poll, forKey: .poll) }
             }
 
             enum CodingKeys: String, CodingKey {
-                case content, embeds, components, attachments
+                case content, embeds, components, attachments, allowed_mentions, flags, tts, sticker_ids, poll
             }
         }
-        let body = Payload(content: content, embeds: embeds, components: components, attachments: attachments)
+        let body = Payload(content: content, embeds: embeds, components: components, attachments: attachments, allowed_mentions: allowedMentions, flags: flags, tts: tts, sticker_ids: stickerIds, poll: poll)
         return try await http.patchMultipart(path: "/channels/\(channelId)/messages/\(messageId)", jsonBody: body, files: files)
     }
 
@@ -1252,6 +1284,7 @@ public actor DiscordClient {
     ///
     /// - Note: Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
     /// - See Also: `modifyGuildEmoji(guildId:emojiId:name:roles:)`
+    @discardableResult
     public func createGuildEmoji(guildId: GuildID, name: String, image: String, roles: [RoleID]? = nil) async throws -> Emoji {
         struct Body: Encodable, Sendable {
             let name: String
@@ -1283,6 +1316,7 @@ public actor DiscordClient {
     /// ```
     ///
     /// - Note: Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
+    @discardableResult
     public func modifyGuildEmoji(guildId: GuildID, emojiId: EmojiID, name: String? = nil, roles: [RoleID]? = nil) async throws -> Emoji {
         struct Body: Encodable, Sendable {
             let name: String?
@@ -2134,7 +2168,7 @@ public actor DiscordClient {
     public func setActivity(name: String, type: Int = 0, state: String? = nil, details: String? = nil, buttons: [String]? = nil) async {
         let act = PresenceUpdatePayload.Activity(
             name: name,
-            type: type,
+            type: PresenceUpdatePayload.ActivityType(rawValue: type) ?? .game,
             state: state,
             details: details,
             timestamps: nil,
@@ -2539,12 +2573,18 @@ public actor DiscordClient {
     /// - Important: All fields are optional; only provided fields will be updated.
     ///           To explicitly clear the content field, pass `OptionalField.null`.
     /// - See Also: `sendMessage(channelId:content:)`
-    public func editMessage(channelId: ChannelID, messageId: MessageID, content: OptionalField<String> = .absent, embeds: [Embed]? = nil, components: [MessageComponent]? = nil, attachments: [PartialAttachment]? = nil) async throws -> Message {
+    @discardableResult
+    public func editMessage(channelId: ChannelID, messageId: MessageID, content: OptionalField<String> = .absent, embeds: [Embed]? = nil, components: [MessageComponent]? = nil, attachments: [PartialAttachment]? = nil, allowedMentions: AllowedMentions? = nil, flags: MessageFlags? = nil, tts: Bool? = nil, stickerIds: [StickerID]? = nil, poll: Poll? = nil) async throws -> Message {
         struct Body: Encodable, Sendable {
             let content: OptionalField<String>
             let embeds: [Embed]?
             let components: [MessageComponent]?
             let attachments: [PartialAttachment]?
+            let allowed_mentions: AllowedMentions?
+            let flags: MessageFlags?
+            let tts: Bool?
+            let sticker_ids: [StickerID]?
+            let poll: Poll?
 
             func encode(to encoder: Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
@@ -2552,13 +2592,18 @@ public actor DiscordClient {
                 if let embeds = embeds { try container.encode(embeds, forKey: .embeds) }
                 if let components = components { try container.encode(components, forKey: .components) }
                 if let attachments = attachments { try container.encode(attachments, forKey: .attachments) }
+                if let allowed_mentions = allowed_mentions { try container.encode(allowed_mentions, forKey: .allowed_mentions) }
+                if let flags = flags { try container.encode(flags, forKey: .flags) }
+                if let tts = tts { try container.encode(tts, forKey: .tts) }
+                if let sticker_ids = sticker_ids { try container.encode(sticker_ids, forKey: .sticker_ids) }
+                if let poll = poll { try container.encode(poll, forKey: .poll) }
             }
 
             enum CodingKeys: String, CodingKey {
-                case content, embeds, components, attachments
+                case content, embeds, components, attachments, allowed_mentions, flags, tts, sticker_ids, poll
             }
         }
-        return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components, attachments: attachments))
+        return try await http.patch(path: "/channels/\(channelId)/messages/\(messageId)", body: Body(content: content, embeds: embeds, components: components, attachments: attachments, allowed_mentions: allowedMentions, flags: flags, tts: tts, sticker_ids: stickerIds, poll: poll))
     }
 
     /// Lists recent messages from a channel.

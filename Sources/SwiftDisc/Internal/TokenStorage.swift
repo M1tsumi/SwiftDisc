@@ -16,7 +16,8 @@ import Foundation
 /// ```
 public struct RedactedToken: Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     /// The raw token string. Avoid logging this directly.
-    public let rawValue: String
+    /// - Warning: Internal access to prevent accidental leakage outside the module.
+    let rawValue: String
 
     /// Creates a new redacted token wrapper.
     /// - Parameter rawValue: The raw bot token (no `Bot ` prefix).

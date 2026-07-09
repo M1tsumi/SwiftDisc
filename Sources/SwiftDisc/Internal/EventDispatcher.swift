@@ -270,6 +270,39 @@ actor EventDispatcher {
         case .entitlementDelete(let ev):
             if let cb = await client.onEntitlementDelete { await cb(ev) }
 
+        // MARK: Stage Instances
+        case .stageInstanceCreate(let ev):
+            if let cb = await client.onStageInstanceCreate { await cb(ev) }
+
+        case .stageInstanceUpdate(let ev):
+            if let cb = await client.onStageInstanceUpdate { await cb(ev) }
+
+        case .stageInstanceDelete(let ev):
+            if let cb = await client.onStageInstanceDelete { await cb(ev) }
+
+        // MARK: Subscriptions (Monetization)
+        case .subscriptionCreate(let ev):
+            if let cb = await client.onSubscriptionCreate { await cb(ev) }
+
+        case .subscriptionUpdate(let ev):
+            if let cb = await client.onSubscriptionUpdate { await cb(ev) }
+
+        case .subscriptionDelete(let ev):
+            if let cb = await client.onSubscriptionDelete { await cb(ev) }
+
+        case .subscriptionGroupSubscriptionCreate(let ev):
+            if let cb = await client.onSubscriptionGroupSubscriptionCreate { await cb(ev) }
+
+        case .subscriptionGroupSubscriptionUpdate(let ev):
+            if let cb = await client.onSubscriptionGroupSubscriptionUpdate { await cb(ev) }
+
+        case .subscriptionGroupSubscriptionDelete(let ev):
+            if let cb = await client.onSubscriptionGroupSubscriptionDelete { await cb(ev) }
+
+        // MARK: Guild Join Requests
+        case .guildJoinRequestUpdate(let ev):
+            if let cb = await client.onGuildJoinRequestUpdate { await cb(ev) }
+
         case .userUpdate(let ev):
             if let cb = await client.onUserUpdate { await cb(ev) }
 

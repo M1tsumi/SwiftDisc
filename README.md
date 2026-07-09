@@ -322,14 +322,20 @@ print(await cache.summary)
 | `SwiftDiscAHCTransport` | Optional AsyncHTTPClient transport. Add `.product(name: "SwiftDiscAHCTransport", package: "SwiftDisc")` to use it. Supports proxies on Linux |
 | [**CODE_OF_CONDUCT.md**](CODE_OF_CONDUCT.md) | Community standards and expectations |
 
-You can also build the docs locally:
+You can also build and preview the docs locally:
 
 ```bash
 # Requires swift-docc-plugin (add it to Package.swift first)
-swift package --allow-writing-to-directory generate-documentation --target SwiftDisc --output-path docs --transform-for-static-hosting
+# Preview with a local web server (hot-reloads on source changes):
+swift package --disable-sandbox preview-documentation --target SwiftDisc
+
+# Or build static HTML and serve it:
+swift package --allow-writing-to-directory docs generate-documentation --target SwiftDisc --output-path docs --transform-for-static-hosting --hosting-base-path /
+cd docs && python3 -m http.server 8080
+# Then open http://localhost:8080 in a browser
 ```
 
-Then open `docs/index.html` in a browser.
+The CI workflow publishes to **GitHub Pages** at `https://M1tsumi.github.io/SwiftDisc/` on every push to `main`. The `--hosting-base-path SwiftDisc` flag in the workflow matches the repo's subpath on Pages.
 
 ## Community and support
 

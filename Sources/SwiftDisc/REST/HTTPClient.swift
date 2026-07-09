@@ -39,10 +39,13 @@ private func parseRetryAfter(data: Data) -> TimeInterval {
     return 1.0
 }
 
-/// A simple async semaphore for limiting concurrent operations
+/// A simple async semaphore for limiting concurrent operations.
+/// Handles cancellation by removing cancelled waiters from the queue.
 private actor AsyncSemaphore {
     private var value: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var nextId: Int = 0
+    private var waiters: [Int: CheckedContinuation<Void, Never>] = [:]
+    private var waiterOrder: [Int] = []
 
     init(value: Int) {
         self.value = value
@@ -53,18 +56,32 @@ private actor AsyncSemaphore {
             value -= 1
             return
         }
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+        let id = nextId
+        nextId += 1
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                waiters[id] = continuation
+                waiterOrder.append(id)
+            }
+        } onCancel: {
+            Task { await self.removeCancelledWaiter(id) }
         }
     }
 
+    private func removeCancelledWaiter(_ id: Int) {
+        waiters.removeValue(forKey: id)
+        waiterOrder.removeAll { $0 == id }
+    }
+
     func signal() {
-        if let waiter = waiters.first {
-            waiters.removeFirst()
-            waiter.resume()
-        } else {
-            value += 1
+        while let id = waiterOrder.first {
+            waiterOrder.removeFirst()
+            if let waiter = waiters.removeValue(forKey: id) {
+                waiter.resume()
+                return
+            }
         }
+        value += 1
     }
 }
 
@@ -482,7 +499,7 @@ final class HTTPClient: @unchecked Sendable {
         return body
     }
 
-    private func makeRouteKey(method: String, path: String) -> String {
+    func makeRouteKey(method: String, path: String) -> String {
         let components = path.split(separator: "/").map { String($0) }
         var majorParam: String?
         var majorParamIndex: Int?
@@ -536,7 +553,10 @@ final class HTTPClient: @unchecked Sendable {
 
             do {
                 let (data, http) = try await request()
-                let headerStrings = Dictionary(uniqueKeysWithValues: http.allHeaderFields.map { (String(describing: $0.key), String(describing: $0.value)) })
+                // Use reduce to safely handle duplicate header keys (case-insensitive duplicates)
+                let headerStrings: [String: String] = http.allHeaderFields.reduce(into: [:]) { result, pair in
+                    result[String(describing: pair.key)] = String(describing: pair.value)
+                }
                 await rateLimiter.updateFromHeaders(routeKey: routeKey, headers: headerStrings)
 
                 if let limit = headerStrings["X-RateLimit-Limit"], let limitInt = Int(limit) {
@@ -631,6 +651,18 @@ final class HTTPClient: @unchecked Sendable {
     }
 
     func getRaw(path: String, query: [String: String]? = nil, headers: [String: String]? = nil, reason: String? = nil) async throws(DiscordError) -> Data {
+        throw DiscordError.unavailable
+    }
+
+    func putMultipart<B: Encodable>(path: String, jsonBody: B?, files: [FileAttachment], reason: String? = nil) async throws(DiscordError) {
+        throw DiscordError.unavailable
+    }
+
+    func postStickerMultipart<T: Decodable>(path: String, name: String, description: String?, tags: String, file: FileAttachment, reason: String? = nil) async throws(DiscordError) -> T {
+        throw DiscordError.unavailable
+    }
+
+    func putFile(path: String, data: Data, filename: String, reason: String? = nil) async throws(DiscordError) {
         throw DiscordError.unavailable
     }
 }

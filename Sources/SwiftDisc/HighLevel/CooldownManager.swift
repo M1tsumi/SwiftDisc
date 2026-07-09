@@ -9,7 +9,7 @@ public actor CooldownManager {
     private var autoCleanupInterval: TimeInterval = 300 // 5 minutes default
 
     public init() {
-        // Auto-cleanup started lazily on first access to avoid actor isolation issues in init
+        startAutoCleanup()
     }
     
     deinit {
@@ -51,7 +51,7 @@ public actor CooldownManager {
     
     /// Clears all cooldowns for a specific command across all keys.
     public func clearCommandCooldowns(command: String) {
-        let prefix = "\(command)::"
+        let prefix = "\(command)\0"
         store = store.filter { !$0.key.hasPrefix(prefix) }
     }
 
@@ -85,14 +85,15 @@ public actor CooldownManager {
     }
 
     private func compoundKey(command: String, key: String) -> String {
-        return "\(command)::\(key)"
+        return "\(command)\0\(key)"
     }
     
     private func startAutoCleanup() {
-        cleanupTask = Task { @Sendable in
+        let interval = autoCleanupInterval
+        cleanupTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(self.autoCleanupInterval * 1_000_000_000))
-                self.purgeExpired()
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                await self?.purgeExpired()
             }
         }
     }

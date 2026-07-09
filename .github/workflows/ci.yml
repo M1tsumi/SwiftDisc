@@ -15,21 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Swift 6.2
+      - name: Install Swift 6.2 (macOS / Ubuntu)
+        if: matrix.os != 'windows-latest'
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Install Swift 6.2 (Windows)
+        if: matrix.os == 'windows-latest'
         uses: compnerd/gha-setup-swift@main
         with:
           source: swift.org
           swift-version: swift-6.2-release
           swift-build: 6.2-RELEASE
 
-      - name: Run tests (Unix)
-        if: matrix.os != 'windows-latest'
-        run: |
-          chmod +x scripts/run-tests.sh || true
-          ./scripts/run-tests.sh
-
-      - name: Run tests (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          .\scripts\run-tests.ps1
+      - name: Run tests
+        run: swift test

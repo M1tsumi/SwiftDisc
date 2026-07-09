@@ -57,8 +57,8 @@ public struct User: Codable, Hashable, Sendable {
     /// The unique ID of the user.
     public let id: UserID
     
-    /// The username of the user (2-32 characters).
-    public let username: String
+    /// The username of the user (2-32 characters, may be null for deleted users).
+    public let username: String?
     
     /// The user's discriminator (deprecated, now usually "0000").
     public let discriminator: String?
@@ -114,7 +114,7 @@ public struct User: Codable, Hashable, Sendable {
 
     public init(
         id: UserID,
-        username: String,
+        username: String?,
         discriminator: String? = nil,
         globalName: String? = nil,
         avatar: String? = nil,
